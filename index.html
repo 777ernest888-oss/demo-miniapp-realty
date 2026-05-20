@@ -1,0 +1,56 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title id="pageTitle">Каталог новостроек</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header id="appHeader" class="header">
+    <img id="headerLogo" src="" alt="Logo" class="header-logo">
+    <h1 id="headerTitle" class="header-title">Загрузка...</h1>
+  </header>
+
+  <div class="filters" id="filtersContainer">
+    <select id="filterRooms" class="filter-select">
+      <option value="all">Все комнаты</option>
+      <option value="Студия">Студии</option>
+      <option value="1">1-комнатные</option>
+      <option value="2">2-комнатные</option>
+      <option value="3">3-комнатные</option>
+    </select>
+    <select id="filterPrice" class="filter-select">
+      <option value="all">Любая цена</option>
+      <option value="5">До 5 млн ₽</option>
+      <option value="10">До 10 млн ₽</option>
+      <option value="15">До 15 млн ₽</option>
+      <option value="15+">От 15 млн ₽</option>
+    </select>
+  </div>
+
+  <main id="listings" class="listings">
+    <div class="loader">Загрузка объектов...</div>
+  </main>
+
+  <div id="modal" class="modal hidden">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal()">×</button>
+      <img id="modalImg" src="" class="modal-img">
+      <div class="modal-body">
+        <div class="modal-status" id="modalStatus"></div>
+        <h2 id="modalTitle" class="modal-title"></h2>
+        <div id="modalPrice" class="modal-price"></div>
+        <div class="modal-meta" id="modalMeta"></div>
+        <p id="modalDesc" class="modal-desc"></p>
+        <div class="modal-details" id="modalDetails"></div>
+        <a id="modalBtn" href="#" class="btn-primary">Оставить заявку</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
