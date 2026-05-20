@@ -7,5 +7,5 @@
     contactLink: "https://t.me/your_username"
   },
   // 📊 ССЫЛКА НА ДАННЫЕ (Замените ВАШ_ID_ТАБЛИЦЫ)
-  sheetUrl: "https://docs.google.com/spreadsheets/d/ВАШ_ID_ТАБЛИЦЫ/export?format=csv&gid=0"
+  sheetUrl: "https://docs.google.com/spreadsheets/d/1z7d0dv5o_JKVfIQgn38rHoAywZazadRSvJQFeQgV3eM/export?format=csv&gid=0"
 };
