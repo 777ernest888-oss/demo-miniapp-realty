@@ -11,7 +11,9 @@
     "sheetUrl": "https://docs.google.com/spreadsheets/d/1z7d0dv5o_JKVfIQgn38rHoAywZazadRSvJQFeQgV3eM/export?format=csv&gid=0"
   },
   "contact": {
-    "botLink": "https://t.me/demo_newbuilds_bot"
+    "botLink": "https://t.me/demo_newbuilds_bot",
+    "botToken": "8946632348:AAGN8ub7hQcsHnFlcpGv-Vvc-LikwDVKMqc",
+    "chatId": "2038206387"
   },
   "texts": {
     "ctaButton": "Получить консультацию",
