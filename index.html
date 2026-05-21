@@ -14,7 +14,7 @@
       <img id="welcomeLogo" src="" alt="Logo" class="welcome-logo">
       <h1 id="welcomeTitle" class="welcome-title">Загрузка...</h1>
       <p id="welcomeSubtitle" class="welcome-subtitle">Подбираем лучшие объекты...</p>
-      <button id="welcomeBtn" class="btn-primary btn-large" onclick="closeWelcome()">Открыть каталог</button>
+      <a id="welcomeBtn" href="#" class="btn-primary btn-large" onclick="closeWelcome(); return false;">Открыть каталог</a>
     </div>
   </div>
 
@@ -57,7 +57,8 @@
         <div class="modal-meta" id="modalMeta"></div>
         <p id="modalDesc" class="modal-desc"></p>
         <div class="modal-details" id="modalDetails"></div>
-        <button id="contactBtn" class="btn-primary btn-contact">Оставить заявку</button>
+        <!-- ЗАМЕНЕНО: ссылка вместо кнопки -->
+        <a id="contactLink" href="#" target="_blank" class="btn-primary btn-contact">Оставить заявку</a>
       </div>
     </div>
   </div>
