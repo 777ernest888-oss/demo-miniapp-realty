@@ -20,6 +20,7 @@ let listings = [];
 let currentModalId = null;
 let map = null;
 let markers = [];
+let brandLogoUrl = null; // Глобальная переменная для логотипа в карточках
 
 function startApp() {
   document.getElementById('welcomeScreen')?.classList.add('hidden');
@@ -32,7 +33,7 @@ function toggleFilters() {
   const btn = document.querySelector('.filters-toggle-btn');
   if (block && btn) {
     block.classList.toggle('hidden');
-    btn.textContent = block.classList.contains('hidden') ? '🔽 Фильтры' : '🔼 Скрыть фильтры';
+    btn.textContent = block.classList.contains('hidden') ? '🔽 Фильтры' : ' Скрыть фильтры';
   }
 }
 
@@ -46,8 +47,8 @@ function switchView(view) {
     mapBtn.classList.remove('active');
     listContainer.classList.remove('hidden');
     mapContainer.classList.add('hidden');
-  } else {
-    listBtn.classList.remove('active');    mapBtn.classList.add('active');
+  } else {    listBtn.classList.remove('active');
+    mapBtn.classList.add('active');
     listContainer.classList.add('hidden');
     mapContainer.classList.remove('hidden');
     setTimeout(() => initMap(), 100);
@@ -62,6 +63,7 @@ async function init() {
       listings = await loadFromGoogleSheets(config.data.sheetUrl);
     }
     applyTheme();
+    applyBranding(); // ✅ Динамическая вставка брендинга
     renderWelcome();
     renderFilters();
     renderListings(listings.filter(l => l.active));
@@ -69,6 +71,49 @@ async function init() {
   } catch (error) {
     console.error('Init Error:', error);
   }
+}
+
+// ✅ Условный рендеринг логотипа и названия
+function applyBranding() {
+  if (!config.brand) return;
+
+  const welcomeContainer = document.getElementById('welcomeBrand');
+  const headerContainer = document.getElementById('headerBrand');
+ 
+  if (welcomeContainer) {
+    welcomeContainer.innerHTML = '';
+    if (config.brand.logo) {
+      const logo = document.createElement('img');
+      logo.src = config.brand.logo;
+      logo.className = 'brand-logo';
+      logo.alt = 'Logo';
+      welcomeContainer.appendChild(logo);
+    }
+    if (config.brand.welcomeTitle || config.brand.name) {
+      const title = document.createElement('h1');
+      title.textContent = config.brand.welcomeTitle || config.brand.name;
+      title.className = 'brand-title';
+      welcomeContainer.appendChild(title);
+    }
+  }
+  if (headerContainer) {
+    headerContainer.innerHTML = '';
+    if (config.brand.logo) {
+      const logo = document.createElement('img');
+      logo.src = config.brand.logo;
+      logo.className = 'brand-logo';
+      logo.alt = 'Logo';
+      headerContainer.appendChild(logo);
+    }
+    if (config.brand.name) {
+      const title = document.createElement('h1');
+      title.textContent = config.brand.name;
+      title.className = 'brand-title';
+      headerContainer.appendChild(title);
+    }
+  }
+
+  brandLogoUrl = config.brand.logo || null;
 }
 
 async function loadFromGoogleSheets(url) {
@@ -96,10 +141,10 @@ function parseCSV(csv) {
       else if (!isNaN(value) && value !== '') value = Number(value);
       obj[header] = value;
     });
-    result.push(obj);  }
+    result.push(obj);
+  }
   return result;
 }
-
 function parseCSVLine(line) {
   const result = [];
   let current = '';
@@ -118,6 +163,9 @@ function applyTheme() {
   if (!config.brand) return;
   document.documentElement.style.setProperty('--primary', config.brand.primaryColor || '#1a365d');
   document.documentElement.style.setProperty('--accent', config.brand.accentColor || '#d4af37');
+ 
+  const img = document.getElementById('welcomeImage');
+  if (img && config.brand.welcomeImage) img.src = config.brand.welcomeImage;
 }
 
 function renderWelcome() {
@@ -145,8 +193,8 @@ function renderFilters() {
   const metroContainer = document.getElementById('metroCheckboxes');
   if (metroContainer) {
     metroContainer.innerHTML = '';
-    metros.forEach(m => {      const label = document.createElement('label');
-      label.className = 'checkbox-label';
+    metros.forEach(m => {
+      const label = document.createElement('label');      label.className = 'checkbox-label';
       label.innerHTML = `<input type="checkbox" value="${escapeHtml(m)}" class="filter-checkbox" data-filter="metro"><span>${escapeHtml(m)}</span>`;
       metroContainer.appendChild(label);
     });
@@ -171,7 +219,6 @@ function renderFilters() {
     });
   }
  
-  // Кнопки цены
   document.querySelectorAll('.price-btn').forEach(btn => {
     btn.addEventListener('click', function() {
       if (this.classList.contains('active')) {
@@ -194,9 +241,9 @@ function filterListings() {
   const selectedDistricts = Array.from(document.querySelectorAll('input[data-filter="district"]:checked')).map(cb => cb.value);
   const selectedMetros = Array.from(document.querySelectorAll('input[data-filter="metro"]:checked')).map(cb => cb.value);
   const selectedRooms = Array.from(document.querySelectorAll('input[data-filter="rooms"]:checked')).map(cb => cb.value);
-    const filtered = listings.filter(item => {
-    if (!item.active) return false;
-    if (typeof item.price_from !== 'number' || item.price_from > maxPrice) return false;
+ 
+  const filtered = listings.filter(item => {
+    if (!item.active) return false;    if (typeof item.price_from !== 'number' || item.price_from > maxPrice) return false;
     if (selectedDistricts.length > 0 && !selectedDistricts.includes(item.district)) return false;
     if (selectedMetros.length > 0 && !selectedMetros.includes(item.metro)) return false;
     if (selectedRooms.length > 0 && item.rooms) {
@@ -221,11 +268,9 @@ function renderListings(data) {
   data.forEach(item => {
     let priceDisplay = '?';
     if (typeof item.price_from === 'number') {
-      if (item.price_from < 1000) {
-        priceDisplay = `${item.price_from.toFixed(1)} млн ₽`;
-      } else {
-        priceDisplay = `${(item.price_from / 1000000).toFixed(1)} млн ₽`;
-      }
+      priceDisplay = item.price_from < 1000
+        ? `${item.price_from.toFixed(1)} млн ₽`
+        : `${(item.price_from / 1000000).toFixed(1)} млн ₽`;
     }
    
     const priceTo = typeof item.price_to === 'number' ? item.price_to.toFixed(1) : '';
@@ -241,10 +286,13 @@ function renderListings(data) {
       if (!e.target.closest('.consult-btn-inline')) openDetails(item.id);
     };
    
-    card.innerHTML = `<img src="${escapeHtml(item.image_main) || ''}" alt="${escapeHtml(item.name) || ''}" class="listing-image" onerror="this.style.display='none'"><div class="listing-info"><h3>${escapeHtml(item.name) || 'Без названия'}</h3><div class="listing-meta"><span>${escapeHtml(item.district) || ''}</span><span>🚇 ${escapeHtml(item.metro) || ''}</span>${rooms ? `<span>🚪 ${escapeHtml(rooms)}</span>` : ''}${area ? `<span>📐 ${escapeHtml(area)}</span>` : ''}</div><div class="listing-price">от ${priceDisplay}${priceTo ? ` до ${priceTo} млн ₽` : ''} ${ppsqm ? `<span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}</div><div class="listing-status status-${statusKey}">${statusText}</div><button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button></div>`;
+    // ✅ Логотип в карточке только если задан в конфиге
+    const logoHtml = brandLogoUrl ? `<img src="${escapeHtml(brandLogoUrl)}" class="card-logo" alt="Logo">` : '';
    
-    container.appendChild(card);  });
-}
+    card.innerHTML = `${logoHtml}<img src="${escapeHtml(item.image_main) || ''}" alt="${escapeHtml(item.name) || ''}" class="listing-image" onerror="this.style.display='none'"><div class="listing-info"><h3>${escapeHtml(item.name) || 'Без названия'}</h3><div class="listing-meta"><span>${escapeHtml(item.district) || ''}</span><span>🚇 ${escapeHtml(item.metro) || ''}</span>${rooms ? `<span> ${escapeHtml(rooms)}</span>` : ''}${area ? `<span>📐 ${escapeHtml(area)}</span>` : ''}</div><div class="listing-price">от ${priceDisplay}${priceTo ? ` до ${priceTo} млн ₽` : ''} ${ppsqm ? `<span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}</div><div class="listing-status status-${statusKey}">${statusText}</div><button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button></div>`;
+   
+    container.appendChild(card);
+  });}
 
 function initMap() {
   if (typeof L === 'undefined') return;
@@ -292,8 +340,8 @@ function openDetails(id) {
   featuresDiv.innerHTML = item.features ? `<ul>${item.features.split(',').map(f => `<li>${escapeHtml(f.trim())}</li>`).join('')}</ul>` : '<p style="color: var(--text-secondary)">Информация уточняется</p>';
  
   const plansContainer = document.getElementById('modalFloorPlans');
-  plansContainer.innerHTML = '';  if (item.floor_plans_text) {
-    const textDiv = document.createElement('div');
+  plansContainer.innerHTML = '';
+  if (item.floor_plans_text) {    const textDiv = document.createElement('div');
     textDiv.className = 'floor-plans-text';
     textDiv.textContent = item.floor_plans_text;
     plansContainer.appendChild(textDiv);
@@ -341,8 +389,8 @@ function openDetails(id) {
     btn.style.marginTop = '20px';
     btn.style.marginBottom = '40px';
     modalContent.appendChild(btn);
-  }  btn.textContent = '📞 Получить консультацию';
-  btn.onclick = () => openConsultForm(id);
+  }
+  btn.textContent = '📞 Получить консультацию';  btn.onclick = () => openConsultForm(id);
   document.getElementById('detailsModal').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
 }
@@ -390,13 +438,12 @@ function submitConsultForm(event) {
  
   const name = document.getElementById('consultName').value;
   const phone = document.getElementById('consultPhone').value;
-  if (phone.length < 18) {    tg?.showAlert('❌ Введите корректный номер телефона');
-    return;
+  if (phone.length < 18) {
+    tg?.showAlert('❌ Введите корректный номер телефона');    return;
   }
 
-  // 🔹 АВТООТПРАВКА ЧЕРЕЗ БОТА
   if (config.contact?.botToken && config.contact?.chatId) {
-    const text = `🔔 Новая заявка!\n\n🏢 ${item.name}\n👤 ${name}\n📱 ${phone}`;
+    const text = ` Новая заявка!\n\n🏢 ${item.name}\n👤 ${name}\n ${phone}`;
     const url = `https://api.telegram.org/bot${config.contact.botToken}/sendMessage`;
    
     const submitBtn = event.target.querySelector('button[type="submit"]');
@@ -431,7 +478,6 @@ function submitConsultForm(event) {
       submitBtn.disabled = false;
     });
   } else {
-    // 🔸 Фоллбек: просто открываем чат
     const botLink = config.contact?.botLink || 'https://t.me/demo_newbuilds_bot';
     if (tg?.openLink) tg.openLink(botLink);
     else window.open(botLink, '_blank');
@@ -439,10 +485,10 @@ function submitConsultForm(event) {
     tg?.showAlert('✅ Вы будете перенаправлены в чат с менеджером');
   }
 }
+
 function escapeHtml(text) {
   if (!text) return '';
-  const div = document.createElement('div');
-  div.textContent = text;
+  const div = document.createElement('div');  div.textContent = text;
   return div.innerHTML;
 }
 
