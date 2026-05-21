@@ -3,27 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Каталог Новостроек</title>
+  <title>КАТАЛОГ НОВОСТРОЕК</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <div id="welcomeScreen" class="screen welcome">
-    <!-- Контейнер для логотипа и названия (генерируется JS) -->
+    <!-- Картинка сверху -->
+    <img id="welcomeImage" class="welcome-img" src="welcome-bg.jpg" alt="Welcome">
+   
+    <!-- Заголовок ПОД картинкой -->
     <div id="welcomeBrand" class="welcome-brand"></div>
    
-    <img id="welcomeImage" class="welcome-img" src="" alt="Welcome">
     <p id="welcomeSubtitle" class="welcome-sub">Подберём квартиру под ваш бюджет</p>
     <button class="btn-primary" onclick="startApp()">Начать подбор</button>
   </div>
 
   <div id="mainContent" class="screen main hidden">
     <header class="header">
-      <!-- Контейнер для шапки (генерируется JS) -->
       <div id="headerBrand" class="header-brand"></div>
     </header>
-   
     <div class="filters-toggle">
       <button class="filters-toggle-btn" onclick="toggleFilters()">🔽 Фильтры</button>
     </div>
@@ -51,7 +51,6 @@
         <div id="roomsCheckboxes" class="checkbox-group"></div>
       </div>
     </div>
-   
     <div class="view-toggle">
       <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>
       <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺 Карта</button>
