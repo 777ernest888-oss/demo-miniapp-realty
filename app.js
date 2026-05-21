@@ -8,23 +8,27 @@ document.addEventListener('DOMContentLoaded', () => {
       tg.expand();
     }
   } catch (e) {
-    console.log('Telegram WebApp не доступен, работаем в обычном режиме');
+    console.log('Telegram WebApp не доступен');
   }
  
   // Применяем бренд из config.js
   document.documentElement.style.setProperty('--primary-color', APP_CONFIG.brand.color);
  
+  // Welcome Screen
+  document.getElementById('welcomeLogo').src = APP_CONFIG.brand.logo;
+  document.getElementById('welcomeTitle').textContent = APP_CONFIG.brand.name;
+  document.getElementById('welcomeSubtitle').textContent = 'Каталог новостроек Санкт-Петербурга. Подберём квартиру под ваш бюджет!';
+ 
+  // Header
   if (tg) {
     try {
       tg.setHeaderColor(APP_CONFIG.brand.color);
     } catch (e) {
-      console.log('Не удалось установить цвет хедера Telegram');
+      console.log('Не удалось установить цвет хедера');
     }
   }
- 
   document.getElementById('headerTitle').textContent = APP_CONFIG.brand.name;
   document.getElementById('headerLogo').src = APP_CONFIG.brand.logo;
-  document.getElementById('modalBtn').href = APP_CONFIG.brand.contactLink;
   document.getElementById('pageTitle').textContent = APP_CONFIG.brand.name;
 
   // 2. Загрузка данных из Google Sheets
@@ -43,16 +47,15 @@ async function loadData() {
     const csv = await res.text();
     allListings = parseCSV(csv)
       .map(row => mapRowToObject(row))
-      .filter(item => String(item.active).toLowerCase() === 'true');
-   
+      .filter(item => String(item.active).toLowerCase() === 'true');   
     renderListings(allListings);
   } catch (e) {
-    console.error('Ошибка загрузки:', e);    document.getElementById('listings').innerHTML =
+    console.error('Ошибка загрузки:', e);
+    document.getElementById('listings').innerHTML =
       '<div class="loader">Ошибка загрузки данных. Проверьте подключение к таблице.</div>';
   }
 }
 
-// Надёжный парсер CSV (учитывает кавычки и запятые внутри полей)
 function parseCSV(csv) {
   const rows = [];
   let currentRow = [];
@@ -66,7 +69,7 @@ function parseCSV(csv) {
     if (char === '"') {
       if (inQuotes && next === '"') {
         currentCell += '"';
-        i++; // skip escaped quote
+        i++;
       } else {
         inQuotes = !inQuotes;
       }
@@ -89,14 +92,13 @@ function parseCSV(csv) {
   return rows;
 }
 
-// Маппинг строго под ваши 25 колонок
 function mapRowToObject(row) {
   return {
     id: row[0],
     name: row[1],
-    district: row[2],
-    metro: row[3],
-    price_from: Number(row[4]) || 0,    price_to: Number(row[5]) || 0,
+    district: row[2],    metro: row[3],
+    price_from: Number(row[4]) || 0,
+    price_to: Number(row[5]) || 0,
     rooms: row[6],
     area_min: Number(row[7]) || 0,
     area_max: Number(row[8]) || 0,
@@ -119,6 +121,13 @@ function mapRowToObject(row) {
   };
 }
 
+function closeWelcome() {
+  document.getElementById('welcomeScreen').classList.add('hidden');
+  document.getElementById('appHeader').classList.remove('hidden');
+  document.getElementById('filtersContainer').classList.remove('hidden');
+  document.getElementById('listings').classList.remove('hidden');
+}
+
 function applyFilters() {
   const roomVal = document.getElementById('filterRooms').value;
   const priceVal = document.getElementById('filterPrice').value;
@@ -127,7 +136,7 @@ function applyFilters() {
     const roomMatch = roomVal === 'all' || item.rooms === roomVal;
     let priceMatch = true;
     if (priceVal !== 'all') {
-      const limit = Number(priceVal) * 1000000; // переводим в миллионы
+      const limit = Number(priceVal) * 1000000;
       if (priceVal.includes('+')) {
         priceMatch = item.price_from >= limit;
       } else {
@@ -136,8 +145,7 @@ function applyFilters() {
     }
     return roomMatch && priceMatch;
   });
- 
-  renderListings(filtered);
+    renderListings(filtered);
 }
 
 function renderListings(items) {
@@ -145,7 +153,8 @@ function renderListings(items) {
   if (items.length === 0) {
     container.innerHTML = '<div class="loader">Нет объектов по выбранным фильтрам</div>';
     return;
-  } 
+  }
+ 
   container.innerHTML = items.map(item => `
     <article class="card" onclick="openModal('${item.id}')">
       <img src="${item.image_main}" alt="${item.name}" class="card-img" loading="lazy">
@@ -185,33 +194,37 @@ function openModal(id) {
   document.getElementById('modalDetails').innerHTML = `
     <div class="detail-item"><div class="detail-label">Класс</div><div class="detail-value">${item.class || '-'}</div></div>
     <div class="detail-item"><div class="detail-label">Отделка</div><div class="detail-value">${item.finishing || '-'}</div></div>
-    <div class="detail-item"><div class="detail-label">Сдача</div><div class="detail-value">${item.completion_soonest || '-'}</div></div>
-    <div class="detail-item"><div class="detail-label">Адрес</div><div class="detail-value">${item.address || '-'}</div></div>
+    <div class="detail-item"><div class="detail-label">Сдача</div><div class="detail-value">${item.completion_soonest || '-'}</div></div>    <div class="detail-item"><div class="detail-label">Адрес</div><div class="detail-value">${item.address || '-'}</div></div>
   `;
+ 
+  // Настраиваем кнопку с рабочим обработчиком
+  const contactBtn = document.getElementById('contactBtn');
+  contactBtn.onclick = () => openTelegramBot();
  
   document.getElementById('modal').classList.remove('hidden');
  
-  // Виброотклик для Telegram (безопасный)
   try {
     if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
-      window.Telegram.WebApp.HapticFeedback.impactOccurred('light');    }
-  } catch (e) {
-    // Игнорируем ошибки вибрации
-  }
+      window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
+    }
+  } catch (e) {}
+}
+
+function openTelegramBot() {
+  // Правильное открытие Telegram бота
+  window.location.href = APP_CONFIG.brand.contactLink;
 }
 
 function closeModal() {
   document.getElementById('modal').classList.add('hidden');
 }
 
-// Закрытие модалки по клику на фон
 document.getElementById('modal').addEventListener('click', (e) => {
   if (e.target === e.currentTarget) {
     closeModal();
   }
 });
 
-// Форматирование цены (4850000 → 4 850 000)
 function formatPrice(num) {
   if (!num) return '0';
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, " ");
