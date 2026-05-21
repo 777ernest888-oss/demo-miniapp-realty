@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // Инициализация Telegram
   let tg = null;
   try {
     if (window.Telegram && window.Telegram.WebApp) {
@@ -11,10 +10,8 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Telegram WebApp не доступен');
   }
  
-  // Применяем цвета
   document.documentElement.style.setProperty('--primary-color', APP_CONFIG.brand.color);
  
-  // Welcome Screen
   document.getElementById('welcomeLogo').src = APP_CONFIG.brand.logo;
   document.getElementById('welcomeTitle').textContent = APP_CONFIG.brand.name;
   document.getElementById('welcomeSubtitle').textContent = 'Каталог новостроек Санкт-Петербурга. Подберём квартиру под ваш бюджет!';
@@ -27,10 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('headerLogo').src = APP_CONFIG.brand.logo;
   document.getElementById('pageTitle').textContent = APP_CONFIG.brand.name;
 
-  // Загрузка данных
   loadData();
  
-  // Фильтры
   document.getElementById('filterRooms').addEventListener('change', applyFilters);
   document.getElementById('filterPrice').addEventListener('change', applyFilters);
 });
@@ -47,11 +42,11 @@ async function loadData() {
    
     renderListings(allListings);
   } catch (e) {
-    console.error('Ошибка загрузки:', e);    document.getElementById('listings').innerHTML =
+    console.error('Ошибка загрузки:', e);
+    document.getElementById('listings').innerHTML =
       '<div class="loader">Ошибка загрузки данных. Проверьте подключение к таблице.</div>';
   }
 }
-
 function parseCSV(csv) {
   const rows = [];
   let currentRow = [];
@@ -97,11 +92,11 @@ function mapRowToObject(row) {
     features: row[20], address: row[21], lat: row[22], lng: row[23], active: row[24]
   };
 }
+
 function closeWelcome() {
   document.getElementById('welcomeScreen').classList.add('hidden');
   document.getElementById('appHeader').classList.remove('hidden');
-  document.getElementById('filtersContainer').classList.remove('hidden');
-  document.getElementById('listings').classList.remove('hidden');
+  document.getElementById('filtersContainer').classList.remove('hidden');  document.getElementById('listings').classList.remove('hidden');
 }
 
 function applyFilters() {
@@ -145,13 +140,12 @@ function renderListings(items) {
   `).join('');
 }
 
-function openModal(id) {  const item = allListings.find(i => String(i.id) === String(id));
+function openModal(id) {
+  const item = allListings.find(i => String(i.id) === String(id));
   if (!item) return;
  
-  // Заполняем модалку
   document.getElementById('modalImg').src = item.image_main;
-  document.getElementById('modalStatus').textContent = item.status;
-  document.getElementById('modalStatus').className = `modal-status ${item.status.includes('Продан') || item.status.includes('Снят') ? 'status-sold' : 'status-active'}`;
+  document.getElementById('modalStatus').textContent = item.status;  document.getElementById('modalStatus').className = `modal-status ${item.status.includes('Продан') || item.status.includes('Снят') ? 'status-sold' : 'status-active'}`;
   document.getElementById('modalTitle').textContent = item.name;
   document.getElementById('modalPrice').textContent = `${formatPrice(item.price_from)} ₽`;
   document.getElementById('modalMeta').innerHTML = `
@@ -168,14 +162,19 @@ function openModal(id) {  const item = allListings.find(i => String(i.id) === St
     <div class="detail-item"><div class="detail-label">Адрес</div><div class="detail-value">${item.address || '-'}</div></div>
   `;
  
-  // ВАЖНО: Устанавливаем ссылку прямо в href
-  const contactLink = document.getElementById('contactLink');
-  contactLink.href = APP_CONFIG.brand.contactLink;
+  // ИСПРАВЛЕНИЕ: Используем tg.openLink
+  const contactBtn = document.getElementById('contactLink');
+  contactBtn.onclick = (e) => {
+    e.preventDefault();
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.openLink) {
+      window.Telegram.WebApp.openLink(APP_CONFIG.brand.contactLink);
+    } else {
+      window.open(APP_CONFIG.brand.contactLink, '_blank');
+    }
+  };
  
-  // Показываем модалку
   document.getElementById('modal').classList.remove('hidden');
  
-  // Вибрация
   try {
     if (window.Telegram?.WebApp?.HapticFeedback) {
       window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
