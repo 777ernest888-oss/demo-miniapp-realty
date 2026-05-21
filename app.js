@@ -32,7 +32,7 @@ function toggleFilters() {
   const btn = document.querySelector('.filters-toggle-btn');
   if (block && btn) {
     block.classList.toggle('hidden');
-    btn.textContent = block.classList.contains('hidden') ? '🔽 Фильтры' : '🔼 Скрыть фильтры';
+    btn.textContent = block.classList.contains('hidden') ? ' Фильтры' : '🔼 Скрыть фильтры';
   }
 }
 
@@ -171,7 +171,6 @@ function renderFilters() {
     });
   }
  
-  // Кнопки цены
   document.querySelectorAll('.price-btn').forEach(btn => {
     btn.addEventListener('click', function() {
       if (this.classList.contains('active')) {
@@ -194,8 +193,8 @@ function filterListings() {
   const selectedDistricts = Array.from(document.querySelectorAll('input[data-filter="district"]:checked')).map(cb => cb.value);
   const selectedMetros = Array.from(document.querySelectorAll('input[data-filter="metro"]:checked')).map(cb => cb.value);
   const selectedRooms = Array.from(document.querySelectorAll('input[data-filter="rooms"]:checked')).map(cb => cb.value);
-    const filtered = listings.filter(item => {
-    if (!item.active) return false;
+ 
+  const filtered = listings.filter(item => {    if (!item.active) return false;
     if (typeof item.price_from !== 'number' || item.price_from > maxPrice) return false;
     if (selectedDistricts.length > 0 && !selectedDistricts.includes(item.district)) return false;
     if (selectedMetros.length > 0 && !selectedMetros.includes(item.metro)) return false;
@@ -221,11 +220,9 @@ function renderListings(data) {
   data.forEach(item => {
     let priceDisplay = '?';
     if (typeof item.price_from === 'number') {
-      if (item.price_from < 1000) {
-        priceDisplay = `${item.price_from.toFixed(1)} млн ₽`;
-      } else {
-        priceDisplay = `${(item.price_from / 1000000).toFixed(1)} млн ₽`;
-      }
+      priceDisplay = item.price_from < 1000
+        ? `${item.price_from.toFixed(1)} млн ₽`
+        : `${(item.price_from / 1000000).toFixed(1)} млн ₽`;
     }
    
     const priceTo = typeof item.price_to === 'number' ? item.price_to.toFixed(1) : '';
@@ -243,9 +240,9 @@ function renderListings(data) {
    
     card.innerHTML = `<img src="${escapeHtml(item.image_main) || ''}" alt="${escapeHtml(item.name) || ''}" class="listing-image" onerror="this.style.display='none'"><div class="listing-info"><h3>${escapeHtml(item.name) || 'Без названия'}</h3><div class="listing-meta"><span>${escapeHtml(item.district) || ''}</span><span>🚇 ${escapeHtml(item.metro) || ''}</span>${rooms ? `<span>🚪 ${escapeHtml(rooms)}</span>` : ''}${area ? `<span>📐 ${escapeHtml(area)}</span>` : ''}</div><div class="listing-price">от ${priceDisplay}${priceTo ? ` до ${priceTo} млн ₽` : ''} ${ppsqm ? `<span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}</div><div class="listing-status status-${statusKey}">${statusText}</div><button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button></div>`;
    
-    container.appendChild(card);  });
+    container.appendChild(card);
+  });
 }
-
 function initMap() {
   if (typeof L === 'undefined') return;
   const mapContainer = document.getElementById('mapContainer');
@@ -292,10 +289,10 @@ function openDetails(id) {
   featuresDiv.innerHTML = item.features ? `<ul>${item.features.split(',').map(f => `<li>${escapeHtml(f.trim())}</li>`).join('')}</ul>` : '<p style="color: var(--text-secondary)">Информация уточняется</p>';
  
   const plansContainer = document.getElementById('modalFloorPlans');
-  plansContainer.innerHTML = '';  if (item.floor_plans_text) {
+  plansContainer.innerHTML = '';
+  if (item.floor_plans_text) {
     const textDiv = document.createElement('div');
-    textDiv.className = 'floor-plans-text';
-    textDiv.textContent = item.floor_plans_text;
+    textDiv.className = 'floor-plans-text';    textDiv.textContent = item.floor_plans_text;
     plansContainer.appendChild(textDiv);
   }
   if (item.floor_plans_images) {
@@ -341,10 +338,10 @@ function openDetails(id) {
     btn.style.marginTop = '20px';
     btn.style.marginBottom = '40px';
     modalContent.appendChild(btn);
-  }  btn.textContent = '📞 Получить консультацию';
+  }
+  btn.textContent = '📞 Получить консультацию';
   btn.onclick = () => openConsultForm(id);
-  document.getElementById('detailsModal').classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
+  document.getElementById('detailsModal').classList.remove('hidden');  document.body.style.overflow = 'hidden';
 }
 
 function closeModal() {
@@ -387,27 +384,27 @@ function submitConsultForm(event) {
   event.preventDefault();
   const item = listings.find(l => l.id === currentModalId);
   if (!item) return;
+ 
   const name = document.getElementById('consultName').value;
   const phone = document.getElementById('consultPhone').value;
   if (phone.length < 18) {
-    tg?.showAlert('❌ Введите корректный номер телефона');    return;
+    tg?.showAlert('❌ Введите корректный номер телефона');
+    return;
   }
- 
-  // ОТПРАВКА ЧЕРЕЗ БОТА (если есть токен)
+  // 🔹 АВТООТПРАВКА ЧЕРЕЗ БОТА (если в config.json есть botToken и chatId)
   if (config.contact?.botToken && config.contact?.chatId) {
-    const BOT_TOKEN = config.contact.botToken;
-    const CHAT_ID = config.contact.chatId;
-    const text = `🔔 Новая заявка!\n\n🏢 ${item.name}\n👤 ${name}\n📱 ${phone}`;
+    const text = `🔔 Новая заявка!\n\n🏢 ${item.name}\n ${name}\n📱 ${phone}`;
+    const url = `https://api.telegram.org/bot${config.contact.botToken}/sendMessage`;
    
     const submitBtn = event.target.querySelector('button[type="submit"]');
     const originalText = submitBtn.textContent;
     submitBtn.textContent = 'Отправка...';
     submitBtn.disabled = true;
-   
-    fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+
+    fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: CHAT_ID, text: text })
+      body: JSON.stringify({ chat_id: config.contact.chatId, text })
     })
     .then(res => res.json())
     .then(data => {
@@ -416,37 +413,32 @@ function submitConsultForm(event) {
         tg?.showAlert('✅ Заявка отправлена!');
         event.target.reset();
       } else {
-        tg?.showAlert('❌ Ошибка: ' + (data.description || 'Неизвестная'));
+        tg?.showAlert('❌ Ошибка отправки');
       }
     })
-    .catch(() => {
-      tg?.showAlert('❌ Ошибка сети');
-    })
+    .catch(() => tg?.showAlert('❌ Ошибка сети'))
     .finally(() => {
       submitBtn.textContent = originalText;
       submitBtn.disabled = false;
     });
   } else {
-    // Если токена нет — просто открываем чат
+    // 🔸 Фоллбек: просто открываем чат
     const botLink = config.contact?.botLink || 'https://t.me/demo_newbuilds_bot';
-    if (tg?.openLink) {
-      tg.openLink(botLink);
-    } else {
-      window.open(botLink, '_blank');
-    }
+    if (tg?.openLink) tg.openLink(botLink);
+    else window.open(botLink, '_blank');
     closeConsultModal();
     tg?.showAlert('✅ Вы будете перенаправлены в чат с менеджером');
   }
 }
 
-function escapeHtml(text) {  if (!text) return '';
+function escapeHtml(text) {
+  if (!text) return '';
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
 }
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
-} else {
+  document.addEventListener('DOMContentLoaded', init);} else {
   init();
 }
