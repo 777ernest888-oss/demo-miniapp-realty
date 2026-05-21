@@ -3,62 +3,42 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title id="pageTitle">Каталог новостроек</title>
+  <title>Каталог новостроек</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <!-- Welcome Screen -->
-  <div id="welcomeScreen" class="welcome-screen">
-    <div class="welcome-content">
-      <img id="welcomeLogo" src="" alt="Logo" class="welcome-logo">
-      <h1 id="welcomeTitle" class="welcome-title">Загрузка...</h1>
-      <p id="welcomeSubtitle" class="welcome-subtitle">Подбираем лучшие объекты...</p>
-      <a id="welcomeBtn" href="#" class="btn-primary btn-large" onclick="closeWelcome(); return false;">Открыть каталог</a>
-    </div>
+  <div id="welcome" class="welcome">
+    <img id="wLogo" class="w-logo" src="" alt="">
+    <h1 id="wTitle" class="w-title">Загрузка...</h1>
+    <p id="wSub" class="w-sub">Каталог новостроек Санкт-Петербурга</p>
+    <button id="wBtn" class="btn-main">Открыть каталог</button>
   </div>
 
-  <!-- Main App -->
-  <header id="appHeader" class="header hidden">
-    <img id="headerLogo" src="" alt="Logo" class="header-logo">
-    <h1 id="headerTitle" class="header-title">Загрузка...</h1>
+  <header id="header" class="header hidden">
+    <img id="hLogo" src="" class="h-logo">
+    <h1 id="hTitle" class="h-title"></h1>
   </header>
 
-  <div class="filters hidden" id="filtersContainer">
-    <select id="filterRooms" class="filter-select">
-      <option value="all">Все комнаты</option>
-      <option value="Студия">Студии</option>
-      <option value="1">1-комнатные</option>
-      <option value="2">2-комнатные</option>
-      <option value="3">3-комнатные</option>
-    </select>
-    <select id="filterPrice" class="filter-select">
-      <option value="all">Любая цена</option>
-      <option value="5">До 5 млн ₽</option>
-      <option value="10">До 10 млн ₽</option>
-      <option value="15">До 15 млн ₽</option>
-      <option value="15+">От 15 млн ₽</option>
-    </select>
+  <div id="filters" class="filters hidden">
+    <select id="fRooms"><option value="all">Все комнаты</option><option value="Студия">Студии</option><option value="1">1-к</option><option value="2">2-к</option><option value="3">3-к</option></select>
+    <select id="fPrice"><option value="all">Любая цена</option><option value="5">До 5 млн</option><option value="10">До 10 млн</option><option value="15">До 15 млн</option><option value="15+">От 15 млн</option></select>
   </div>
 
-  <main id="listings" class="listings hidden">
-    <div class="loader">Загрузка объектов...</div>
-  </main>
+  <main id="list" class="list hidden"></main>
 
-  <!-- Modal -->
   <div id="modal" class="modal hidden">
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeModal()">×</button>
-      <img id="modalImg" src="" class="modal-img">
-      <div class="modal-body">
-        <div class="modal-status" id="modalStatus"></div>
-        <h2 id="modalTitle" class="modal-title"></h2>
-        <div id="modalPrice" class="modal-price"></div>
-        <div class="modal-meta" id="modalMeta"></div>
-        <p id="modalDesc" class="modal-desc"></p>
-        <div class="modal-details" id="modalDetails"></div>
-        <!-- ЗАМЕНЕНО: ссылка вместо кнопки -->
-        <a id="contactLink" href="#" target="_blank" class="btn-primary btn-contact">Оставить заявку</a>
+    <div class="modal-body">
+      <button class="close" onclick="closeModal()">×</button>
+      <img id="mImg" class="m-img">
+      <div class="m-info">
+        <span id="mStatus" class="badge"></span>
+        <h2 id="mTitle"></h2>
+        <div id="mPrice" class="price"></div>
+        <div id="mMeta" class="meta"></div>
+        <p id="mDesc" class="desc"></p>
+        <div id="mDetails" class="details"></div>
+        <a id="mBtn" href="#" target="_blank" rel="noopener" class="btn-main">Оставить заявку</a>
       </div>
     </div>
   </div>
