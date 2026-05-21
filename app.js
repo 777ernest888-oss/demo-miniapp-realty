@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. БЕЗОПАСНАЯ инициализация Telegram WebApp
   let tg = null;
   try {
     if (window.Telegram && window.Telegram.WebApp) {
@@ -11,7 +10,6 @@ document.addEventListener('DOMContentLoaded', () => {
     console.log('Telegram WebApp не доступен');
   }
  
-  // Применяем бренд из config.js
   document.documentElement.style.setProperty('--primary-color', APP_CONFIG.brand.color);
  
   // Welcome Screen
@@ -19,7 +17,6 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('welcomeTitle').textContent = APP_CONFIG.brand.name;
   document.getElementById('welcomeSubtitle').textContent = 'Каталог новостроек Санкт-Петербурга. Подберём квартиру под ваш бюджет!';
  
-  // Header
   if (tg) {
     try {
       tg.setHeaderColor(APP_CONFIG.brand.color);
@@ -31,10 +28,8 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('headerLogo').src = APP_CONFIG.brand.logo;
   document.getElementById('pageTitle').textContent = APP_CONFIG.brand.name;
 
-  // 2. Загрузка данных из Google Sheets
   loadData();
 
-  // 3. Обработчики фильтров
   document.getElementById('filterRooms').addEventListener('change', applyFilters);
   document.getElementById('filterPrice').addEventListener('change', applyFilters);
 });
@@ -47,12 +42,12 @@ async function loadData() {
     const csv = await res.text();
     allListings = parseCSV(csv)
       .map(row => mapRowToObject(row))
-      .filter(item => String(item.active).toLowerCase() === 'true');   
+      .filter(item => String(item.active).toLowerCase() === 'true');
+   
     renderListings(allListings);
   } catch (e) {
     console.error('Ошибка загрузки:', e);
-    document.getElementById('listings').innerHTML =
-      '<div class="loader">Ошибка загрузки данных. Проверьте подключение к таблице.</div>';
+    document.getElementById('listings').innerHTML =       '<div class="loader">Ошибка загрузки данных. Проверьте подключение к таблице.</div>';
   }
 }
 
@@ -96,12 +91,12 @@ function mapRowToObject(row) {
   return {
     id: row[0],
     name: row[1],
-    district: row[2],    metro: row[3],
+    district: row[2],
+    metro: row[3],
     price_from: Number(row[4]) || 0,
     price_to: Number(row[5]) || 0,
     rooms: row[6],
-    area_min: Number(row[7]) || 0,
-    area_max: Number(row[8]) || 0,
+    area_min: Number(row[7]) || 0,    area_max: Number(row[8]) || 0,
     price_per_sqm: Number(row[9]) || 0,
     completion_soonest: row[10],
     status: row[11],
@@ -145,12 +140,12 @@ function applyFilters() {
     }
     return roomMatch && priceMatch;
   });
-    renderListings(filtered);
+ 
+  renderListings(filtered);
 }
 
 function renderListings(items) {
-  const container = document.getElementById('listings');
-  if (items.length === 0) {
+  const container = document.getElementById('listings');  if (items.length === 0) {
     container.innerHTML = '<div class="loader">Нет объектов по выбранным фильтрам</div>';
     return;
   }
@@ -194,12 +189,18 @@ function openModal(id) {
   document.getElementById('modalDetails').innerHTML = `
     <div class="detail-item"><div class="detail-label">Класс</div><div class="detail-value">${item.class || '-'}</div></div>
     <div class="detail-item"><div class="detail-label">Отделка</div><div class="detail-value">${item.finishing || '-'}</div></div>
-    <div class="detail-item"><div class="detail-label">Сдача</div><div class="detail-value">${item.completion_soonest || '-'}</div></div>    <div class="detail-item"><div class="detail-label">Адрес</div><div class="detail-value">${item.address || '-'}</div></div>
+    <div class="detail-item"><div class="detail-label">Сдача</div><div class="detail-value">${item.completion_soonest || '-'}</div></div>
+    <div class="detail-item"><div class="detail-label">Адрес</div><div class="detail-value">${item.address || '-'}</div></div>
   `;
  
-  // Настраиваем кнопку с рабочим обработчиком
-  const contactBtn = document.getElementById('contactBtn');
-  contactBtn.onclick = () => openTelegramBot();
+  // ВАЖНО: Получаем кнопку и назначаем обработчик
+  const contactBtn = document.getElementById('contactBtn');  if (contactBtn) {
+    contactBtn.onclick = null; // Сбрасываем старые обработчики
+    contactBtn.onclick = () => {
+      console.log('Кнопка нажата! Открываем:', APP_CONFIG.brand.contactLink);
+      window.open(APP_CONFIG.brand.contactLink, '_blank');
+    };
+  }
  
   document.getElementById('modal').classList.remove('hidden');
  
@@ -208,11 +209,6 @@ function openModal(id) {
       window.Telegram.WebApp.HapticFeedback.impactOccurred('light');
     }
   } catch (e) {}
-}
-
-function openTelegramBot() {
-  // Правильное открытие Telegram бота
-  window.location.href = APP_CONFIG.brand.contactLink;
 }
 
 function closeModal() {
