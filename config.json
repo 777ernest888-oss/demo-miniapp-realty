@@ -1,0 +1,31 @@
+﻿{
+  "brand": {
+    "name": "Demo NewBuilds",
+    "primaryColor": "#1a365d",
+    "accentColor": "#d4af37",
+    "welcomeImage": "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800",
+    "welcomeTitle": "Каталог новостроек",
+    "welcomeSubtitle": "Подберём квартиру под ваш бюджет"
+  },
+  "data": {
+    "sheetUrl": "https://docs.google.com/spreadsheets/d/1z7d0dv5o_JKVfIQgn38rHoAywZazadRSvJQFeQgV3eM/export?format=csv&gid=0"
+  },
+  "contact": {
+    "botLink": "https://t.me/demo_newbuilds_bot"
+  },
+  "texts": {
+    "ctaButton": "Получить консультацию",
+    "emptyState": "Нет объектов по выбранным фильтрам",
+    "successMsg": "✅ Вы будете перенаправлены в чат с менеджером"
+  },
+  "features": {
+    "showWelcomeScreen": true,
+    "showMap": true,
+    "showFilters": true
+  },
+  "filters": {
+    "defaults": {
+      "maxPrice": 50
+    }
+  }
+}
