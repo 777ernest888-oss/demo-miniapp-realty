@@ -1,12 +1,27 @@
 document.addEventListener('DOMContentLoaded', () => {
-  // 1. Инициализация Telegram WebApp
-  const tg = window.Telegram.WebApp;
-  tg.ready();
-  tg.expand();
+  // 1. БЕЗОПАСНАЯ инициализация Telegram WebApp
+  let tg = null;
+  try {
+    if (window.Telegram && window.Telegram.WebApp) {
+      tg = window.Telegram.WebApp;
+      tg.ready();
+      tg.expand();
+    }
+  } catch (e) {
+    console.log('Telegram WebApp не доступен, работаем в обычном режиме');
+  }
  
   // Применяем бренд из config.js
   document.documentElement.style.setProperty('--primary-color', APP_CONFIG.brand.color);
-  tg.setHeaderColor(APP_CONFIG.brand.color);
+ 
+  if (tg) {
+    try {
+      tg.setHeaderColor(APP_CONFIG.brand.color);
+    } catch (e) {
+      console.log('Не удалось установить цвет хедера Telegram');
+    }
+  }
+ 
   document.getElementById('headerTitle').textContent = APP_CONFIG.brand.name;
   document.getElementById('headerLogo').src = APP_CONFIG.brand.logo;
   document.getElementById('modalBtn').href = APP_CONFIG.brand.contactLink;
@@ -32,8 +47,7 @@ async function loadData() {
    
     renderListings(allListings);
   } catch (e) {
-    console.error('Ошибка загрузки:', e);
-    document.getElementById('listings').innerHTML =
+    console.error('Ошибка загрузки:', e);    document.getElementById('listings').innerHTML =
       '<div class="loader">Ошибка загрузки данных. Проверьте подключение к таблице.</div>';
   }
 }
@@ -47,7 +61,8 @@ function parseCSV(csv) {
  
   for (let i = 0; i < csv.length; i++) {
     const char = csv[i];
-    const next = csv[i + 1];   
+    const next = csv[i + 1];
+   
     if (char === '"') {
       if (inQuotes && next === '"') {
         currentCell += '"';
@@ -81,8 +96,7 @@ function mapRowToObject(row) {
     name: row[1],
     district: row[2],
     metro: row[3],
-    price_from: Number(row[4]) || 0,
-    price_to: Number(row[5]) || 0,
+    price_from: Number(row[4]) || 0,    price_to: Number(row[5]) || 0,
     rooms: row[6],
     area_min: Number(row[7]) || 0,
     area_max: Number(row[8]) || 0,
@@ -96,7 +110,8 @@ function mapRowToObject(row) {
     image_main: row[16] || 'https://via.placeholder.com/600x400?text=No+Image',
     images_gallery: row[17],
     floor_plans_text: row[18],
-    floor_plans_images: row[19],    features: row[20],
+    floor_plans_images: row[19],
+    features: row[20],
     address: row[21],
     lat: row[22],
     lng: row[23],
@@ -130,8 +145,7 @@ function renderListings(items) {
   if (items.length === 0) {
     container.innerHTML = '<div class="loader">Нет объектов по выбранным фильтрам</div>';
     return;
-  }
- 
+  } 
   container.innerHTML = items.map(item => `
     <article class="card" onclick="openModal('${item.id}')">
       <img src="${item.image_main}" alt="${item.name}" class="card-img" loading="lazy">
@@ -145,7 +159,8 @@ function renderListings(items) {
           <span>от ${item.area_min} м²</span>
           <span>•</span>
           <span>${item.district}</span>
-        </div>        ${item.metro ? `<div class="card-district">🚇 ${item.metro}</div>` : ''}
+        </div>
+        ${item.metro ? `<div class="card-district">🚇 ${item.metro}</div>` : ''}
       </div>
     </article>
   `).join('');
@@ -154,8 +169,6 @@ function renderListings(items) {
 function openModal(id) {
   const item = allListings.find(i => String(i.id) === String(id));
   if (!item) return;
- 
-  const tg = window.Telegram.WebApp;
  
   document.getElementById('modalImg').src = item.image_main;
   document.getElementById('modalStatus').textContent = item.status;
@@ -178,9 +191,12 @@ function openModal(id) {
  
   document.getElementById('modal').classList.remove('hidden');
  
-  // Виброотклик для Telegram
-  if (tg.HapticFeedback) {
-    tg.HapticFeedback.impactOccurred('light');
+  // Виброотклик для Telegram (безопасный)
+  try {
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.HapticFeedback) {
+      window.Telegram.WebApp.HapticFeedback.impactOccurred('light');    }
+  } catch (e) {
+    // Игнорируем ошибки вибрации
   }
 }
 
@@ -194,6 +210,7 @@ document.getElementById('modal').addEventListener('click', (e) => {
     closeModal();
   }
 });
+
 // Форматирование цены (4850000 → 4 850 000)
 function formatPrice(num) {
   if (!num) return '0';
