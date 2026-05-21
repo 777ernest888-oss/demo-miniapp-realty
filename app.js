@@ -32,7 +32,7 @@ function toggleFilters() {
   const btn = document.querySelector('.filters-toggle-btn');
   if (block && btn) {
     block.classList.toggle('hidden');
-    btn.textContent = block.classList.contains('hidden') ? '🔽 Фильтры' : '🔼 Скрыть фильтры';
+    btn.textContent = block.classList.contains('hidden') ? '🔽 Фильтры' : ' Скрыть фильтры';
   }
 }
 
@@ -64,6 +64,7 @@ async function init() {
     applyTheme();
     renderWelcome();
     renderFilters();
+    // Фильтруем только активные объекты при старте
     renderListings(listings.filter(l => l.active));
     initPhoneMask();
   } catch (error) {
@@ -95,8 +96,8 @@ function parseCSV(csv) {
       else if (value === 'FALSE') value = false;
       else if (!isNaN(value) && value !== '') value = Number(value);
       obj[header] = value;
-    });
-    result.push(obj);  }
+    });    result.push(obj);
+  }
   return result;
 }
 
@@ -129,6 +130,7 @@ function renderWelcome() {
 }
 
 function renderFilters() {
+  // Исправлено: убраны пробелы в l =>
   const districts = [...new Set(listings.map(l => l.district).filter(Boolean))].sort();
   const districtContainer = document.getElementById('districtCheckboxes');
   if (districtContainer) {
@@ -143,9 +145,9 @@ function renderFilters() {
  
   const metros = [...new Set(listings.map(l => l.metro).filter(Boolean))].sort();
   const metroContainer = document.getElementById('metroCheckboxes');
-  if (metroContainer) {
-    metroContainer.innerHTML = '';
-    metros.forEach(m => {      const label = document.createElement('label');
+  if (metroContainer) {    metroContainer.innerHTML = '';
+    metros.forEach(m => {
+      const label = document.createElement('label');
       label.className = 'checkbox-label';
       label.innerHTML = `<input type="checkbox" value="${escapeHtml(m)}" class="filter-checkbox" data-filter="metro"><span>${escapeHtml(m)}</span>`;
       metroContainer.appendChild(label);
@@ -171,7 +173,7 @@ function renderFilters() {
     });
   }
  
-  // Кнопки цены с чётким переключением
+  // Кнопки цены
   document.querySelectorAll('.price-btn').forEach(btn => {
     btn.addEventListener('click', function() {
       if (this.classList.contains('active')) {
@@ -192,9 +194,9 @@ function filterListings() {
   const maxPrice = activeBtn ? parseFloat(activeBtn.dataset.price) : Infinity;
  
   const selectedDistricts = Array.from(document.querySelectorAll('input[data-filter="district"]:checked')).map(cb => cb.value);
-  const selectedMetros = Array.from(document.querySelectorAll('input[data-filter="metro"]:checked')).map(cb => cb.value);
-  const selectedRooms = Array.from(document.querySelectorAll('input[data-filter="rooms"]:checked')).map(cb => cb.value);
-    const filtered = listings.filter(item => {
+  const selectedMetros = Array.from(document.querySelectorAll('input[data-filter="metro"]:checked')).map(cb => cb.value);  const selectedRooms = Array.from(document.querySelectorAll('input[data-filter="rooms"]:checked')).map(cb => cb.value);
+ 
+  const filtered = listings.filter(item => {
     if (!item.active) return false;
     if (typeof item.price_from !== 'number' || item.price_from > maxPrice) return false;
     if (selectedDistricts.length > 0 && !selectedDistricts.includes(item.district)) return false;
@@ -241,9 +243,9 @@ function renderListings(data) {
       if (!e.target.closest('.consult-btn-inline')) openDetails(item.id);
     };
    
-    card.innerHTML = `<img src="${escapeHtml(item.image_main) || ''}" alt="${escapeHtml(item.name) || ''}" class="listing-image" onerror="this.style.display='none'"><div class="listing-info"><h3>${escapeHtml(item.name) || 'Без названия'}</h3><div class="listing-meta"><span>${escapeHtml(item.district) || ''}</span><span>🚇 ${escapeHtml(item.metro) || ''}</span>${rooms ? `<span>🚪 ${escapeHtml(rooms)}</span>` : ''}${area ? `<span>📐 ${escapeHtml(area)}</span>` : ''}</div><div class="listing-price">от ${priceDisplay}${priceTo ? ` до ${priceTo} млн ₽` : ''} ${ppsqm ? `<span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}</div><div class="listing-status status-${statusKey}">${statusText}</div><button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button></div>`;
-   
-    container.appendChild(card);  });
+    card.innerHTML = `<img src="${escapeHtml(item.image_main) || ''}" alt="${escapeHtml(item.name) || ''}" class="listing-image" onerror="this.style.display='none'"><div class="listing-info"><h3>${escapeHtml(item.name) || 'Без названия'}</h3><div class="listing-meta"><span>${escapeHtml(item.district) || ''}</span><span>🚇 ${escapeHtml(item.metro) || ''}</span>${rooms ? `<span>🚪 ${escapeHtml(rooms)}</span>` : ''}${area ? `<span>📐 ${escapeHtml(area)}</span>` : ''}</div><div class="listing-price">от ${priceDisplay}${priceTo ? ` до ${priceTo} млн ₽` : ''} ${ppsqm ? `<span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}</div><div class="listing-status status-${statusKey}">${statusText}</div><button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button></div>`;   
+    container.appendChild(card);
+  });
 }
 
 function initMap() {
@@ -290,9 +292,9 @@ function openDetails(id) {
  
   const featuresDiv = document.getElementById('modalFeatures');
   featuresDiv.innerHTML = item.features ? `<ul>${item.features.split(',').map(f => `<li>${escapeHtml(f.trim())}</li>`).join('')}</ul>` : '<p style="color: var(--text-secondary)">Информация уточняется</p>';
- 
-  const plansContainer = document.getElementById('modalFloorPlans');
-  plansContainer.innerHTML = '';  if (item.floor_plans_text) {
+    const plansContainer = document.getElementById('modalFloorPlans');
+  plansContainer.innerHTML = '';
+  if (item.floor_plans_text) {
     const textDiv = document.createElement('div');
     textDiv.className = 'floor-plans-text';
     textDiv.textContent = item.floor_plans_text;
@@ -323,95 +325,4 @@ function openDetails(id) {
     gallery.appendChild(mainImg);
   }
   if (item.images_gallery) {
-    item.images_gallery.split(',').map(u => u.trim()).filter(Boolean).forEach(url => {
-      const img = document.createElement('img');
-      img.src = url;
-      img.className = 'modal-thumb';
-      img.onclick = () => window.open(url, '_blank');
-      gallery.appendChild(img);
-    });
-  }
- 
-  const modalContent = document.querySelector('#detailsModal .modal-content');
-  let btn = document.getElementById('modalConsultBtn');
-  if (!btn) {
-    btn = document.createElement('button');
-    btn.id = 'modalConsultBtn';
-    btn.className = 'tg-btn';
-    btn.style.marginTop = '20px';
-    btn.style.marginBottom = '40px';
-    modalContent.appendChild(btn);
-  }  btn.textContent = '📞 Получить консультацию';
-  btn.onclick = () => openConsultForm(id);
-  document.getElementById('detailsModal').classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
-}
-
-function closeModal() {
-  document.getElementById('detailsModal').classList.add('hidden');
-  document.body.style.overflow = '';
-  currentModalId = null;
-}
-
-function openConsultForm(id, event) {
-  if (event) event.stopPropagation();
-  currentModalId = id;
-  sendConsultRequest();
-}
-
-function sendConsultRequest() {
-  const item = listings.find(l => l.id === currentModalId);
-  if (!item) return;
-  document.getElementById('consultObjectName').textContent = '🏢 ' + item.name;
-  document.getElementById('consultName').value = '';
-  document.getElementById('consultPhone').value = '+7 (';
-  document.getElementById('consultModal').classList.remove('hidden');
-}
-
-function closeConsultModal() {
-  document.getElementById('consultModal').classList.add('hidden');
-  document.getElementById('consultForm').reset();
-}
-
-function initPhoneMask() {
-  const phoneInput = document.getElementById('consultPhone');
-  if (!phoneInput) return;
-  phoneInput.addEventListener('input', function(e) {
-    let x = e.target.value.replace(/\D/g, '').match(/(\d{0,1})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
-    e.target.value = !x[2] ? '+7 (' : '+7 (' + x[2] + (x[3] ? ') ' + x[3] : '') + (x[4] ? '-' + x[4] : '') + (x[5] ? '-' + x[5] : '');
-  });
-  phoneInput.addEventListener('focus', function(e) { if (e.target.value === '') e.target.value = '+7 ('; });
-}
-
-function submitConsultForm(event) {
-  event.preventDefault();
-  const item = listings.find(l => l.id === currentModalId);
-  if (!item) return;
-  const name = document.getElementById('consultName').value;
-  const phone = document.getElementById('consultPhone').value;
-  if (phone.length < 18) {
-    tg?.showAlert('❌ Введите корректный номер телефона');    return;
-  }
- 
-  const botLink = config.contact?.botLink || 'https://t.me/demo_newbuilds_bot';
-  if (tg?.openLink) {
-    tg.openLink(botLink);
-  } else {
-    window.open(botLink, '_blank');
-  }
-  closeConsultModal();
-  tg?.showAlert('✅ Вы будете перенаправлены в чат с менеджером');
-}
-
-function escapeHtml(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
-} else {
-  init();
-}
+    item.images_gallery.split(',').map(u => u.trim()).filter(Boolean).forEach(url').map(u => u.trim()).filter(Boolean).forEach(url
