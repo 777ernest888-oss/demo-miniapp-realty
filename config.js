@@ -4,7 +4,7 @@ const APP_CONFIG = {
     name: "Название Агентства",
     color: "#1a365d",                       // Фирменный цвет (HEX)
     logo: "https://via.placeholder.com/150?text=LOGO",
-    contactLink: "https://t.me/your_username"
+    contactLink: "https://t.me/demo_newbuilds_bot"
   },
   // 📊 ССЫЛКА НА ДАННЫЕ (Замените ВАШ_ID_ТАБЛИЦЫ на реальный ID)
   sheetUrl: "https://docs.google.com/spreadsheets/d/1z7d0dv5o_JKVfIQgn38rHoAywZazadRSvJQFeQgV3eM/export?format=csv&gid=0"
