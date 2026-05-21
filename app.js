@@ -75,7 +75,7 @@ async function init() {
 
 function applyBranding() {
   if (!config.brand) return;
-
+ 
   const welcomeContainer = document.getElementById('welcomeBrand');
   const headerContainer = document.getElementById('headerBrand');
  
@@ -90,7 +90,7 @@ function applyBranding() {
     }
     if (config.brand.welcomeTitle || config.brand.name) {
       const title = document.createElement('h1');
-      title.textContent = config.brand.welcomeTitle || config.brand.name;
+      title.textContent = (config.brand.welcomeTitle || config.brand.name).toUpperCase();
       title.className = 'brand-title';
       welcomeContainer.appendChild(title);
     }
@@ -106,7 +106,7 @@ function applyBranding() {
     }
     if (config.brand.name) {
       const title = document.createElement('h1');
-      title.textContent = config.brand.name;
+      title.textContent = config.brand.name.toUpperCase();
       title.className = 'brand-title';
       headerContainer.appendChild(title);
     }
