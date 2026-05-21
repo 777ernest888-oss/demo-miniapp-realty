@@ -20,7 +20,7 @@ let listings = [];
 let currentModalId = null;
 let map = null;
 let markers = [];
-let brandLogoUrl = null; // Глобальная переменная для логотипа в карточках
+let brandLogoUrl = null;
 
 function startApp() {
   document.getElementById('welcomeScreen')?.classList.add('hidden');
@@ -33,7 +33,7 @@ function toggleFilters() {
   const btn = document.querySelector('.filters-toggle-btn');
   if (block && btn) {
     block.classList.toggle('hidden');
-    btn.textContent = block.classList.contains('hidden') ? '🔽 Фильтры' : ' Скрыть фильтры';
+    btn.textContent = block.classList.contains('hidden') ? '🔽 Фильтры' : '🔼 Скрыть фильтры';
   }
 }
 
@@ -63,7 +63,7 @@ async function init() {
       listings = await loadFromGoogleSheets(config.data.sheetUrl);
     }
     applyTheme();
-    applyBranding(); // ✅ Динамическая вставка брендинга
+    applyBranding();
     renderWelcome();
     renderFilters();
     renderListings(listings.filter(l => l.active));
@@ -73,7 +73,6 @@ async function init() {
   }
 }
 
-// ✅ Условный рендеринг логотипа и названия
 function applyBranding() {
   if (!config.brand) return;
 
@@ -96,8 +95,8 @@ function applyBranding() {
       welcomeContainer.appendChild(title);
     }
   }
-  if (headerContainer) {
-    headerContainer.innerHTML = '';
+
+  if (headerContainer) {    headerContainer.innerHTML = '';
     if (config.brand.logo) {
       const logo = document.createElement('img');
       logo.src = config.brand.logo;
@@ -145,8 +144,8 @@ function parseCSV(csv) {
   }
   return result;
 }
-function parseCSVLine(line) {
-  const result = [];
+
+function parseCSVLine(line) {  const result = [];
   let current = '';
   let inQuotes = false;
   for (let i = 0; i < line.length; i++) {
@@ -194,8 +193,8 @@ function renderFilters() {
   if (metroContainer) {
     metroContainer.innerHTML = '';
     metros.forEach(m => {
-      const label = document.createElement('label');      label.className = 'checkbox-label';
-      label.innerHTML = `<input type="checkbox" value="${escapeHtml(m)}" class="filter-checkbox" data-filter="metro"><span>${escapeHtml(m)}</span>`;
+      const label = document.createElement('label');
+      label.className = 'checkbox-label';      label.innerHTML = `<input type="checkbox" value="${escapeHtml(m)}" class="filter-checkbox" data-filter="metro"><span>${escapeHtml(m)}</span>`;
       metroContainer.appendChild(label);
     });
   }
@@ -243,8 +242,8 @@ function filterListings() {
   const selectedRooms = Array.from(document.querySelectorAll('input[data-filter="rooms"]:checked')).map(cb => cb.value);
  
   const filtered = listings.filter(item => {
-    if (!item.active) return false;    if (typeof item.price_from !== 'number' || item.price_from > maxPrice) return false;
-    if (selectedDistricts.length > 0 && !selectedDistricts.includes(item.district)) return false;
+    if (!item.active) return false;
+    if (typeof item.price_from !== 'number' || item.price_from > maxPrice) return false;    if (selectedDistricts.length > 0 && !selectedDistricts.includes(item.district)) return false;
     if (selectedMetros.length > 0 && !selectedMetros.includes(item.metro)) return false;
     if (selectedRooms.length > 0 && item.rooms) {
       const itemRooms = String(item.rooms).split(',').map(r => r.trim());
@@ -268,9 +267,11 @@ function renderListings(data) {
   data.forEach(item => {
     let priceDisplay = '?';
     if (typeof item.price_from === 'number') {
-      priceDisplay = item.price_from < 1000
-        ? `${item.price_from.toFixed(1)} млн ₽`
-        : `${(item.price_from / 1000000).toFixed(1)} млн ₽`;
+      if (item.price_from < 1000) {
+        priceDisplay = `${item.price_from.toFixed(1)} млн ₽`;
+      } else {
+        priceDisplay = `${(item.price_from / 1000000).toFixed(1)} млн ₽`;
+      }
     }
    
     const priceTo = typeof item.price_to === 'number' ? item.price_to.toFixed(1) : '';
@@ -286,10 +287,9 @@ function renderListings(data) {
       if (!e.target.closest('.consult-btn-inline')) openDetails(item.id);
     };
    
-    // ✅ Логотип в карточке только если задан в конфиге
     const logoHtml = brandLogoUrl ? `<img src="${escapeHtml(brandLogoUrl)}" class="card-logo" alt="Logo">` : '';
    
-    card.innerHTML = `${logoHtml}<img src="${escapeHtml(item.image_main) || ''}" alt="${escapeHtml(item.name) || ''}" class="listing-image" onerror="this.style.display='none'"><div class="listing-info"><h3>${escapeHtml(item.name) || 'Без названия'}</h3><div class="listing-meta"><span>${escapeHtml(item.district) || ''}</span><span>🚇 ${escapeHtml(item.metro) || ''}</span>${rooms ? `<span> ${escapeHtml(rooms)}</span>` : ''}${area ? `<span>📐 ${escapeHtml(area)}</span>` : ''}</div><div class="listing-price">от ${priceDisplay}${priceTo ? ` до ${priceTo} млн ₽` : ''} ${ppsqm ? `<span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}</div><div class="listing-status status-${statusKey}">${statusText}</div><button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button></div>`;
+    card.innerHTML = `${logoHtml}<img src="${escapeHtml(item.image_main) || ''}" alt="${escapeHtml(item.name) || ''}" class="listing-image" onerror="this.style.display='none'"><div class="listing-info"><h3>${escapeHtml(item.name) || 'Без названия'}</h3><div class="listing-meta"><span>${escapeHtml(item.district) || ''}</span><span>🚇 ${escapeHtml(item.metro) || ''}</span>${rooms ? `<span>🚪 ${escapeHtml(rooms)}</span>` : ''}${area ? `<span>📐 ${escapeHtml(area)}</span>` : ''}</div><div class="listing-price">от ${priceDisplay}${priceTo ? ` до ${priceTo} млн ₽` : ''} ${ppsqm ? `<span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}</div><div class="listing-status status-${statusKey}">${statusText}</div><button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button></div>`;
    
     container.appendChild(card);
   });}
@@ -443,7 +443,7 @@ function submitConsultForm(event) {
   }
 
   if (config.contact?.botToken && config.contact?.chatId) {
-    const text = ` Новая заявка!\n\n🏢 ${item.name}\n👤 ${name}\n ${phone}`;
+    const text = `🔔 Новая заявка!\n\n🏢 ${item.name}\n👤 ${name}\n📱 ${phone}`;
     const url = `https://api.telegram.org/bot${config.contact.botToken}/sendMessage`;
    
     const submitBtn = event.target.querySelector('button[type="submit"]');
