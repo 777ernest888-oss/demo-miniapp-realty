@@ -8,12 +8,23 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <header id="appHeader" class="header">
+  <!-- Welcome Screen -->
+  <div id="welcomeScreen" class="welcome-screen">
+    <div class="welcome-content">
+      <img id="welcomeLogo" src="" alt="Logo" class="welcome-logo">
+      <h1 id="welcomeTitle" class="welcome-title">Загрузка...</h1>
+      <p id="welcomeSubtitle" class="welcome-subtitle">Подбираем лучшие объекты...</p>
+      <button id="welcomeBtn" class="btn-primary btn-large" onclick="closeWelcome()">Открыть каталог</button>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <header id="appHeader" class="header hidden">
     <img id="headerLogo" src="" alt="Logo" class="header-logo">
     <h1 id="headerTitle" class="header-title">Загрузка...</h1>
   </header>
 
-  <div class="filters" id="filtersContainer">
+  <div class="filters hidden" id="filtersContainer">
     <select id="filterRooms" class="filter-select">
       <option value="all">Все комнаты</option>
       <option value="Студия">Студии</option>
@@ -30,10 +41,11 @@
     </select>
   </div>
 
-  <main id="listings" class="listings">
+  <main id="listings" class="listings hidden">
     <div class="loader">Загрузка объектов...</div>
   </main>
 
+  <!-- Modal -->
   <div id="modal" class="modal hidden">
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal()">×</button>
@@ -45,7 +57,7 @@
         <div class="modal-meta" id="modalMeta"></div>
         <p id="modalDesc" class="modal-desc"></p>
         <div class="modal-details" id="modalDetails"></div>
-        <a id="modalBtn" href="#" class="btn-primary">Оставить заявку</a>
+        <button id="contactBtn" class="btn-primary btn-contact">Оставить заявку</button>
       </div>
     </div>
   </div>
