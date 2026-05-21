@@ -1,3 +1,6 @@
+/* =========================================
+   1. ПЕРЕМЕННЫЕ И БАЗОВЫЕ НАСТРОЙКИ
+   ========================================= */
 :root {
   --primary: #1a365d;
   --accent: #d4af37;
@@ -32,7 +35,9 @@ body {
   display: none !important;
 }
 
-/* Welcome Screen */
+/* =========================================
+   2. ЭКРАН ПРИВЕТСТВИЯ (WELCOME SCREEN)
+   ========================================= */
 .welcome {
   min-height: 100vh;
   display: flex;
@@ -42,32 +47,65 @@ body {
   padding: 20px;
   background: linear-gradient(135deg, var(--primary) 0%, #2c5282 100%);
 }
+/* Контейнер для логотипа и названия */
+.welcome-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+/* Правило: если контейнер пуст (нет логотипа/названия), он исчезает без следа */
+.welcome-brand:empty {
+  display: none !important;
+  margin: 0 !important;
+  height: 0 !important;
+}
+
+.brand-logo {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  padding: 6px;
+  flex-shrink: 0;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.brand-title {
+  font-size: 26px;
+  font-weight: 700;
+  color: white;
+  margin: 0;
+  text-align: center;
+  line-height: 1.2;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
 
 .welcome-img {
   width: 100%;
-  max-width: 400px;
-  height: 300px;
-  object-fit: cover;  border-radius: var(--radius);
+  max-width: 450px;
+  height: 280px;
+  object-fit: cover;
+  border-radius: var(--radius);
   margin-bottom: 30px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
 }
 
-.welcome-title {
-  font-size: 28px;
-  font-weight: 700;
-  color: white;
-  margin-bottom: 10px;
-  text-align: center;
-}
-
-.welcome-sub {
-  font-size: 16px;
+.welcome-sub {  font-size: 16px;
   color: rgba(255, 255, 255, 0.9);
   margin-bottom: 40px;
   text-align: center;
+  max-width: 300px;
 }
 
-/* Buttons */
+/* =========================================
+   3. КНОПКИ И ОБЩИЕ ЭЛЕМЕНТЫ
+   ========================================= */
 .btn-primary {
   background: var(--primary);
   color: white;
@@ -80,34 +118,106 @@ body {
   transition: all 0.3s;
   width: 100%;
   max-width: 300px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
 
 .btn-primary:hover {
   background: #2c5282;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(26, 54, 93, 0.3);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 }
 
 .btn-primary:active {
   transform: translateY(0);
 }
 
-/* Header */
+.btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* =========================================
+   4. ШАПКА (HEADER) И НАВИГАЦИЯ
+   ========================================= */
 .header {
   position: sticky;
   top: 0;
-  background: var(--primary);  color: white;
-  padding: 12px 16px;
-  z-index: 100;
+  background: var(--primary);
+  color: white;
+  padding: 12px 16px;  z-index: 100;
   box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
 }
 
-.header h1 {
-  font-size: 18px;
+.header-brand {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  width: 100%;
+}
+
+/* Скрытие пустого хедера */
+.header-brand:empty {
+  display: none !important;
+}
+
+.header-brand .brand-logo {
+  width: 36px;
+  height: 36px;
+  padding: 3px;
+}
+
+.header-brand .brand-title {
+  font-size: 17px;
   font-weight: 600;
+  text-shadow: none;
+  flex: 1;
 }
 
-/* Filters Toggle */
+/* Переключатель видов (Список / Карта) */
+.view-toggle {
+  display: flex;
+  gap: 12px;
+  padding: 16px;
+  background: white;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 56px; /* Под шапкой */
+  z-index: 90;
+}
+
+.view-btn {
+  flex: 1;
+  padding: 10px;
+  border: 2px solid var(--border);
+  background: white;
+  border-radius: 8px;  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.view-btn.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
+
+.view-btn:not(.active):hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+/* =========================================
+   5. ФИЛЬТРЫ
+   ========================================= */
 .filters-toggle {
   padding: 12px 16px;
   background: white;
@@ -134,17 +244,17 @@ body {
 .filters-toggle-btn:hover {
   background: #2c5282;
 }
-
-/* Filters Block */
 .filters-block {
   background: white;
   padding: 16px;
   border-bottom: 1px solid var(--border);
+  transition: all 0.3s ease;
 }
 
 .filter-group {
   margin-bottom: 20px;
 }
+
 .filter-group:last-child {
   margin-bottom: 0;
 }
@@ -157,56 +267,7 @@ body {
   font-size: 14px;
 }
 
-/* Price Buttons */
-.price-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.price-btn {
-  padding: 10px 16px;
-  border: 2px solid var(--border);
-  background: white;
-  color: var(--text-secondary);
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  font-family: inherit;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-}
-
-.price-btn:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(26, 54, 93, 0.15);
-}
-
-.price-btn.active {
-  background: var(--primary);
-  color: white;
-  border-color: var(--primary);
-  font-weight: 600;
-  box-shadow: 0 4px 12px rgba(26, 54, 93, 0.3);
-  transform: translateY(0);
-}
-.price-btn:not(.active) {
-  background: #f8f9fa;
-  color: #a0aec0;
-  border-color: #e2e8f0;
-}
-
-.price-btn:not(.active):hover {
-  background: white;
-  color: var(--primary);
-  border-color: var(--primary);
-}
-
-/* Checkbox Group */
+/* Чекбоксы */
 .checkbox-group {
   display: flex;
   flex-wrap: wrap;
@@ -231,55 +292,56 @@ body {
 .checkbox-label input[type="checkbox"] {
   margin-right: 8px;
   width: 16px;
-  height: 16px;
-  cursor: pointer;
+  height: 16px;  cursor: pointer;
+  accent-color: var(--primary);
 }
 
 .checkbox-label span {
   cursor: pointer;
 }
 
-/* View Toggle */
-.view-toggle {
+/* Кнопки цены */
+.price-buttons {
   display: flex;
-  gap: 12px;
-  padding: 16px;  background: white;
-  border-bottom: 1px solid var(--border);
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 5px;
 }
 
-.view-btn {
-  flex: 1;
-  padding: 10px;
+.price-btn {
+  padding: 10px 14px;
   border: 2px solid var(--border);
   background: white;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
+  color: var(--text-secondary);
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
+  transition: all 0.2s ease;
+  font-family: inherit;
 }
 
-.view-btn.active {
+.price-btn:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.price-btn.active {
   background: var(--primary);
   color: white;
   border-color: var(--primary);
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(26, 54, 93, 0.2);
 }
 
-.view-btn:not(.active):hover {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-/* Listings */
+/* =========================================
+   6. СПИСОК КАРТОЧЕК (LISTINGS)
+   ========================================= */
 .listings {
   padding: 16px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
+  max-width: 800px;
+  margin: 0 auto;}
 
 .listing-card {
   background: var(--card);
@@ -289,27 +351,47 @@ body {
   box-shadow: var(--shadow);
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
+  position: relative; /* Для логотипа */
 }
 
 .listing-card:hover {
-  transform: translateY(-4px);  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-3px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.1);
 }
 
 .listing-image {
   width: 100%;
   height: 200px;
   object-fit: cover;
+  display: block;
 }
 
 .listing-info {
   padding: 16px;
+  padding-top: 40px; /* Отступ под логотип */
+  position: relative;
+}
+
+/* Логотип в карточке */
+.card-logo {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  border-radius: 8px;
+  background: white;
+  padding: 4px;
+  z-index: 5;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
 }
 
 .listing-info h3 {
   font-size: 18px;
   font-weight: 600;
-  margin-bottom: 8px;
-  color: var(--text);
+  margin-bottom: 8px;  color: var(--text);
+  line-height: 1.3;
 }
 
 .listing-meta {
@@ -325,13 +407,16 @@ body {
   display: flex;
   align-items: center;
   gap: 4px;
+  background: var(--bg);
+  padding: 4px 8px;
+  border-radius: 6px;
 }
 
 .listing-price {
   font-size: 20px;
   font-weight: 700;
   color: var(--primary);
-  margin-bottom: 8px;
+  margin-bottom: 10px;
 }
 
 .price-per-sqm {
@@ -341,31 +426,20 @@ body {
   margin-left: 8px;
 }
 
-.listing-status {  display: inline-block;
-  padding: 4px 12px;
+.listing-status {
+  display: inline-block;
+  padding: 4px 10px;
   border-radius: 20px;
   font-size: 12px;
   font-weight: 600;
   margin-bottom: 12px;
 }
 
-.status-Строится {
-  background: #e6f4ea;
-  color: #1e7e34;
-}
+.status-Строится { background: #e6f4ea; color: #1e7e34; }
+.status-Сдан { background: #d4edda; color: #155724; }
+.status-Частично-сдан { background: #fff3cd; color: #856404; }
 
-.status-Сдан {
-  background: #d4edda;
-  color: #155724;
-}
-
-.status-Частично-сдан {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.tg-btn {
-  width: 100%;
+.tg-btn {  width: 100%;
   background: var(--primary);
   color: white;
   border: none;
@@ -389,12 +463,24 @@ body {
   margin-top: 12px;
 }
 
-/* Map Container */
-.map-container {  height: calc(100vh - 200px);
+.empty-state {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--text-secondary);
+  font-size: 16px;
+}
+
+/* =========================================
+   7. КАРТА
+   ========================================= */
+.map-container {
+  height: calc(100vh - 180px);
   width: 100%;
 }
 
-/* Modal */
+/* =========================================
+   8. МОДАЛЬНЫЕ ОКНА
+   ========================================= */
 .modal {
   position: fixed;
   inset: 0;
@@ -402,8 +488,8 @@ body {
   z-index: 1000;
   display: flex;
   align-items: flex-end;
-  justify-content: center;
-  overflow-y: auto;
+  justify-content: center;  overflow-y: auto;
+  backdrop-filter: blur(3px);
 }
 
 .modal-content {
@@ -418,28 +504,25 @@ body {
 }
 
 @keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 
 .close-btn {
   position: sticky;
-  top: 10px;
-  right: 10px;
+  top: 12px;
+  right: 12px;
   float: right;
   background: rgba(0, 0, 0, 0.5);
   color: white;
   border: none;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  font-size: 18px;
+  font-size: 20px;
   cursor: pointer;
-  z-index: 10;  display: flex;
+  z-index: 10;
+  display: flex;
   align-items: center;
   justify-content: center;
   transition: background 0.2s;
@@ -449,12 +532,12 @@ body {
   background: rgba(0, 0, 0, 0.7);
 }
 
+/* Галерея в модалке */
 .modal-gallery {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  padding: 16px;
-  background: var(--bg);
+  padding: 16px;  background: var(--bg);
 }
 
 .modal-main-image {
@@ -471,12 +554,15 @@ body {
   border-radius: 8px;
   cursor: pointer;
   transition: transform 0.2s;
+  border: 2px solid transparent;
 }
 
 .modal-thumb:hover {
   transform: scale(1.05);
+  border-color: var(--primary);
 }
 
+/* Контент модалки */
 .modal-body {
   padding: 20px;
 }
@@ -488,7 +574,8 @@ body {
   color: var(--text);
 }
 
-.modal-price {  font-size: 24px;
+.modal-price {
+  font-size: 24px;
   font-weight: 700;
   color: var(--primary);
   margin-bottom: 16px;
@@ -499,8 +586,7 @@ body {
   flex-direction: column;
   gap: 8px;
   margin-bottom: 20px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--border);
+  padding-bottom: 20px;  border-bottom: 1px solid var(--border);
 }
 
 .meta-row {
@@ -511,7 +597,7 @@ body {
 .modal-body h3 {
   font-size: 16px;
   font-weight: 600;
-  margin: 20px 0 12px;
+  margin: 20px 0 10px;
   color: var(--text);
 }
 
@@ -537,18 +623,19 @@ body {
 
 .modal-features li:before {
   content: "✓";
-  position: absolute;  left: 0;
+  position: absolute;
+  left: 0;
   color: var(--success);
   font-weight: bold;
 }
 
+/* Планировки */
 .floor-plans-text {
   font-size: 14px;
   line-height: 1.6;
   color: var(--text);
   margin-bottom: 16px;
 }
-
 .floor-plans-gallery {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
@@ -561,13 +648,14 @@ body {
   border-radius: 8px;
   cursor: pointer;
   transition: transform 0.2s;
+  border: 1px solid var(--border);
 }
 
 .floor-plan-image:hover {
-  transform: scale(1.05);
+  transform: scale(1.03);
 }
 
-/* Form Modal */
+/* Форма консультации */
 .form-modal {
   padding: 24px;
 }
@@ -586,7 +674,8 @@ body {
   margin-bottom: 8px;
 }
 
-.form-hint {  font-size: 13px;
+.form-hint {
+  font-size: 13px;
   color: var(--text-secondary);
   margin-bottom: 20px;
 }
@@ -594,38 +683,33 @@ body {
 #consultForm {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 14px;
 }
-
 #consultForm input {
-  padding: 12px 16px;
+  padding: 14px 16px;
   border: 2px solid var(--border);
-  border-radius: 8px;
+  border-radius: 10px;
   font-size: 15px;
   transition: border-color 0.3s;
+  background: #fafafa;
 }
 
 #consultForm input:focus {
   outline: none;
   border-color: var(--primary);
+  background: white;
 }
 
 #consultForm button {
   margin-top: 8px;
 }
 
-/* Empty State */
-.empty-state {
-  text-align: center;
-  padding: 60px 20px;
-  color: var(--text-secondary);
-  font-size: 16px;
-}
-
-/* Responsive */
+/* =========================================
+   9. АДАПТИВНОСТЬ
+   ========================================= */
 @media (max-width: 640px) {
-  .welcome-title {
-    font-size: 24px;
+  .welcome-brand .brand-title {
+    font-size: 22px;
   }
  
   .listing-info h3 {
@@ -635,7 +719,8 @@ body {
   .listing-price {
     font-size: 18px;
   }
-    .modal-body h2 {
+ 
+  .modal-body h2 {
     font-size: 20px;
   }
  
@@ -644,18 +729,17 @@ body {
   }
 }
 
-/* Scrollbar */
+/* Скроллбар */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
-
 ::-webkit-scrollbar-track {
   background: var(--bg);
 }
 
 ::-webkit-scrollbar-thumb {
   background: var(--border);
-  border-radius: 4px;
+  border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
