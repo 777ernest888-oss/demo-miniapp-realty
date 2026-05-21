@@ -3,47 +3,92 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Каталог новостроек</title>
+  <title>Demo NewBuilds</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-  <div id="welcome" class="welcome">
-    <img id="wLogo" class="w-logo" src="" alt="">
-    <h1 id="wTitle" class="w-title">Загрузка...</h1>
-    <p id="wSub" class="w-sub">Каталог новостроек Санкт-Петербурга</p>
-    <button id="wBtn" class="btn-main">Открыть каталог</button>
+  <div id="welcomeScreen" class="screen welcome">
+    <img id="welcomeImage" class="welcome-img" src="welcome-bg.jpg" alt="Welcome">
+    <h1 id="welcomeTitle" class="welcome-title">Demo NewBuilds</h1>
+    <p id="welcomeSubtitle" class="welcome-sub">Подберём квартиру под ваш бюджет</p>
+    <button class="btn-primary" onclick="startApp()">Начать подбор</button>
   </div>
 
-  <header id="header" class="header hidden">
-    <img id="hLogo" src="" class="h-logo">
-    <h1 id="hTitle" class="h-title"></h1>
-  </header>
-
-  <div id="filters" class="filters hidden">
-    <select id="fRooms"><option value="all">Все комнаты</option><option value="Студия">Студии</option><option value="1">1-к</option><option value="2">2-к</option><option value="3">3-к</option></select>
-    <select id="fPrice"><option value="all">Любая цена</option><option value="5">До 5 млн</option><option value="10">До 10 млн</option><option value="15">До 15 млн</option><option value="15+">От 15 млн</option></select>
+  <div id="mainContent" class="screen main hidden">
+    <header class="header">
+      <h1 id="headerTitle">Demo NewBuilds</h1>
+    </header>
+    <div class="filters-toggle">
+      <button class="filters-toggle-btn" onclick="toggleFilters()">🔽 Фильтры</button>
+    </div>
+    <div id="filtersBlock" class="filters-block hidden">
+      <div class="filter-group">
+        <label>💰 Цена до (млн ₽)</label>
+        <div class="price-buttons">
+          <button class="price-btn" data-price="5">До 5 млн</button>
+          <button class="price-btn" data-price="10">До 10 млн</button>
+          <button class="price-btn" data-price="20">До 20 млн</button>
+          <button class="price-btn" data-price="50">До 50 млн</button>
+          <button class="price-btn" data-price="100">До 100 млн</button>
+        </div>
+      </div>
+      <div class="filter-group">
+        <label>📍 Районы</label>
+        <div id="districtCheckboxes" class="checkbox-group"></div>
+      </div>
+      <div class="filter-group">
+        <label>🚇 Метро</label>
+        <div id="metroCheckboxes" class="checkbox-group"></div>
+      </div>
+      <div class="filter-group">
+        <label>🚪 Комнаты</label>
+        <div id="roomsCheckboxes" class="checkbox-group"></div>
+      </div>
+    </div>
+    <div class="view-toggle">
+      <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>
+      <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺 Карта</button>
+    </div>
+    <div id="listingsContainer" class="listings"></div>
+    <div id="mapContainer" class="map-container hidden"></div>
   </div>
 
-  <main id="list" class="list hidden"></main>
-
-  <div id="modal" class="modal hidden">
-    <div class="modal-body">
-      <button class="close" onclick="closeModal()">×</button>
-      <img id="mImg" class="m-img">
-      <div class="m-info">
-        <span id="mStatus" class="badge"></span>
-        <h2 id="mTitle"></h2>
-        <div id="mPrice" class="price"></div>
-        <div id="mMeta" class="meta"></div>
-        <p id="mDesc" class="desc"></p>
-        <div id="mDetails" class="details"></div>
-        <a id="mBtn" href="#" target="_blank" rel="noopener" class="btn-main">Оставить заявку</a>
+  <div id="detailsModal" class="modal hidden">
+    <div class="modal-content">
+      <button class="close-btn" onclick="closeModal()">✕</button>
+      <div id="modalGallery" class="modal-gallery"></div>
+      <div class="modal-body">
+        <h2 id="modalTitle"></h2>
+        <div id="modalPrice" class="modal-price"></div>
+        <div id="modalMeta" class="modal-meta"></div>
+        <h3>📖 Описание</h3>
+        <div id="modalDescription" class="modal-desc"></div>
+        <h3>✨ Преимущества</h3>
+        <div id="modalFeatures" class="modal-features"></div>
+        <h3>📐 Планировки</h3>
+        <div id="modalFloorPlans" class="modal-floor-plans"></div>
       </div>
     </div>
   </div>
 
-  <script src="config.js"></script>
+  <div id="consultModal" class="modal hidden">
+    <div class="modal-content form-modal">
+      <button class="close-btn" onclick="closeConsultModal()">✕</button>
+      <h3>Заказать консультацию</h3>
+      <p id="consultObjectName" class="form-object"></p>
+      <p class="form-hint">Оставьте контакты — мы перезвоним и ответим на все вопросы по объекту</p>
+      <form id="consultForm" onsubmit="submitConsultForm(event)">
+        <input type="text" id="consultName" placeholder="Ваше имя *" required>
+        <input type="tel" id="consultPhone" placeholder="Телефон *" required>
+        <button type="submit" class="btn-primary">Отправить заявку</button>
+      </form>
+    </div>
+  </div>
+
+  <script src="config.json"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
