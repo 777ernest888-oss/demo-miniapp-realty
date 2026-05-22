@@ -35,23 +35,19 @@ function hideBack() {
 }
 
 function appBack() {
-  // 1. Если открыта форма заявки
   if (!document.getElementById('consultModal').classList.contains('hidden')) {
     closeConsultModal();
     return;
   }
-  // 2. Если открыта карточка объекта
   if (!document.getElementById('detailsModal').classList.contains('hidden')) {
     closeModal();
     return;
   }
-  // 3. Если открыта карта
   if (!document.getElementById('mapContainer').classList.contains('hidden')) {
-    switchView('list');    return;
+    switchView('list');
+    return;
   }
-  // 4. Если ничего не открыто — закрываем Mini App
-  if (tg.close) tg.close();
-}
+  if (tg.close) tg.close();}
 // -------------------------------
 
 function startApp() {
@@ -93,6 +89,10 @@ function switchView(view) {
 
 async function init() {
   try {
+    // Показываем индикатор загрузки
+    const loadingScreen = document.getElementById('loadingScreen');
+    if (loadingScreen) loadingScreen.classList.remove('hidden');
+   
     const configRes = await fetch('config.json');
     config = await configRes.json();
     if (config.data?.sheetUrl) {
@@ -104,8 +104,14 @@ async function init() {
     renderListings(listings.filter(l => l.active));
     initPhoneMask();
     hideBack();
+   
+    // Скрываем индикатор после загрузки
+    if (loadingScreen) loadingScreen.classList.add('hidden');
   } catch (error) {
     console.error('Init Error:', error);
+    // Скрываем индикатор даже при ошибке
+    const loadingScreen = document.getElementById('loadingScreen');
+    if (loadingScreen) loadingScreen.classList.add('hidden');
   }
 }
 
@@ -139,13 +145,13 @@ function applyBranding() {
   if (headerContainer) {
     headerContainer.innerHTML = '';
     if (config.brand.logo) {
-      const logo = document.createElement('img');
-      logo.src = config.brand.logo;
+      const logo = document.createElement('img');      logo.src = config.brand.logo;
       logo.className = 'brand-logo';
       logo.alt = 'Logo';
       headerContainer.appendChild(logo);
     }
-    if (config.brand.name) {      const title = document.createElement('h1');
+    if (config.brand.name) {
+      const title = document.createElement('h1');
       title.textContent = config.brand.name.toUpperCase();
       title.className = 'brand-title';
       headerContainer.appendChild(title);
@@ -188,13 +194,13 @@ function parseCSV(csv) {
 function parseCSVLine(line) {
   const result = [];
   let current = '';
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
+  let inQuotes = false;  for (let i = 0; i < line.length; i++) {
     const char = line[i];
     if (char === '"') inQuotes = !inQuotes;
     else if (char === ',' && !inQuotes) { result.push(current); current = ''; }
     else current += char;
-  }  result.push(current);
+  }
+  result.push(current);
   return result;
 }
 
@@ -237,13 +243,13 @@ function renderFilters() {
     listings.forEach(l => {
       if (l.rooms) {
         const roomList = String(l.rooms).split(',').map(r => r.trim());
-        roomList.forEach(r => { if (r && !allRooms.includes(r)) allRooms.push(r); });
-      }
+        roomList.forEach(r => { if (r && !allRooms.includes(r)) allRooms.push(r); });      }
     });
     allRooms.sort();
     roomsContainer.innerHTML = '';
     allRooms.forEach(r => {
-      const label = document.createElement('label');      label.className = 'checkbox-label';
+      const label = document.createElement('label');
+      label.className = 'checkbox-label';
       label.innerHTML = `<input type="checkbox" value="${escapeHtml(r)}" class="filter-checkbox" data-filter="rooms"><span>${escapeHtml(r)}</span>`;
       roomsContainer.appendChild(label);
     });
@@ -286,12 +292,12 @@ function filterListings() {
   });
  
   renderListings(filtered);
- 
-  const mapContainer = document.getElementById('mapContainer');
+    const mapContainer = document.getElementById('mapContainer');
   if (mapContainer && !mapContainer.classList.contains('hidden')) {
     updateMapMarkers(filtered);
   }
 }
+
 function resetFilters() {
   document.querySelectorAll('.price-btn').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll('.filter-checkbox').forEach(cb => cb.checked = false);
@@ -335,13 +341,13 @@ function renderListings(data) {
       } else {
         priceDisplay = `${(item.price_from / 1000000).toFixed(1)} млн ₽`;
       }
-    }
-   
+    }   
     const priceTo = typeof item.price_to === 'number' ? item.price_to.toFixed(1) : '';
     const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
     const area = (typeof item.area_min === 'number' && typeof item.area_max === 'number') ? `${item.area_min}–${item.area_max} м²` : '';
     const rooms = item.rooms || '';
-    const statusKey = (item.status || 'other').toString().replace(/\s+/g, '-');    const statusText = item.status === 'Сдан' ? '✅ Сдан' : item.status === 'Строится' ? '🏗 Строится' : '🟡 Частично сдан';
+    const statusKey = (item.status || 'other').toString().replace(/\s+/g, '-');
+    const statusText = item.status === 'Сдан' ? '✅ Сдан' : item.status === 'Строится' ? '🏗 Строится' : '🟡 Частично сдан';
    
     const card = document.createElement('div');
     card.className = 'listing-card';
@@ -384,18 +390,14 @@ function updateMapMarkers(filteredItems) {
   filteredItems.forEach(item => {
     if (!item.active || !item.lat || !item.lng) return;
    
-    let priceDisplay = '?';
-    if (typeof item.price_from === 'number') {
+    let priceDisplay = '?';    if (typeof item.price_from === 'number') {
       priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
     }
    
-    // Создаем маркер
-    const marker = L.marker([item.lat, item.lng]).addTo(map);   
-    // Popup с информацией (кликабельный)
+    const marker = L.marker([item.lat, item.lng]).addTo(map);
     const popupContent = `<div class="map-popup" data-id="${item.id}" style="cursor: pointer;"><b>${item.name}</b><br>от ${priceDisplay} млн ₽<small style="display: block; margin-top: 4px; color: #666;">Нажмите для деталей</small></div>`;
     marker.bindPopup(popupContent);
    
-    // Клик по popup открывает карточку
     marker.on('popupopen', function() {
       const popupEl = document.querySelector(`.map-popup[data-id="${item.id}"]`);
       if (popupEl) {
@@ -437,9 +439,9 @@ function openDetails(id) {
   const plansContainer = document.getElementById('modalFloorPlans');
   plansContainer.innerHTML = '';
   if (item.floor_plans_text) {
-    const textDiv = document.createElement('div');
-    textDiv.className = 'floor-plans-text';
-    textDiv.textContent = item.floor_plans_text;    plansContainer.appendChild(textDiv);
+    const textDiv = document.createElement('div');    textDiv.className = 'floor-plans-text';
+    textDiv.textContent = item.floor_plans_text;
+    plansContainer.appendChild(textDiv);
   }
   if (item.floor_plans_images) {
     const galleryDiv = document.createElement('div');
@@ -486,9 +488,9 @@ function openDetails(id) {
     modalContent.appendChild(btn);
   }
   btn.textContent = '📞 Получить консультацию';
-  btn.onclick = () => openConsultForm(id);
-  document.getElementById('detailsModal').classList.remove('hidden');
-  document.body.style.overflow = 'hidden'; 
+  btn.onclick = () => openConsultForm(id);  document.getElementById('detailsModal').classList.remove('hidden');
+  document.body.style.overflow = 'hidden';
+ 
   showBack();
 }
 
@@ -535,9 +537,9 @@ function initPhoneMask() {
   phoneInput.addEventListener('input', function(e) {
     let x = e.target.value.replace(/\D/g, '').match(/(\d{0,1})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
     e.target.value = !x[2] ? '+7 (' : '+7 (' + x[2] + (x[3] ? ') ' + x[3] : '') + (x[4] ? '-' + x[4] : '') + (x[5] ? '-' + x[5] : '');
-  });
-  phoneInput.addEventListener('focus', function(e) { if (e.target.value === '') e.target.value = '+7 ('; });
+  });  phoneInput.addEventListener('focus', function(e) { if (e.target.value === '') e.target.value = '+7 ('; });
 }
+
 function submitConsultForm(event) {
   event.preventDefault();
   const item = listings.find(l => l.id === currentModalId);
@@ -584,9 +586,9 @@ function submitConsultForm(event) {
     .finally(() => {
       submitBtn.textContent = originalText;
       submitBtn.disabled = false;
-    });
-  } else {
-    const botLink = config.contact?.botLink || 'https://t.me/demo_newbuilds_bot';    if (tg?.openLink) tg.openLink(botLink);
+    });  } else {
+    const botLink = config.contact?.botLink || 'https://t.me/demo_newbuilds_bot';
+    if (tg?.openLink) tg.openLink(botLink);
     else window.open(botLink, '_blank');
     closeConsultModal();
     tg?.showAlert('✅ Вы будете перенаправлены в чат с менеджером');
