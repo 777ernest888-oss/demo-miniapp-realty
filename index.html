@@ -10,11 +10,13 @@
 </head>
 <body>
   <div id="welcomeScreen" class="screen welcome">
-    <!-- 1. Картинка сверху -->
+    <!-- Ваша картинка (JS её не трогает) -->
     <img id="welcomeImage" class="welcome-img" src="welcome-bg.jpg" alt="Welcome">
    
-    <!-- 2. Логотип + Название ПОД картинкой -->
-    <div id="welcomeBrand" class="welcome-brand"></div>
+    <!-- Логотип + Название (статично в HTML для мгновенной загрузки) -->
+    <div id="welcomeBrand" class="welcome-brand">
+      <h1 class="brand-title">КАТАЛОГ НОВОСТРОЕК</h1>
+    </div>
    
     <p id="welcomeSubtitle" class="welcome-sub">Подберём квартиру под ваш бюджет</p>
     <button class="btn-primary" onclick="startApp()">Начать подбор</button>
