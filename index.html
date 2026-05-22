@@ -29,8 +29,10 @@
 
   <div id="mainContent" class="screen main hidden">
     <header class="header">
-      <!-- Кнопка Назад -->
-      <button id="customBackBtn" class="header-back-btn hidden" onclick="appBack()">←</button>
+      <!-- Кнопка Назад (Исправлен текст: одна стрелка и слово) -->
+      <button id="customBackBtn" class="header-back-btn hidden" onclick="appBack()">
+        <span class="back-arrow">←</span> Назад
+      </button>
       <!-- Логотип и Название -->
       <div id="headerBrand" class="header-brand"></div>
     </header>
@@ -45,9 +47,9 @@
           <button class="price-btn" data-price="5">До 5 млн</button>
           <button class="price-btn" data-price="10">До 10 млн</button>
           <button class="price-btn" data-price="20">До 20 млн</button>
-          <button class="price-btn" data-price="50">До 50 млн</button>
-          <button class="price-btn" data-price="100">До 100 млн</button>
-        </div>      </div>
+          <button class="price-btn" data-price="50">До 50 млн</button>          <button class="price-btn" data-price="100">До 100 млн</button>
+        </div>
+      </div>
       <div class="filter-group">
         <label>📍 Районы</label>
         <div id="districtCheckboxes" class="checkbox-group"></div>
@@ -57,13 +59,13 @@
         <div id="metroCheckboxes" class="checkbox-group"></div>
       </div>
       <div class="filter-group">
-        <label>🚪 Комнаты</label>
+        <label> Комнаты</label>
         <div id="roomsCheckboxes" class="checkbox-group"></div>
       </div>
     </div>
     <div class="view-toggle">
       <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>
-      <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺️ Карта</button>
+      <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">️ Карта</button>
     </div>
     <div id="listingsContainer" class="listings"></div>
     <div id="mapContainer" class="map-container hidden"></div>
@@ -89,14 +91,14 @@
 
   <div id="consultModal" class="modal hidden">
     <div class="modal-content form-modal">
-      <button class="close-btn" onclick="closeConsultModal()">✕</button>
+      <button class="close-btn" onclick="closeConsultModal()"></button>
       <h3>Заказать консультацию</h3>
       <p id="consultObjectName" class="form-object"></p>
       <p class="form-hint">Оставьте контакты — мы перезвоним и ответим на все вопросы по объекту</p>
       <form id="consultForm" onsubmit="submitConsultForm(event)">
-        <input type="text" id="consultName" placeholder="Ваше имя *" required>
-        <input type="tel" id="consultPhone" placeholder="Телефон *" required>
-        <button type="submit" class="btn-primary">Отправить заявку</button>      </form>
+        <input type="text" id="consultName" placeholder="Ваше имя *" required>        <input type="tel" id="consultPhone" placeholder="Телефон *" required>
+        <button type="submit" class="btn-primary">Отправить заявку</button>
+      </form>
     </div>
   </div>
 
