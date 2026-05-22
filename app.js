@@ -250,7 +250,6 @@ function filterListings() {
  
   renderListings(filtered);
  
-  // Обновляем карту если она видима
   const mapContainer = document.getElementById('mapContainer');
   if (mapContainer && !mapContainer.classList.contains('hidden')) {
     updateMapMarkers(filtered);
@@ -292,8 +291,8 @@ function renderListings(data) {
     card.innerHTML = `<img src="${escapeHtml(item.image_main) || ''}" alt="${escapeHtml(item.name) || ''}" class="listing-image" onerror="this.style.display='none'"><div class="listing-info"><h3>${escapeHtml(item.name) || 'Без названия'}</h3><div class="listing-meta"><span>${escapeHtml(item.district) || ''}</span><span>🚇 ${escapeHtml(item.metro) || ''}</span>${rooms ? `<span>🚪 ${escapeHtml(rooms)}</span>` : ''}${area ? `<span>📐 ${escapeHtml(area)}</span>` : ''}</div><div class="listing-price">от ${priceDisplay}${priceTo ? ` до ${priceTo} млн ₽` : ''} ${ppsqm ? `<span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}</div><div class="listing-status status-${statusKey}">${statusText}</div><button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button></div>`;
    
     container.appendChild(card);
-  });}
-
+  });
+}
 function initMap() {
   if (typeof L === 'undefined') {
     console.error('Leaflet not loaded');
@@ -309,29 +308,18 @@ function initMap() {
     }).addTo(map);
   }
  
-  // Показываем все активные объекты при инициализации
-  const activeListings = listings.filter(l => l.active && l.lat && l.lng);
-  updateMapMarkersCore(activeListings);
+  filterListings();
  
   setTimeout(() => map.invalidateSize(), 150);
 }
 
 function updateMapMarkers(filteredItems) {
-  updateMapMarkersCore(filteredItems);
-}
-
-function updateMapMarkersCore(itemsToShow) {
-  if (!map) {
-    console.error('Map not initialized');
-    return;
-  }
+  if (!map) return;
  
-  // Удаляем все старые маркеры
   markers.forEach(m => map.removeLayer(m));
   markers = [];
  
-  // Создаем новые маркеры
-  itemsToShow.forEach(item => {
+  filteredItems.forEach(item => {
     if (!item.active || !item.lat || !item.lng) return;
    
     let priceDisplay = '?';
@@ -341,10 +329,10 @@ function updateMapMarkersCore(itemsToShow) {
    
     const marker = L.marker([item.lat, item.lng]).addTo(map)
       .bindPopup(`<b>${item.name}</b><br>от ${priceDisplay} млн ₽`);
-        markers.push(marker);
+   
+    markers.push(marker);
   });
  
-  // Подгоняем масштаб если есть маркеры
   if (markers.length > 0) {
     const group = new L.featureGroup(markers);
     map.fitBounds(group.getBounds().pad(0.1));
@@ -353,8 +341,7 @@ function updateMapMarkersCore(itemsToShow) {
 
 function openDetails(id) {
   const item = listings.find(l => l.id === id);
-  if (!item) return;
-  currentModalId = id;
+  if (!item) return;  currentModalId = id;
   document.getElementById('modalTitle').textContent = item.name || '';
  
   let priceDisplay = '?';
@@ -390,7 +377,8 @@ function openDetails(id) {
       galleryDiv.appendChild(img);
     });
     plansContainer.appendChild(galleryDiv);
-  }  if (!item.floor_plans_text && !item.floor_plans_images) {
+  }
+  if (!item.floor_plans_text && !item.floor_plans_images) {
     plansContainer.innerHTML = '<p style="color: var(--text-secondary)">Информация уточняется</p>';
   }
  
@@ -402,8 +390,7 @@ function openDetails(id) {
     mainImg.className = 'modal-main-image';
     gallery.appendChild(mainImg);
   }
-  if (item.images_gallery) {
-    item.images_gallery.split(',').map(u => u.trim()).filter(Boolean).forEach(url => {
+  if (item.images_gallery) {    item.images_gallery.split(',').map(u => u.trim()).filter(Boolean).forEach(url => {
       const img = document.createElement('img');
       img.src = url;
       img.className = 'modal-thumb';
@@ -439,6 +426,7 @@ function openConsultForm(id, event) {
   currentModalId = id;
   sendConsultRequest();
 }
+
 function sendConsultRequest() {
   const item = listings.find(l => l.id === currentModalId);
   if (!item) return;
@@ -452,7 +440,6 @@ function closeConsultModal() {
   document.getElementById('consultModal').classList.add('hidden');
   document.getElementById('consultForm').reset();
 }
-
 function initPhoneMask() {
   const phoneInput = document.getElementById('consultPhone');
   if (!phoneInput) return;
@@ -488,7 +475,8 @@ function submitConsultForm(event) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: config.contact.chatId, text })
-    })    .then(res => {
+    })
+    .then(res => {
       if (!res.ok) throw new Error('HTTP error ' + res.status);
       return res.json();
     })
@@ -500,8 +488,7 @@ function submitConsultForm(event) {
       } else {
         throw new Error(data.description || 'Неизвестная ошибка');
       }
-    })
-    .catch(err => {
+    })    .catch(err => {
       console.error('Send error:', err);
       tg?.showAlert('⚠️ Ошибка: ' + err.message);
     })
