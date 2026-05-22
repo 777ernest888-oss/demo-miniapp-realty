@@ -77,7 +77,7 @@ function applyTheme() {
   if (!config.brand) return;
   document.documentElement.style.setProperty('--primary', config.brand.primaryColor || '#1a365d');
   document.documentElement.style.setProperty('--accent', config.brand.accentColor || '#d4af37');
-  // ✅ Картинка больше не меняется через JS. Используется только та, что в HTML.
+  // Картинка больше не меняется через JS
 }
 
 function applyBranding() {
@@ -86,22 +86,33 @@ function applyBranding() {
   const welcomeContainer = document.getElementById('welcomeBrand');
   const headerContainer = document.getElementById('headerBrand');
  
+  // === WELCOME SCREEN ===
   if (welcomeContainer) {
-    welcomeContainer.innerHTML = '';
-    if (config.brand.logo) {
-      const logo = document.createElement('img');
-      logo.src = config.brand.logo;
-      logo.className = 'brand-logo';
-      logo.alt = 'Logo';
-      welcomeContainer.appendChild(logo);
+    // Проверяем, нужно ли менять контент (если есть логотип или кастомное название)
+    const customTitle = config.brand.welcomeTitle || config.brand.name;
+    const needsUpdate = config.brand.logo || (customTitle && customTitle.toUpperCase() !== 'КАТАЛОГ НОВОСТРОЕК');
+   
+    if (needsUpdate) {
+      welcomeContainer.innerHTML = '';
+     
+      if (config.brand.logo) {
+        const logo = document.createElement('img');        logo.src = config.brand.logo;
+        logo.className = 'brand-logo';
+        logo.alt = 'Logo';
+        welcomeContainer.appendChild(logo);
+      }
+     
+      if (customTitle) {
+        const title = document.createElement('h1');
+        title.textContent = customTitle.toUpperCase();
+        title.className = 'brand-title';
+        welcomeContainer.appendChild(title);
+      }
     }
-    if (config.brand.welcomeTitle || config.brand.name) {
-      const title = document.createElement('h1');      title.textContent = (config.brand.welcomeTitle || config.brand.name).toUpperCase();
-      title.className = 'brand-title';
-      welcomeContainer.appendChild(title);
-    }
+    // Если нет кастомных данных — оставляем статичный HTML из index.html
   }
 
+  // === HEADER ===
   if (headerContainer) {
     headerContainer.innerHTML = '';
     if (config.brand.logo) {
@@ -134,8 +145,7 @@ async function loadFromGoogleSheets(url) {
 function parseCSV(csv) {
   const lines = csv.trim().split('\n');
   if (lines.length < 2) return [];
-  const headers = parseCSVLine(lines[0]).map(h => h.trim());
-  const result = [];
+  const headers = parseCSVLine(lines[0]).map(h => h.trim());  const result = [];
   for (let i = 1; i < lines.length; i++) {
     if (!lines[i].trim()) continue;
     const values = parseCSVLine(lines[i]);
@@ -145,7 +155,8 @@ function parseCSV(csv) {
       if (value === 'TRUE') value = true;
       else if (value === 'FALSE') value = false;
       else if (!isNaN(value) && value !== '') value = Number(value);
-      obj[header] = value;    });
+      obj[header] = value;
+    });
     result.push(obj);
   }
   return result;
@@ -183,8 +194,7 @@ function renderFilters() {
       label.className = 'checkbox-label';
       label.innerHTML = `<input type="checkbox" value="${escapeHtml(d)}" class="filter-checkbox" data-filter="district"><span>${escapeHtml(d)}</span>`;
       districtContainer.appendChild(label);
-    });
-  }
+    });  }
  
   const metros = [...new Set(listings.map(l => l.metro).filter(Boolean))].sort();
   const metroContainer = document.getElementById('metroCheckboxes');
@@ -194,7 +204,8 @@ function renderFilters() {
       const label = document.createElement('label');
       label.className = 'checkbox-label';
       label.innerHTML = `<input type="checkbox" value="${escapeHtml(m)}" class="filter-checkbox" data-filter="metro"><span>${escapeHtml(m)}</span>`;
-      metroContainer.appendChild(label);    });
+      metroContainer.appendChild(label);
+    });
   }
  
   const roomsContainer = document.getElementById('roomsCheckboxes');
@@ -232,8 +243,7 @@ function renderFilters() {
 }
 
 function filterListings() {
-  const activeBtn = document.querySelector('.price-btn.active');
-  const maxPrice = activeBtn ? parseFloat(activeBtn.dataset.price) : Infinity;
+  const activeBtn = document.querySelector('.price-btn.active');  const maxPrice = activeBtn ? parseFloat(activeBtn.dataset.price) : Infinity;
  
   const selectedDistricts = Array.from(document.querySelectorAll('input[data-filter="district"]:checked')).map(cb => cb.value);
   const selectedMetros = Array.from(document.querySelectorAll('input[data-filter="metro"]:checked')).map(cb => cb.value);
@@ -243,7 +253,8 @@ function filterListings() {
     if (!item.active) return false;
     if (typeof item.price_from !== 'number' || item.price_from > maxPrice) return false;
     if (selectedDistricts.length > 0 && !selectedDistricts.includes(item.district)) return false;
-    if (selectedMetros.length > 0 && !selectedMetros.includes(item.metro)) return false;    if (selectedRooms.length > 0 && item.rooms) {
+    if (selectedMetros.length > 0 && !selectedMetros.includes(item.metro)) return false;
+    if (selectedRooms.length > 0 && item.rooms) {
       const itemRooms = String(item.rooms).split(',').map(r => r.trim());
       const hasMatch = selectedRooms.some(r => itemRooms.includes(r));
       if (!hasMatch) return false;
@@ -281,18 +292,18 @@ function renderListings(data) {
    
     const card = document.createElement('div');
     card.className = 'listing-card';
-    card.onclick = function(e) {
-      if (!e.target.closest('.consult-btn-inline')) openDetails(item.id);
+    card.onclick = function(e) {      if (!e.target.closest('.consult-btn-inline')) openDetails(item.id);
     };
    
-    // ✅ Логотип в карточках полностью удалён
+    // Логотип в карточках не показываем
     card.innerHTML = `<img src="${escapeHtml(item.image_main) || ''}" alt="${escapeHtml(item.name) || ''}" class="listing-image" onerror="this.style.display='none'"><div class="listing-info"><h3>${escapeHtml(item.name) || 'Без названия'}</h3><div class="listing-meta"><span>${escapeHtml(item.district) || ''}</span><span>🚇 ${escapeHtml(item.metro) || ''}</span>${rooms ? `<span>🚪 ${escapeHtml(rooms)}</span>` : ''}${area ? `<span>📐 ${escapeHtml(area)}</span>` : ''}</div><div class="listing-price">от ${priceDisplay}${priceTo ? ` до ${priceTo} млн ₽` : ''} ${ppsqm ? `<span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}</div><div class="listing-status status-${statusKey}">${statusText}</div><button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button></div>`;
    
     container.appendChild(card);
   });
 }
 
-function initMap() {  if (typeof L === 'undefined') return;
+function initMap() {
+  if (typeof L === 'undefined') return;
   const mapContainer = document.getElementById('mapContainer');
   if (!mapContainer) return;
   if (!map) {
@@ -330,8 +341,7 @@ function openDetails(id) {
   document.getElementById('modalPrice').innerHTML = `от <b>${priceDisplay}</b> млн ₽ ${ppsqm ? `<span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}`;
  
   document.getElementById('modalMeta').innerHTML = `<div class="meta-row"><span>📍 ${escapeHtml(item.address) || ''}</span></div><div class="meta-row"><span>🚇 ${escapeHtml(item.metro) || ''}</span></div><div class="meta-row"><span>🏗 ${escapeHtml(item.class) || ''} • ${escapeHtml(item.finishing) || ''}</span></div><div class="meta-row"><span>📅 ${escapeHtml(item.completion_soonest || item.completion_all) || ''}</span></div>`;
- 
-  document.getElementById('modalDescription').textContent = item.description || 'Описание отсутствует';
+    document.getElementById('modalDescription').textContent = item.description || 'Описание отсутствует';
  
   const featuresDiv = document.getElementById('modalFeatures');
   featuresDiv.innerHTML = item.features ? `<ul>${item.features.split(',').map(f => `<li>${escapeHtml(f.trim())}</li>`).join('')}</ul>` : '<p style="color: var(--text-secondary)">Информация уточняется</p>';
@@ -341,7 +351,8 @@ function openDetails(id) {
   if (item.floor_plans_text) {
     const textDiv = document.createElement('div');
     textDiv.className = 'floor-plans-text';
-    textDiv.textContent = item.floor_plans_text;    plansContainer.appendChild(textDiv);
+    textDiv.textContent = item.floor_plans_text;
+    plansContainer.appendChild(textDiv);
   }
   if (item.floor_plans_images) {
     const galleryDiv = document.createElement('div');
@@ -379,8 +390,7 @@ function openDetails(id) {
  
   const modalContent = document.querySelector('#detailsModal .modal-content');
   let btn = document.getElementById('modalConsultBtn');
-  if (!btn) {
-    btn = document.createElement('button');
+  if (!btn) {    btn = document.createElement('button');
     btn.id = 'modalConsultBtn';
     btn.className = 'tg-btn';
     btn.style.marginTop = '20px';
@@ -390,7 +400,8 @@ function openDetails(id) {
   btn.textContent = '📞 Получить консультацию';
   btn.onclick = () => openConsultForm(id);
   document.getElementById('detailsModal').classList.remove('hidden');
-  document.body.style.overflow = 'hidden';}
+  document.body.style.overflow = 'hidden';
+}
 
 function closeModal() {
   document.getElementById('detailsModal').classList.add('hidden');
@@ -428,8 +439,7 @@ function initPhoneMask() {
   phoneInput.addEventListener('focus', function(e) { if (e.target.value === '') e.target.value = '+7 ('; });
 }
 
-function submitConsultForm(event) {
-  event.preventDefault();
+function submitConsultForm(event) {  event.preventDefault();
   const item = listings.find(l => l.id === currentModalId);
   if (!item) return;
  
@@ -439,6 +449,7 @@ function submitConsultForm(event) {
     tg?.showAlert('❌ Введите корректный номер телефона');
     return;
   }
+
   if (config.contact?.botToken && config.contact?.chatId) {
     const text = `🔔 Новая заявка!\n\n🏢 ${item.name}\n👤 ${name}\n📱 ${phone}`;
     const url = `https://api.telegram.org/bot${config.contact.botToken}/sendMessage`;
@@ -477,8 +488,7 @@ function submitConsultForm(event) {
   } else {
     const botLink = config.contact?.botLink || 'https://t.me/demo_newbuilds_bot';
     if (tg?.openLink) tg.openLink(botLink);
-    else window.open(botLink, '_blank');
-    closeConsultModal();
+    else window.open(botLink, '_blank');    closeConsultModal();
     tg?.showAlert('✅ Вы будете перенаправлены в чат с менеджером');
   }
 }
@@ -489,6 +499,7 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {
