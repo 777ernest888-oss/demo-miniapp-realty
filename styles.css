@@ -14,7 +14,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .hidden { display: none !important; }
 .screen { min-height: 100vh; display: flex; flex-direction: column; }
 
-/* WELCOME SCREEN - С КРУПНЫМ ЛОГОТИПОМ */
+/* WELCOME SCREEN - СИММЕТРИЧНАЯ ВЁРСТКА */
 .welcome {
   position: relative;
   display: flex;
@@ -22,13 +22,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   align-items: center;
   justify-content: center;
   min-height: 100vh;
-  padding: 12px;
+  padding: 16px; /* Базовый отступ */
   background: var(--primary);
   box-sizing: border-box;
 }
 .welcome-brand {
   position: absolute;
-  top: 16px;
+  top: 16px; /* Ровно как padding */
   left: 16px;
   display: flex;
   align-items: center;
@@ -36,34 +36,35 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   z-index: 10;
 }
 .brand-logo {
-  width: 50px;        /* Было 36px → стало 50px */
-  height: 50px;       /* Было 36px → стало 50px */
+  width: 50px;
+  height: 50px;
   object-fit: contain;
   border-radius: 8px;
   background: var(--white);
   padding: 4px;
 }
 .brand-company {
-  font-size: 18px;    /* Было 14px → стало 18px */
+  font-size: 18px;
   font-weight: 700;
   color: var(--white);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  text-transform: uppercase;  letter-spacing: 0.5px;
 }
 .welcome-img {
   width: 100%;
-  max-width: 400px;
-  border-radius: 12px;
-  box-shadow: 0 6px 16px rgba(0,0,0,0.3);
-  margin-top: 70px;
-  margin-bottom: 24px; /* Увеличил отступ до картинки (было 16px) */
+  max-width: 460px; /* Чуть шире для солидности */
+  height: auto;
+  max-height: 65vh; /* Растянули, чтобы не обрезала верх/низ */
+  border-radius: 16px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.35);
+  margin-top: 16px; /* Ровно как отступ до логотипа */
+  margin-bottom: 16px; /* Ровно как отступ сверху */
   object-fit: cover;
-  max-height: 50vh;
+  display: block;
 }
 .welcome-bottom {
   text-align: center;
   width: 100%;
-  max-width: 400px;
+  max-width: 460px;
 }
 .welcome-main-title {
   font-size: 22px;
@@ -72,9 +73,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   margin: 0 0 8px 0;
 }
 .welcome-sub {
-  color: rgba(255,255,255,0.8);
-  margin-bottom: 16px;
-  font-size: 14px;
+  color: rgba(255,255,255,0.85);
+  margin-bottom: 18px;
+  font-size: 15px;
 }
 
 /* BUTTONS */
@@ -82,87 +83,87 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   background: var(--accent);
   color: var(--primary);
   border: none;
-  padding: 12px 24px;
+  padding: 13px 24px;
   border-radius: var(--radius);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 700;
   cursor: pointer;
   width: 100%;
-  max-width: 400px;
+  max-width: 460px;
   transition: transform 0.2s;
 }
 .btn-primary:active { transform: scale(0.98); }
 
 /* HEADER */
 .header {
-  background: var(--primary);
-  padding: 12px 16px;
-  display: flex;  align-items: center;
+  background: var(--primary);  padding: 14px 16px;
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   color: var(--white);
 }
 .header-brand {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
-.header-brand .brand-logo { width: 32px; height: 32px; padding: 2px; }
-.header-brand .brand-title { font-size: 16px; font-weight: 700; margin: 0; }
+.header-brand .brand-logo { width: 36px; height: 36px; padding: 3px; }
+.header-brand .brand-title { font-size: 17px; font-weight: 700; margin: 0; }
 
 /* FILTERS */
-.filters-toggle { padding: 10px 16px; background: var(--white); border-bottom: 1px solid #eee; }
-.filters-toggle-btn { background: none; border: 1px solid var(--primary); color: var(--primary); padding: 6px 12px; border-radius: 6px; cursor: pointer; width: 100%; font-size: 13px; }
-.filters-block { background: var(--white); padding: 12px 16px; border-bottom: 1px solid #eee; }
-.filter-group { margin-bottom: 12px; }
-.filter-group label { display: block; font-weight: 600; margin-bottom: 6px; font-size: 13px; }
-.price-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
-.price-btn { flex: 1; min-width: 55px; padding: 6px; border: 1px solid #ddd; background: var(--white); border-radius: 6px; cursor: pointer; font-size: 11px; }
+.filters-toggle { padding: 12px 16px; background: var(--white); border-bottom: 1px solid #eee; }
+.filters-toggle-btn { background: none; border: 1px solid var(--primary); color: var(--primary); padding: 8px 14px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 14px; }
+.filters-block { background: var(--white); padding: 14px 16px; border-bottom: 1px solid #eee; }
+.filter-group { margin-bottom: 14px; }
+.filter-group label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
+.price-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
+.price-btn { flex: 1; min-width: 60px; padding: 8px; border: 1px solid #ddd; background: var(--white); border-radius: 6px; cursor: pointer; font-size: 12px; }
 .price-btn.active { background: var(--primary); color: var(--white); border-color: var(--primary); }
-.checkbox-group { display: flex; flex-direction: column; gap: 6px; }
-.checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 13px; cursor: pointer; }
-.checkbox-label input { width: 16px; height: 16px; accent-color: var(--primary); }
+.checkbox-group { display: flex; flex-direction: column; gap: 8px; }
+.checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+.checkbox-label input { width: 18px; height: 18px; accent-color: var(--primary); }
 
 /* VIEW TOGGLE */
-.view-toggle { display: flex; padding: 10px 16px; gap: 10px; background: var(--bg); }
-.view-btn { flex: 1; padding: 8px; border: 1px solid #ddd; background: var(--white); border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+.view-toggle { display: flex; padding: 12px 16px; gap: 10px; background: var(--bg); }
+.view-btn { flex: 1; padding: 10px; border: 1px solid #ddd; background: var(--white); border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; }
 .view-btn.active { background: var(--primary); color: var(--white); border-color: var(--primary); }
 
 /* LISTINGS */
-.listings { padding: 12px 16px; flex: 1; overflow-y: auto; }
-.listing-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 12px; overflow: hidden; cursor: pointer; transition: transform 0.2s; }
+.listings { padding: 14px 16px; flex: 1; overflow-y: auto; }
+.listing-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 14px; overflow: hidden; cursor: pointer; transition: transform 0.2s; }
 .listing-card:active { transform: scale(0.99); }
-.listing-image { width: 100%; height: 160px; object-fit: cover; }
-.listing-info { padding: 12px; }
-.listing-info h3 { font-size: 16px; margin-bottom: 6px; color: var(--primary); }
-.listing-meta { display: flex; flex-wrap: wrap; gap: 6px; font-size: 11px; color: var(--text-secondary); margin-bottom: 10px; }
-.listing-meta span { background: #f0f2f5; padding: 3px 6px; border-radius: 4px; }
-.listing-price { font-size: 18px; font-weight: 700; color: var(--accent); margin-bottom: 6px; }
-.price-per-sqm { font-size: 11px; color: var(--text-secondary); font-weight: 400; margin-left: 6px; }
-.listing-status { font-size: 11px; font-weight: 600; padding: 3px 6px; border-radius: 4px; display: inline-block; margin-bottom: 10px; }
+.listing-image { width: 100%; height: 170px; object-fit: cover; }
+.listing-info { padding: 14px; }
+.listing-info h3 { font-size: 17px; margin-bottom: 8px; color: var(--primary); }
+.listing-meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; }
+.listing-meta span { background: #f0f2f5; padding: 4px 8px; border-radius: 4px; }
+.listing-price { font-size: 19px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
+.price-per-sqm { font-size: 12px; color: var(--text-secondary); font-weight: 400; margin-left: 8px; }
+.listing-status { font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-bottom: 12px; }
 .status-Сдан { background: #d4edda; color: #155724; }
 .status-Строится { background: #fff3cd; color: #856404; }
-.consult-btn-inline { width: 100%; padding: 8px; background: var(--primary); color: var(--white); border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; }
+.consult-btn-inline { width: 100%; padding: 10px; background: var(--primary); color: var(--white); border: none; border-radius: 8px; font-weight: 600; cursor: pointer; font-size: 14px; }
 
 /* MAP */
-.map-container { height: calc(100vh - 120px); }
-
-/* MODALS */.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-.modal-content { background: var(--white); width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; border-radius: var(--radius); padding: 20px; position: relative; }
-.close-btn { position: absolute; top: 10px; right: 10px; background: none; border: none; font-size: 22px; cursor: pointer; color: var(--text-secondary); }
-.modal-gallery { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 12px; padding-bottom: 6px; }
-.modal-main-image { width: 100%; border-radius: 6px; margin-bottom: 6px; }
-.modal-thumb { width: 70px; height: 50px; object-fit: cover; border-radius: 4px; cursor: pointer; }
-.modal-price { font-size: 20px; font-weight: 700; color: var(--accent); margin-bottom: 10px; }
-.modal-meta { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; font-size: 13px; color: var(--text-secondary); }
-.modal-desc { font-size: 13px; line-height: 1.5; margin-bottom: 12px; }
-.modal-features ul { padding-left: 18px; margin-bottom: 12px; }
-.modal-features li { margin-bottom: 3px; font-size: 13px; }
-.floor-plans-text { font-size: 13px; margin-bottom: 12px; white-space: pre-wrap; }
-.floor-plans-gallery { display: flex; gap: 6px; overflow-x: auto; }
-.floor-plan-image { width: 100px; height: 100px; object-fit: cover; border-radius: 6px; cursor: pointer; }
-.form-modal h3 { margin-bottom: 10px; }
-.form-object { font-weight: 600; margin-bottom: 6px; color: var(--primary); }
-.form-hint { font-size: 11px; color: var(--text-secondary); margin-bottom: 12px; }
-.form-modal input { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; margin-bottom: 10px; font-size: 15px; }
-.empty-state { text-align: center; padding: 30px 16px; color: var(--text-secondary); }
-.tg-btn { background: var(--primary); color: var(--white); border: none; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; width: 100%; font-size: 13px; }
+.map-container { height: calc(100vh - 130px); }
+/* MODALS */
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.modal-content { background: var(--white); width: 92%; max-width: 520px; max-height: 90vh; overflow-y: auto; border-radius: var(--radius); padding: 22px; position: relative; }
+.close-btn { position: absolute; top: 12px; right: 12px; background: none; border: none; font-size: 24px; cursor: pointer; color: var(--text-secondary); }
+.modal-gallery { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 14px; padding-bottom: 8px; }
+.modal-main-image { width: 100%; border-radius: 8px; margin-bottom: 8px; }
+.modal-thumb { width: 75px; height: 55px; object-fit: cover; border-radius: 4px; cursor: pointer; }
+.modal-price { font-size: 22px; font-weight: 700; color: var(--accent); margin-bottom: 12px; }
+.modal-meta { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; font-size: 14px; color: var(--text-secondary); }
+.modal-desc { font-size: 14px; line-height: 1.5; margin-bottom: 14px; }
+.modal-features ul { padding-left: 20px; margin-bottom: 14px; }
+.modal-features li { margin-bottom: 4px; font-size: 14px; }
+.floor-plans-text { font-size: 14px; margin-bottom: 14px; white-space: pre-wrap; }
+.floor-plans-gallery { display: flex; gap: 8px; overflow-x: auto; }
+.floor-plan-image { width: 110px; height: 110px; object-fit: cover; border-radius: 8px; cursor: pointer; }
+.form-modal h3 { margin-bottom: 12px; }
+.form-object { font-weight: 600; margin-bottom: 8px; color: var(--primary); }
+.form-hint { font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; }
+.form-modal input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 12px; font-size: 16px; }
+.empty-state { text-align: center; padding: 35px 16px; color: var(--text-secondary); }
+.tg-btn { background: var(--primary); color: var(--white); border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; font-size: 14px; }
