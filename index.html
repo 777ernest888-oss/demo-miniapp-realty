@@ -10,16 +10,21 @@
 </head>
 <body>
   <div id="welcomeScreen" class="screen welcome">
-    <!-- Ваша картинка (JS её не трогает) -->
-    <img id="welcomeImage" class="welcome-img" src="welcome-bg.jpg" alt="Welcome">
-   
-    <!-- Логотип + Название (статично в HTML для мгновенной загрузки) -->
+    <!-- ЛОГОТИП + НАЗВАНИЕ КОМПАНИИ (Сверху слева) -->
     <div id="welcomeBrand" class="welcome-brand">
-      <h1 class="brand-title">КАТАЛОГ НОВОСТРОЕК</h1>
+      <img src="logo.png" alt="Logo" class="brand-logo">
+      <span class="brand-company">DEMO NEWBUILDS</span>
     </div>
-   
-    <p id="welcomeSubtitle" class="welcome-sub">Подберём квартиру под ваш бюджет</p>
-    <button class="btn-primary" onclick="startApp()">Начать подбор</button>
+
+    <!-- КАРТИНКА -->
+    <img id="welcomeImage" class="welcome-img" src="welcome-bg.jpg" alt="Welcome">
+
+    <!-- ЗАГОЛОВОК И КНОПКА (По центру снизу) -->
+    <div class="welcome-bottom">
+      <h1 class="welcome-main-title">КАТАЛОГ НОВОСТРОЕК</h1>
+      <p class="welcome-sub">Подберём квартиру под ваш бюджет</p>
+      <button class="btn-primary" onclick="startApp()">Начать подбор</button>
+    </div>
   </div>
 
   <div id="mainContent" class="screen main hidden">
@@ -42,8 +47,7 @@
       </div>
       <div class="filter-group">
         <label>📍 Районы</label>
-        <div id="districtCheckboxes" class="checkbox-group"></div>
-      </div>
+        <div id="districtCheckboxes" class="checkbox-group"></div>      </div>
       <div class="filter-group">
         <label>🚇 Метро</label>
         <div id="metroCheckboxes" class="checkbox-group"></div>
@@ -55,7 +59,7 @@
     </div>
     <div class="view-toggle">
       <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>
-      <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺 Карта</button>
+      <button id="mapViewBtn" class="view-btn" onclick="switchView('map')"> Карта</button>
     </div>
     <div id="listingsContainer" class="listings"></div>
     <div id="mapContainer" class="map-container hidden"></div>
@@ -69,11 +73,11 @@
         <h2 id="modalTitle"></h2>
         <div id="modalPrice" class="modal-price"></div>
         <div id="modalMeta" class="modal-meta"></div>
-        <h3>📖 Описание</h3>
+        <h3> Описание</h3>
         <div id="modalDescription" class="modal-desc"></div>
         <h3>✨ Преимущества</h3>
         <div id="modalFeatures" class="modal-features"></div>
-        <h3>📐 Планировки</h3>
+        <h3> Планировки</h3>
         <div id="modalFloorPlans" class="modal-floor-plans"></div>
       </div>
     </div>
@@ -92,7 +96,6 @@
       </form>
     </div>
   </div>
-
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="app.js"></script>
 </body>
