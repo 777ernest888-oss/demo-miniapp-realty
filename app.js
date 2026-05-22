@@ -391,13 +391,18 @@ function updateMapMarkers(filteredItems) {
    
     // Создаем маркер
     const marker = L.marker([item.lat, item.lng]).addTo(map);   
-    // Popup с информацией
-    const popupContent = `<b>${item.name}</b><br>от ${priceDisplay} млн ₽`;
+    // Popup с информацией (кликабельный)
+    const popupContent = `<div class="map-popup" data-id="${item.id}" style="cursor: pointer;"><b>${item.name}</b><br>от ${priceDisplay} млн ₽<small style="display: block; margin-top: 4px; color: #666;">Нажмите для деталей</small></div>`;
     marker.bindPopup(popupContent);
    
-    // Клик по маркеру открывает карточку
-    marker.on('click', () => {
-      openDetails(item.id);
+    // Клик по popup открывает карточку
+    marker.on('popupopen', function() {
+      const popupEl = document.querySelector(`.map-popup[data-id="${item.id}"]`);
+      if (popupEl) {
+        popupEl.addEventListener('click', function() {
+          openDetails(item.id);
+        });
+      }
     });
    
     markers.push(marker);
@@ -434,12 +439,12 @@ function openDetails(id) {
   if (item.floor_plans_text) {
     const textDiv = document.createElement('div');
     textDiv.className = 'floor-plans-text';
-    textDiv.textContent = item.floor_plans_text;
-    plansContainer.appendChild(textDiv);
+    textDiv.textContent = item.floor_plans_text;    plansContainer.appendChild(textDiv);
   }
   if (item.floor_plans_images) {
     const galleryDiv = document.createElement('div');
-    galleryDiv.className = 'floor-plans-gallery';    item.floor_plans_images.split(',').map(u => u.trim()).filter(Boolean).forEach(url => {
+    galleryDiv.className = 'floor-plans-gallery';
+    item.floor_plans_images.split(',').map(u => u.trim()).filter(Boolean).forEach(url => {
       const img = document.createElement('img');
       img.src = url;
       img.className = 'floor-plan-image';
@@ -483,12 +488,12 @@ function openDetails(id) {
   btn.textContent = '📞 Получить консультацию';
   btn.onclick = () => openConsultForm(id);
   document.getElementById('detailsModal').classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
- 
+  document.body.style.overflow = 'hidden'; 
   showBack();
 }
 
-function closeModal() {  document.getElementById('detailsModal').classList.add('hidden');
+function closeModal() {
+  document.getElementById('detailsModal').classList.add('hidden');
   document.body.style.overflow = '';
   currentModalId = null;
  
@@ -533,11 +538,11 @@ function initPhoneMask() {
   });
   phoneInput.addEventListener('focus', function(e) { if (e.target.value === '') e.target.value = '+7 ('; });
 }
-
 function submitConsultForm(event) {
   event.preventDefault();
   const item = listings.find(l => l.id === currentModalId);
-  if (!item) return; 
+  if (!item) return;
+ 
   const name = document.getElementById('consultName').value;
   const phone = document.getElementById('consultPhone').value;
   if (phone.length < 18) {
@@ -581,12 +586,12 @@ function submitConsultForm(event) {
       submitBtn.disabled = false;
     });
   } else {
-    const botLink = config.contact?.botLink || 'https://t.me/demo_newbuilds_bot';
-    if (tg?.openLink) tg.openLink(botLink);
+    const botLink = config.contact?.botLink || 'https://t.me/demo_newbuilds_bot';    if (tg?.openLink) tg.openLink(botLink);
     else window.open(botLink, '_blank');
     closeConsultModal();
     tg?.showAlert('✅ Вы будете перенаправлены в чат с менеджером');
-  }}
+  }
+}
 
 function escapeHtml(text) {
   if (!text) return '';
