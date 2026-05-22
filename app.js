@@ -256,13 +256,43 @@ function filterListings() {
   }
 }
 
+function resetFilters() {
+  // Сброс кнопок цены
+  document.querySelectorAll('.price-btn').forEach(btn => btn.classList.remove('active'));
+  // Сброс чекбоксов
+  document.querySelectorAll('.filter-checkbox').forEach(cb => cb.checked = false);
+  // Перерисовка полного списка
+  renderListings(listings.filter(l => l.active));
+}
+
 function renderListings(data) {
   const container = document.getElementById('listingsContainer');
   if (!container) return;
   container.innerHTML = '';
-  if (!data || data.length === 0) {
-    container.innerHTML = `<div class="empty-state">${config.texts?.emptyState || 'Нет объектов'}</div>`;
+
+  // Если база вообще пуста
+  if (listings.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon"></div>
+        <h3>База пуста</h3>
+        <p>Объекты ещё не добавлены. Свяжитесь с менеджером.</p>
+      </div>
+    `;
     return;
+  }
+
+  // Если фильтры отсекли всё
+  if (!data || data.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-icon">🔍</div>
+        <h3>Ничего не найдено</h3>
+        <p>По вашему запросу нет объектов.</p>
+        <p>Попробуйте изменить параметры поиска или сбросить фильтры.</p>
+        <button class="btn-reset-filters" onclick="resetFilters()">🔄 Сбросить фильтры</button>
+      </div>
+    `;    return;
   }
  
   data.forEach(item => {
@@ -293,6 +323,7 @@ function renderListings(data) {
     container.appendChild(card);
   });
 }
+
 function initMap() {
   if (typeof L === 'undefined') {
     console.error('Leaflet not loaded');
@@ -308,11 +339,9 @@ function initMap() {
     }).addTo(map);
   }
  
-  // Применяем текущие фильтры при открытии карты
   filterListings();
  
-  setTimeout(() => map.invalidateSize(), 150);
-}
+  setTimeout(() => map.invalidateSize(), 150);}
 
 function updateMapMarkers(filteredItems) {
   if (!map) return;
@@ -341,7 +370,8 @@ function updateMapMarkers(filteredItems) {
 }
 
 function openDetails(id) {
-  const item = listings.find(l => l.id === id);  if (!item) return;
+  const item = listings.find(l => l.id === id);
+  if (!item) return;
   currentModalId = id;
   document.getElementById('modalTitle').textContent = item.name || '';
  
@@ -360,8 +390,7 @@ function openDetails(id) {
   featuresDiv.innerHTML = item.features ? `<ul>${item.features.split(',').map(f => `<li>${escapeHtml(f.trim())}</li>`).join('')}</ul>` : '<p style="color: var(--text-secondary)">Информация уточняется</p>';
  
   const plansContainer = document.getElementById('modalFloorPlans');
-  plansContainer.innerHTML = '';
-  if (item.floor_plans_text) {
+  plansContainer.innerHTML = '';  if (item.floor_plans_text) {
     const textDiv = document.createElement('div');
     textDiv.className = 'floor-plans-text';
     textDiv.textContent = item.floor_plans_text;
@@ -390,7 +419,8 @@ function openDetails(id) {
     mainImg.src = item.image_main;
     mainImg.className = 'modal-main-image';
     gallery.appendChild(mainImg);
-  }  if (item.images_gallery) {
+  }
+  if (item.images_gallery) {
     item.images_gallery.split(',').map(u => u.trim()).filter(Boolean).forEach(url => {
       const img = document.createElement('img');
       img.src = url;
@@ -409,8 +439,7 @@ function openDetails(id) {
     btn.style.marginTop = '20px';
     btn.style.marginBottom = '40px';
     modalContent.appendChild(btn);
-  }
-  btn.textContent = '📞 Получить консультацию';
+  }  btn.textContent = '📞 Получить консультацию';
   btn.onclick = () => openConsultForm(id);
   document.getElementById('detailsModal').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
@@ -439,7 +468,8 @@ function sendConsultRequest() {
 
 function closeConsultModal() {
   document.getElementById('consultModal').classList.add('hidden');
-  document.getElementById('consultForm').reset();}
+  document.getElementById('consultForm').reset();
+}
 
 function initPhoneMask() {
   const phoneInput = document.getElementById('consultPhone');
@@ -458,13 +488,12 @@ function submitConsultForm(event) {
  
   const name = document.getElementById('consultName').value;
   const phone = document.getElementById('consultPhone').value;
-  if (phone.length < 18) {
-    tg?.showAlert('❌ Введите корректный номер телефона');
+  if (phone.length < 18) {    tg?.showAlert('❌ Введите корректный номер телефона');
     return;
   }
 
   if (config.contact?.botToken && config.contact?.chatId) {
-    const text = `🔔 Новая заявка!\n\n ${item.name}\n👤 ${name}\n📱 ${phone}`;
+    const text = ` Новая заявка!\n\n🏢 ${item.name}\n👤 ${name}\n ${phone}`;
     const url = `https://api.telegram.org/bot${config.contact.botToken}/sendMessage`;
    
     const submitBtn = event.target.querySelector('button[type="submit"]');
@@ -488,7 +517,8 @@ function submitConsultForm(event) {
         event.target.reset();
       } else {
         throw new Error(data.description || 'Неизвестная ошибка');
-      }    })
+      }
+    })
     .catch(err => {
       console.error('Send error:', err);
       tg?.showAlert('⚠️ Ошибка: ' + err.message);
@@ -507,8 +537,7 @@ function submitConsultForm(event) {
 }
 
 function escapeHtml(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
+  if (!text) return '';  const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
 }
