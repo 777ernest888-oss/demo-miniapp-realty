@@ -288,7 +288,7 @@ function renderListings(data) {
       if (!e.target.closest('.consult-btn-inline')) openDetails(item.id);
     };
    
-    card.innerHTML = `<img src="${escapeHtml(item.image_main) || ''}" alt="${escapeHtml(item.name) || ''}" class="listing-image" onerror="this.style.display='none'"><div class="listing-info"><h3>${escapeHtml(item.name) || 'Без названия'}</h3><div class="listing-meta"><span>${escapeHtml(item.district) || ''}</span><span>🚇 ${escapeHtml(item.metro) || ''}</span>${rooms ? `<span>🚪 ${escapeHtml(rooms)}</span>` : ''}${area ? `<span>📐 ${escapeHtml(area)}</span>` : ''}</div><div class="listing-price">от ${priceDisplay}${priceTo ? ` до ${priceTo} млн ₽` : ''} ${ppsqm ? `<span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}</div><div class="listing-status status-${statusKey}">${statusText}</div><button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button></div>`;
+    card.innerHTML = `<img src="${escapeHtml(item.image_main) || ''}" alt="${escapeHtml(item.name) || ''}" class="listing-image" onerror="this.style.display='none'"><div class="listing-info"><h3>${escapeHtml(item.name) || 'Без названия'}</h3><div class="listing-meta"><span>${escapeHtml(item.district) || ''}</span><span>🚇 ${escapeHtml(item.metro) || ''}</span>${rooms ? `<span>🚪 ${escapeHtml(rooms)}</span>` : ''}${area ? `<span>📐 ${escapeHtml(area)}</span>` : ''}</div><div class="listing-price">от ${priceDisplay}${priceTo ? ` до ${priceTo} млн ₽` : ''} ${ppsqm ? `<br><span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}</div><div class="listing-status status-${statusKey}">${statusText}</div><button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button></div>`;
    
     container.appendChild(card);
   });
@@ -308,6 +308,7 @@ function initMap() {
     }).addTo(map);
   }
  
+  // Применяем текущие фильтры при открытии карты
   filterListings();
  
   setTimeout(() => map.invalidateSize(), 150);
@@ -340,8 +341,8 @@ function updateMapMarkers(filteredItems) {
 }
 
 function openDetails(id) {
-  const item = listings.find(l => l.id === id);
-  if (!item) return;  currentModalId = id;
+  const item = listings.find(l => l.id === id);  if (!item) return;
+  currentModalId = id;
   document.getElementById('modalTitle').textContent = item.name || '';
  
   let priceDisplay = '?';
@@ -389,8 +390,8 @@ function openDetails(id) {
     mainImg.src = item.image_main;
     mainImg.className = 'modal-main-image';
     gallery.appendChild(mainImg);
-  }
-  if (item.images_gallery) {    item.images_gallery.split(',').map(u => u.trim()).filter(Boolean).forEach(url => {
+  }  if (item.images_gallery) {
+    item.images_gallery.split(',').map(u => u.trim()).filter(Boolean).forEach(url => {
       const img = document.createElement('img');
       img.src = url;
       img.className = 'modal-thumb';
@@ -438,8 +439,8 @@ function sendConsultRequest() {
 
 function closeConsultModal() {
   document.getElementById('consultModal').classList.add('hidden');
-  document.getElementById('consultForm').reset();
-}
+  document.getElementById('consultForm').reset();}
+
 function initPhoneMask() {
   const phoneInput = document.getElementById('consultPhone');
   if (!phoneInput) return;
@@ -463,7 +464,7 @@ function submitConsultForm(event) {
   }
 
   if (config.contact?.botToken && config.contact?.chatId) {
-    const text = `🔔 Новая заявка!\n\n🏢 ${item.name}\n👤 ${name}\n📱 ${phone}`;
+    const text = `🔔 Новая заявка!\n\n ${item.name}\n👤 ${name}\n📱 ${phone}`;
     const url = `https://api.telegram.org/bot${config.contact.botToken}/sendMessage`;
    
     const submitBtn = event.target.querySelector('button[type="submit"]');
@@ -487,8 +488,8 @@ function submitConsultForm(event) {
         event.target.reset();
       } else {
         throw new Error(data.description || 'Неизвестная ошибка');
-      }
-    })    .catch(err => {
+      }    })
+    .catch(err => {
       console.error('Send error:', err);
       tg?.showAlert('⚠️ Ошибка: ' + err.message);
     })
