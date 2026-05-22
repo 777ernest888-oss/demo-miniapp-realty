@@ -85,7 +85,6 @@ function applyBranding() {
   const welcomeContainer = document.getElementById('welcomeBrand');
   const headerContainer = document.getElementById('headerBrand');
  
-  // === WELCOME SCREEN ===
   if (welcomeContainer) {
     const customTitle = config.brand.welcomeTitle || config.brand.name;
     const customLogo = config.brand.logo;
@@ -96,11 +95,10 @@ function applyBranding() {
     }
    
     if (customTitle && customTitle.toUpperCase() !== 'КАТАЛОГ НОВОСТРОЕК') {
-      const titleEl = welcomeContainer.querySelector('.brand-title');      if (titleEl) titleEl.textContent = customTitle.toUpperCase();
-    }
+      const titleEl = welcomeContainer.querySelector('.brand-title');
+      if (titleEl) titleEl.textContent = customTitle.toUpperCase();    }
   }
 
-  // === HEADER ===
   if (headerContainer) {
     headerContainer.innerHTML = '';
     if (config.brand.logo) {
@@ -145,9 +143,9 @@ function parseCSV(csv) {
       else if (value === 'FALSE') value = false;
       else if (!isNaN(value) && value !== '') value = Number(value);
       obj[header] = value;
-    });    result.push(obj);
-  }
-  return result;
+    });
+    result.push(obj);
+  }  return result;
 }
 
 function parseCSVLine(line) {
@@ -194,9 +192,9 @@ function renderFilters() {
       label.className = 'checkbox-label';
       label.innerHTML = `<input type="checkbox" value="${escapeHtml(m)}" class="filter-checkbox" data-filter="metro"><span>${escapeHtml(m)}</span>`;
       metroContainer.appendChild(label);
-    });  }
- 
-  const roomsContainer = document.getElementById('roomsCheckboxes');
+    });
+  }
+    const roomsContainer = document.getElementById('roomsCheckboxes');
   if (roomsContainer) {
     const allRooms = [];
     listings.forEach(l => {
@@ -243,15 +241,20 @@ function filterListings() {
     if (typeof item.price_from !== 'number' || item.price_from > maxPrice) return false;
     if (selectedDistricts.length > 0 && !selectedDistricts.includes(item.district)) return false;
     if (selectedMetros.length > 0 && !selectedMetros.includes(item.metro)) return false;
-    if (selectedRooms.length > 0 && item.rooms) {      const itemRooms = String(item.rooms).split(',').map(r => r.trim());
-      const hasMatch = selectedRooms.some(r => itemRooms.includes(r));
-      if (!hasMatch) return false;
+    if (selectedRooms.length > 0 && item.rooms) {
+      const itemRooms = String(item.rooms).split(',').map(r => r.trim());
+      const hasMatch = selectedRooms.some(r => itemRooms.includes(r));      if (!hasMatch) return false;
     }
     return true;
   });
  
   renderListings(filtered);
-  updateMapMarkers(filtered); // Обновляем маркеры на карте
+ 
+  // Обновляем карту если она видима
+  const mapContainer = document.getElementById('mapContainer');
+  if (mapContainer && !mapContainer.classList.contains('hidden')) {
+    updateMapMarkers(filtered);
+  }
 }
 
 function renderListings(data) {
@@ -289,44 +292,48 @@ function renderListings(data) {
     card.innerHTML = `<img src="${escapeHtml(item.image_main) || ''}" alt="${escapeHtml(item.name) || ''}" class="listing-image" onerror="this.style.display='none'"><div class="listing-info"><h3>${escapeHtml(item.name) || 'Без названия'}</h3><div class="listing-meta"><span>${escapeHtml(item.district) || ''}</span><span>🚇 ${escapeHtml(item.metro) || ''}</span>${rooms ? `<span>🚪 ${escapeHtml(rooms)}</span>` : ''}${area ? `<span>📐 ${escapeHtml(area)}</span>` : ''}</div><div class="listing-price">от ${priceDisplay}${priceTo ? ` до ${priceTo} млн ₽` : ''} ${ppsqm ? `<span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}</div><div class="listing-status status-${statusKey}">${statusText}</div><button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button></div>`;
    
     container.appendChild(card);
-  });
-}
+  });}
 
-function initMap() {  if (typeof L === 'undefined') return;
+function initMap() {
+  if (typeof L === 'undefined') {
+    console.error('Leaflet not loaded');
+    return;
+  }
   const mapContainer = document.getElementById('mapContainer');
   if (!mapContainer) return;
+ 
   if (!map) {
     map = L.map('mapContainer').setView([59.9343, 30.3351], 11);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
   }
-  markers.forEach(m => map.removeLayer(m));
-  markers = [];
+ 
+  // Показываем все активные объекты при инициализации
   const activeListings = listings.filter(l => l.active && l.lat && l.lng);
-  activeListings.forEach(item => {
-    let priceDisplay = '?';
-    if (typeof item.price_from === 'number') {
-      priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
-    }
-    const marker = L.marker([item.lat, item.lng]).addTo(map).bindPopup(`<b>${item.name}</b><br>от ${priceDisplay} млн ₽`);
-    markers.push(marker);
-  });
-  if (markers.length > 0) {
-    map.fitBounds(new L.featureGroup(markers).getBounds().pad(0.1));
-  }
+  updateMapMarkersCore(activeListings);
+ 
   setTimeout(() => map.invalidateSize(), 150);
 }
 
-function updateMapMarkers(filteredListings) {
-  if (!map) return;
+function updateMapMarkers(filteredItems) {
+  updateMapMarkersCore(filteredItems);
+}
+
+function updateMapMarkersCore(itemsToShow) {
+  if (!map) {
+    console.error('Map not initialized');
+    return;
+  }
  
   // Удаляем все старые маркеры
   markers.forEach(m => map.removeLayer(m));
   markers = [];
  
-  // Создаем новые маркеры только для отфильтрованных объектов
-  const activeListings = filteredListings.filter(l => l.active && l.lat && l.lng);
- 
-  activeListings.forEach(item => {
+  // Создаем новые маркеры
+  itemsToShow.forEach(item => {
+    if (!item.active || !item.lat || !item.lng) return;
+   
     let priceDisplay = '?';
     if (typeof item.price_from === 'number') {
       priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
@@ -334,14 +341,15 @@ function updateMapMarkers(filteredListings) {
    
     const marker = L.marker([item.lat, item.lng]).addTo(map)
       .bindPopup(`<b>${item.name}</b><br>от ${priceDisplay} млн ₽`);
-   
-    markers.push(marker);
+        markers.push(marker);
   });
  
-  // Если есть маркеры, подгоняем масштаб
+  // Подгоняем масштаб если есть маркеры
   if (markers.length > 0) {
-    map.fitBounds(new L.featureGroup(markers).getBounds().pad(0.1));
-  }}
+    const group = new L.featureGroup(markers);
+    map.fitBounds(group.getBounds().pad(0.1));
+  }
+}
 
 function openDetails(id) {
   const item = listings.find(l => l.id === id);
@@ -382,15 +390,15 @@ function openDetails(id) {
       galleryDiv.appendChild(img);
     });
     plansContainer.appendChild(galleryDiv);
-  }
-  if (!item.floor_plans_text && !item.floor_plans_images) {
+  }  if (!item.floor_plans_text && !item.floor_plans_images) {
     plansContainer.innerHTML = '<p style="color: var(--text-secondary)">Информация уточняется</p>';
   }
  
   const gallery = document.getElementById('modalGallery');
   gallery.innerHTML = '';
   if (item.image_main) {
-    const mainImg = document.createElement('img');    mainImg.src = item.image_main;
+    const mainImg = document.createElement('img');
+    mainImg.src = item.image_main;
     mainImg.className = 'modal-main-image';
     gallery.appendChild(mainImg);
   }
@@ -431,7 +439,6 @@ function openConsultForm(id, event) {
   currentModalId = id;
   sendConsultRequest();
 }
-
 function sendConsultRequest() {
   const item = listings.find(l => l.id === currentModalId);
   if (!item) return;
@@ -440,6 +447,7 @@ function sendConsultRequest() {
   document.getElementById('consultPhone').value = '+7 (';
   document.getElementById('consultModal').classList.remove('hidden');
 }
+
 function closeConsultModal() {
   document.getElementById('consultModal').classList.add('hidden');
   document.getElementById('consultForm').reset();
@@ -480,15 +488,15 @@ function submitConsultForm(event) {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: config.contact.chatId, text })
-    })
-    .then(res => {
+    })    .then(res => {
       if (!res.ok) throw new Error('HTTP error ' + res.status);
       return res.json();
     })
     .then(data => {
       if (data.ok) {
         closeConsultModal();
-        tg?.showAlert('✅ Заявка отправлена!');        event.target.reset();
+        tg?.showAlert('✅ Заявка отправлена!');
+        event.target.reset();
       } else {
         throw new Error(data.description || 'Неизвестная ошибка');
       }
