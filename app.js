@@ -10,7 +10,8 @@ try {
       expand: () => {},
       MainButton: { setText: () => {}, show: () => {}, onClick: () => {}, hide: () => {} },
       showAlert: (msg) => alert(msg),
-      initDataUnsafe: { user: {} }
+      initDataUnsafe: { user: {} },
+      BackButton: { show: () => {}, hide: () => {}, onClick: (cb) => { /* Mock for desktop */ } }
     };
   }
 } catch (e) { console.error(e); }
@@ -26,6 +27,7 @@ function startApp() {
   document.getElementById('welcomeScreen')?.classList.add('hidden');
   document.getElementById('mainContent')?.classList.remove('hidden');
   window.scrollTo(0, 0);
+  if (tg.BackButton) tg.BackButton.hide(); // Скрываем на главном
 }
 
 function toggleFilters() {
@@ -42,15 +44,18 @@ function switchView(view) {
   const mapBtn = document.getElementById('mapViewBtn');
   const listContainer = document.getElementById('listingsContainer');
   const mapContainer = document.getElementById('mapContainer');
+ 
   if (view === 'list') {
     listBtn.classList.add('active');
-    mapBtn.classList.remove('active');
-    listContainer.classList.remove('hidden');
+    mapBtn.classList.remove('active');    listContainer.classList.remove('hidden');
     mapContainer.classList.add('hidden');
-  } else {    listBtn.classList.remove('active');
+    if (tg.BackButton) tg.BackButton.hide(); // Скрываем кнопку при возврате в список
+  } else {
+    listBtn.classList.remove('active');
     mapBtn.classList.add('active');
     listContainer.classList.add('hidden');
     mapContainer.classList.remove('hidden');
+    if (tg.BackButton) tg.BackButton.show(); // Показываем кнопку на карте
     setTimeout(() => initMap(), 100);
   }
 }
@@ -68,9 +73,40 @@ async function init() {
     renderFilters();
     renderListings(listings.filter(l => l.active));
     initPhoneMask();
+   
+    // Настройка кнопки "Назад" при старте
+    setupBackButton();
   } catch (error) {
     console.error('Init Error:', error);
   }
+}
+
+function setupBackButton() {
+  if (!tg.BackButton) return;
+ 
+  tg.BackButton.hide(); // Изначально скрыта
+ 
+  tg.BackButton.onClick(() => {
+    // Приоритет 1: Если открыта форма заявки
+    if (!document.getElementById('consultModal').classList.contains('hidden')) {
+      closeConsultModal();
+      return;
+    }
+   
+    // Приоритет 2: Если открыта карточка объекта
+    if (!document.getElementById('detailsModal').classList.contains('hidden')) {
+      closeModal();
+      return;    }
+
+    // Приоритет 3: Если открыта карта
+    if (!document.getElementById('mapContainer').classList.contains('hidden')) {
+      switchView('list');
+      return;
+    }
+
+    // Если ничего не открыто — закрываем приложение
+    if (tg.close) tg.close();
+  });
 }
 
 function applyTheme() {
@@ -96,7 +132,8 @@ function applyBranding() {
    
     if (customTitle && customTitle.toUpperCase() !== 'КАТАЛОГ НОВОСТРОЕК') {
       const titleEl = welcomeContainer.querySelector('.brand-title');
-      if (titleEl) titleEl.textContent = customTitle.toUpperCase();    }
+      if (titleEl) titleEl.textContent = customTitle.toUpperCase();
+    }
   }
 
   if (headerContainer) {
@@ -108,8 +145,7 @@ function applyBranding() {
       logo.alt = 'Logo';
       headerContainer.appendChild(logo);
     }
-    if (config.brand.name) {
-      const title = document.createElement('h1');
+    if (config.brand.name) {      const title = document.createElement('h1');
       title.textContent = config.brand.name.toUpperCase();
       title.className = 'brand-title';
       headerContainer.appendChild(title);
@@ -145,7 +181,8 @@ function parseCSV(csv) {
       obj[header] = value;
     });
     result.push(obj);
-  }  return result;
+  }
+  return result;
 }
 
 function parseCSVLine(line) {
@@ -157,8 +194,7 @@ function parseCSVLine(line) {
     if (char === '"') inQuotes = !inQuotes;
     else if (char === ',' && !inQuotes) { result.push(current); current = ''; }
     else current += char;
-  }
-  result.push(current);
+  }  result.push(current);
   return result;
 }
 
@@ -194,7 +230,8 @@ function renderFilters() {
       metroContainer.appendChild(label);
     });
   }
-    const roomsContainer = document.getElementById('roomsCheckboxes');
+ 
+  const roomsContainer = document.getElementById('roomsCheckboxes');
   if (roomsContainer) {
     const allRooms = [];
     listings.forEach(l => {
@@ -206,8 +243,7 @@ function renderFilters() {
     allRooms.sort();
     roomsContainer.innerHTML = '';
     allRooms.forEach(r => {
-      const label = document.createElement('label');
-      label.className = 'checkbox-label';
+      const label = document.createElement('label');      label.className = 'checkbox-label';
       label.innerHTML = `<input type="checkbox" value="${escapeHtml(r)}" class="filter-checkbox" data-filter="rooms"><span>${escapeHtml(r)}</span>`;
       roomsContainer.appendChild(label);
     });
@@ -243,7 +279,8 @@ function filterListings() {
     if (selectedMetros.length > 0 && !selectedMetros.includes(item.metro)) return false;
     if (selectedRooms.length > 0 && item.rooms) {
       const itemRooms = String(item.rooms).split(',').map(r => r.trim());
-      const hasMatch = selectedRooms.some(r => itemRooms.includes(r));      if (!hasMatch) return false;
+      const hasMatch = selectedRooms.some(r => itemRooms.includes(r));
+      if (!hasMatch) return false;
     }
     return true;
   });
@@ -255,7 +292,6 @@ function filterListings() {
     updateMapMarkers(filtered);
   }
 }
-
 function resetFilters() {
   // Сброс кнопок цены
   document.querySelectorAll('.price-btn').forEach(btn => btn.classList.remove('active'));
@@ -274,9 +310,9 @@ function renderListings(data) {
   if (listings.length === 0) {
     container.innerHTML = `
       <div class="empty-state">
-        <div class="empty-icon"></div>
+        <div class="empty-icon">🏗</div>
         <h3>База пуста</h3>
-        <p>Объекты ещё не добавлены. Свяжитесь с менеджером.</p>
+        <p>Объекты ещё не добавлены.</p>
       </div>
     `;
     return;
@@ -292,7 +328,8 @@ function renderListings(data) {
         <p>Попробуйте изменить параметры поиска или сбросить фильтры.</p>
         <button class="btn-reset-filters" onclick="resetFilters()">🔄 Сбросить фильтры</button>
       </div>
-    `;    return;
+    `;
+    return;
   }
  
   data.forEach(item => {
@@ -304,8 +341,7 @@ function renderListings(data) {
         priceDisplay = `${(item.price_from / 1000000).toFixed(1)} млн ₽`;
       }
     }
-   
-    const priceTo = typeof item.price_to === 'number' ? item.price_to.toFixed(1) : '';
+        const priceTo = typeof item.price_to === 'number' ? item.price_to.toFixed(1) : '';
     const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
     const area = (typeof item.area_min === 'number' && typeof item.area_max === 'number') ? `${item.area_min}–${item.area_max} м²` : '';
     const rooms = item.rooms || '';
@@ -341,7 +377,8 @@ function initMap() {
  
   filterListings();
  
-  setTimeout(() => map.invalidateSize(), 150);}
+  setTimeout(() => map.invalidateSize(), 150);
+}
 
 function updateMapMarkers(filteredItems) {
   if (!map) return;
@@ -353,8 +390,7 @@ function updateMapMarkers(filteredItems) {
     if (!item.active || !item.lat || !item.lng) return;
    
     let priceDisplay = '?';
-    if (typeof item.price_from === 'number') {
-      priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
+    if (typeof item.price_from === 'number') {      priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
     }
    
     const marker = L.marker([item.lat, item.lng]).addTo(map)
@@ -390,7 +426,8 @@ function openDetails(id) {
   featuresDiv.innerHTML = item.features ? `<ul>${item.features.split(',').map(f => `<li>${escapeHtml(f.trim())}</li>`).join('')}</ul>` : '<p style="color: var(--text-secondary)">Информация уточняется</p>';
  
   const plansContainer = document.getElementById('modalFloorPlans');
-  plansContainer.innerHTML = '';  if (item.floor_plans_text) {
+  plansContainer.innerHTML = '';
+  if (item.floor_plans_text) {
     const textDiv = document.createElement('div');
     textDiv.className = 'floor-plans-text';
     textDiv.textContent = item.floor_plans_text;
@@ -402,8 +439,7 @@ function openDetails(id) {
     item.floor_plans_images.split(',').map(u => u.trim()).filter(Boolean).forEach(url => {
       const img = document.createElement('img');
       img.src = url;
-      img.className = 'floor-plan-image';
-      img.onclick = () => window.open(url, '_blank');
+      img.className = 'floor-plan-image';      img.onclick = () => window.open(url, '_blank');
       galleryDiv.appendChild(img);
     });
     plansContainer.appendChild(galleryDiv);
@@ -439,16 +475,23 @@ function openDetails(id) {
     btn.style.marginTop = '20px';
     btn.style.marginBottom = '40px';
     modalContent.appendChild(btn);
-  }  btn.textContent = '📞 Получить консультацию';
+  }
+  btn.textContent = '📞 Получить консультацию';
   btn.onclick = () => openConsultForm(id);
   document.getElementById('detailsModal').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
+ 
+  if (tg.BackButton) tg.BackButton.show(); // Показываем кнопку при открытии деталей
 }
 
 function closeModal() {
   document.getElementById('detailsModal').classList.add('hidden');
   document.body.style.overflow = '';
   currentModalId = null;
+    // Скрываем кнопку только если мы вернулись в список, а не на карту
+  if (document.getElementById('mapContainer').classList.contains('hidden')) {
+    if (tg.BackButton) tg.BackButton.hide();
+  }
 }
 
 function openConsultForm(id, event) {
@@ -464,11 +507,19 @@ function sendConsultRequest() {
   document.getElementById('consultName').value = '';
   document.getElementById('consultPhone').value = '+7 (';
   document.getElementById('consultModal').classList.remove('hidden');
+ 
+  // Кнопка "Назад" уже должна быть видна, так как открыта модалка
+  if (tg.BackButton) tg.BackButton.show();
 }
 
 function closeConsultModal() {
   document.getElementById('consultModal').classList.add('hidden');
   document.getElementById('consultForm').reset();
+  // Если под ней открыта карточка, оставляем кнопку. Если нет — скрываем.
+  if (document.getElementById('detailsModal').classList.contains('hidden') &&
+      document.getElementById('mapContainer').classList.contains('hidden')) {
+    if (tg.BackButton) tg.BackButton.hide();
+  }
 }
 
 function initPhoneMask() {
@@ -486,14 +537,14 @@ function submitConsultForm(event) {
   const item = listings.find(l => l.id === currentModalId);
   if (!item) return;
  
-  const name = document.getElementById('consultName').value;
-  const phone = document.getElementById('consultPhone').value;
-  if (phone.length < 18) {    tg?.showAlert('❌ Введите корректный номер телефона');
+  const name = document.getElementById('consultName').value;  const phone = document.getElementById('consultPhone').value;
+  if (phone.length < 18) {
+    tg?.showAlert('❌ Введите корректный номер телефона');
     return;
   }
 
   if (config.contact?.botToken && config.contact?.chatId) {
-    const text = ` Новая заявка!\n\n🏢 ${item.name}\n👤 ${name}\n ${phone}`;
+    const text = `🔔 Новая заявка!\n\n🏢 ${item.name}\n👤 ${name}\n📱 ${phone}`;
     const url = `https://api.telegram.org/bot${config.contact.botToken}/sendMessage`;
    
     const submitBtn = event.target.querySelector('button[type="submit"]');
@@ -535,9 +586,9 @@ function submitConsultForm(event) {
     tg?.showAlert('✅ Вы будете перенаправлены в чат с менеджером');
   }
 }
-
 function escapeHtml(text) {
-  if (!text) return '';  const div = document.createElement('div');
+  if (!text) return '';
+  const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
 }
