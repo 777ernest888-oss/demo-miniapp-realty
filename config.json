@@ -9,7 +9,7 @@
     "welcomeSubtitle": "Подберём квартиру под ваш бюджет"
   },
   "data": {
-    "sheetUrl": "https://docs.google.com/spreadsheets/d/1z7d0dv5o_JKVflQgn38rHoAywZazadRSvJQFeQgV3eM/pub?output=csv"
+    "sheetUrl": "https://docs.google.com/spreadsheets/d/1z7d0dv5o_JKVfIQgn38rHoAywZazadRSvJQFeQgV3eM/pub?output=csv"
   },
   "contact": {
     "botLink": "https://t.me/demo_newbuilds_bot",
