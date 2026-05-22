@@ -389,8 +389,17 @@ function updateMapMarkers(filteredItems) {
       priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
     }
    
-    const marker = L.marker([item.lat, item.lng]).addTo(map)
-      .bindPopup(`<b>${item.name}</b><br>от ${priceDisplay} млн ₽`);   
+    // Создаем маркер
+    const marker = L.marker([item.lat, item.lng]).addTo(map);   
+    // Popup с информацией
+    const popupContent = `<b>${item.name}</b><br>от ${priceDisplay} млн ₽`;
+    marker.bindPopup(popupContent);
+   
+    // Клик по маркеру открывает карточку
+    marker.on('click', () => {
+      openDetails(item.id);
+    });
+   
     markers.push(marker);
   });
  
@@ -430,8 +439,7 @@ function openDetails(id) {
   }
   if (item.floor_plans_images) {
     const galleryDiv = document.createElement('div');
-    galleryDiv.className = 'floor-plans-gallery';
-    item.floor_plans_images.split(',').map(u => u.trim()).filter(Boolean).forEach(url => {
+    galleryDiv.className = 'floor-plans-gallery';    item.floor_plans_images.split(',').map(u => u.trim()).filter(Boolean).forEach(url => {
       const img = document.createElement('img');
       img.src = url;
       img.className = 'floor-plan-image';
@@ -439,7 +447,8 @@ function openDetails(id) {
       galleryDiv.appendChild(img);
     });
     plansContainer.appendChild(galleryDiv);
-  }  if (!item.floor_plans_text && !item.floor_plans_images) {
+  }
+  if (!item.floor_plans_text && !item.floor_plans_images) {
     plansContainer.innerHTML = '<p style="color: var(--text-secondary)">Информация уточняется</p>';
   }
  
@@ -479,8 +488,7 @@ function openDetails(id) {
   showBack();
 }
 
-function closeModal() {
-  document.getElementById('detailsModal').classList.add('hidden');
+function closeModal() {  document.getElementById('detailsModal').classList.add('hidden');
   document.body.style.overflow = '';
   currentModalId = null;
  
@@ -488,6 +496,7 @@ function closeModal() {
     hideBack();
   }
 }
+
 function openConsultForm(id, event) {
   if (event) event.stopPropagation();
   currentModalId = id;
@@ -528,8 +537,7 @@ function initPhoneMask() {
 function submitConsultForm(event) {
   event.preventDefault();
   const item = listings.find(l => l.id === currentModalId);
-  if (!item) return;
- 
+  if (!item) return; 
   const name = document.getElementById('consultName').value;
   const phone = document.getElementById('consultPhone').value;
   if (phone.length < 18) {
@@ -537,7 +545,8 @@ function submitConsultForm(event) {
     return;
   }
 
-  if (config.contact?.botToken && config.contact?.chatId) {    const text = `🔔 Новая заявка!\n\n🏢 ${item.name}\n👤 ${name}\n📱 ${phone}`;
+  if (config.contact?.botToken && config.contact?.chatId) {
+    const text = `🔔 Новая заявка!\n\n🏢 ${item.name}\n👤 ${name}\n📱 ${phone}`;
     const url = `https://api.telegram.org/bot${config.contact.botToken}/sendMessage`;
    
     const submitBtn = event.target.querySelector('button[type="submit"]');
@@ -577,8 +586,7 @@ function submitConsultForm(event) {
     else window.open(botLink, '_blank');
     closeConsultModal();
     tg?.showAlert('✅ Вы будете перенаправлены в чат с менеджером');
-  }
-}
+  }}
 
 function escapeHtml(text) {
   if (!text) return '';
@@ -586,6 +594,7 @@ function escapeHtml(text) {
   div.textContent = text;
   return div.innerHTML;
 }
+
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {
