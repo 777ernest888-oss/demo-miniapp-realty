@@ -14,22 +14,26 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .hidden { display: none !important; }
 .screen { min-height: 100vh; display: flex; flex-direction: column; }
 
-/* WELCOME SCREEN - АДАПТИВНАЯ ВЁРСТКА */
+/* WELCOME SCREEN - ИДЕАЛЬНАЯ ПРОПОРЦИЯ (Всё в VH) */
 .welcome {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center; /* Центрируем всё по вертикали */
+  justify-content: flex-start; /* Выравнивание от верха */
   min-height: 100vh;
-  padding: 4vh 16px; /* Отступы в vh - адаптируются под высоту экрана */
   background: var(--primary);
   box-sizing: border-box;
+  padding-top: 12vh; /* Опускаем весь блок контента вниз */
+  padding-bottom: 8vh; /* Место снизу для кнопки */
+  padding-left: 16px;
+  padding-right: 16px;
 }
 
+/* Логотип: фиксируем в самом верху */
 .welcome-brand {
   position: absolute;
-  top: 4vh; /* Отступ от верха в процентах от высоты экрана */
+  top: 3vh; /* Отступ от верхнего края экрана */
   left: 16px;
   display: flex;
   align-items: center;
@@ -38,33 +42,32 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 }
 
 .brand-logo {
-  width: clamp(40px, 8vw, 56px); /* Адаптивный размер: min, предпочтительный, max */
-  height: clamp(40px, 8vw, 56px);
+  width: clamp(44px, 10vw, 56px);
+  height: clamp(44px, 10vw, 56px);
   object-fit: contain;
   border-radius: 8px;
   background: var(--white);
-  padding: 4px;
-}
+  padding: 4px;}
 
 .brand-company {
-  font-size: clamp(16px, 4vw, 20px); /* Адаптивный шрифт */  font-weight: 700;
+  font-size: clamp(16px, 4vw, 20px);
+  font-weight: 700;
   color: var(--white);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-/* Картинка - адаптивная */
+/* Картинка: отступ от логотипа */
 .welcome-img {
   width: 100%;
-  max-width: min(460px, 90vw); /* Не шире 460px или 90% ширины экрана */
+  max-width: 480px;
   height: auto;
-  max-height: min(60vh, 500px); /* Не выше 60% экрана или 500px */
+  max-height: 55vh; /* Ограничиваем высоту, чтобы влезала */
   border-radius: 16px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.35);
  
-  /* Динамические отступы */
-  margin-top: clamp(16px, 8vh, 40px); /* Адаптивный отступ сверху */
-  margin-bottom: clamp(16px, 4vh, 32px); /* Адаптивный отступ снизу */
+  margin-top: 4vh; /* РОВНЫЙ отступ от логотипа */
+  margin-bottom: 4vh; /* РОВНЫЙ отступ до текста */
  
   object-fit: cover;
   object-position: center;
@@ -74,36 +77,35 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .welcome-bottom {
   text-align: center;
   width: 100%;
-  max-width: min(460px, 90vw);
-  margin-bottom: clamp(20px, 6vh, 60px); /* Адаптивный отступ снизу */
+  max-width: 480px;
 }
 
 .welcome-main-title {
-  font-size: clamp(20px, 5vw, 26px); /* Адаптивный заголовок */
+  font-size: clamp(22px, 6vw, 28px);
   font-weight: 800;
   color: var(--white);
-  margin: 0 0 clamp(8px, 2vh, 12px) 0;
+  margin: 0 0 2vh 0;
   line-height: 1.2;
 }
 
 .welcome-sub {
   color: rgba(255,255,255,0.85);
-  margin-bottom: clamp(16px, 4vh, 24px);
-  font-size: clamp(14px, 3.5vw, 17px);
+  margin-bottom: 4vh;
+  font-size: clamp(14px, 4vw, 18px);
   line-height: 1.4;
 }
 
 /* BUTTONS */
-.btn-primary {
-  background: var(--accent);
-  color: var(--primary);  border: none;
-  padding: clamp(12px, 3vh, 16px) 24px;
+.btn-primary {  background: var(--accent);
+  color: var(--primary);
+  border: none;
+  padding: clamp(14px, 3vh, 18px) 24px;
   border-radius: var(--radius);
-  font-size: clamp(15px, 4vw, 17px);
+  font-size: clamp(16px, 4.5vw, 18px);
   font-weight: 700;
   cursor: pointer;
   width: 100%;
-  max-width: min(460px, 90vw);
+  max-width: 480px;
   transition: transform 0.2s;
 }
 .btn-primary:active { transform: scale(0.98); }
@@ -143,9 +145,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .view-btn { flex: 1; padding: 10px; border: 1px solid #ddd; background: var(--white); border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; }
 .view-btn.active { background: var(--primary); color: var(--white); border-color: var(--primary); }
 
-/* LISTINGS */
-.listings { padding: 14px 16px; flex: 1; overflow-y: auto; }
-.listing-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 14px; overflow: hidden; cursor: pointer; transition: transform 0.2s; }.listing-card:active { transform: scale(0.99); }
+/* LISTINGS */.listings { padding: 14px 16px; flex: 1; overflow-y: auto; }
+.listing-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 14px; overflow: hidden; cursor: pointer; transition: transform 0.2s; }
+.listing-card:active { transform: scale(0.99); }
 .listing-image { width: 100%; height: 170px; object-fit: cover; }
 .listing-info { padding: 14px; }
 .listing-info h3 { font-size: 17px; margin-bottom: 8px; color: var(--primary); }
@@ -183,32 +185,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .empty-state { text-align: center; padding: 35px 16px; color: var(--text-secondary); }
 .tg-btn { background: var(--primary); color: var(--white); border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; font-size: 14px; }
 
-/* МЕДИА-ЗАПРОСЫ для маленьких экранов */
-@media (max-height: 700px) {
+/* МЕДИА-ЗАПРОСЫ для очень маленьких экранов */
+@media (max-height: 650px) {
   .welcome {
-    padding: 2vh 12px;
+    padding-top: 8vh;
   }
   .welcome-brand {
-    top: 2vh;
+    top: 1.5vh;
   }
   .welcome-img {
-    max-height: 50vh;
-    margin-top: 12px;
-    margin-bottom: 12px;  }
-  .welcome-main-title {
-    font-size: 18px;
-  }
-  .welcome-sub {
-    font-size: 13px;
-    margin-bottom: 12px;
-  }
-}
-
-@media (max-width: 360px) {
-  .welcome-brand {
-    left: 12px;
-  }
-  .brand-company {
-    font-size: 14px;
+    max-height: 45vh;    margin-top: 2vh;
+    margin-bottom: 2vh;
   }
 }
