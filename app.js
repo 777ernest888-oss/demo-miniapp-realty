@@ -287,13 +287,12 @@ function renderListings(data) {
       if (!e.target.closest('.consult-btn-inline')) openDetails(item.id);
     };
    
-    const logoHtml = brandLogoUrl ? `<img src="${escapeHtml(brandLogoUrl)}" class="card-logo" alt="Logo">` : '';
-   
-    card.innerHTML = `${logoHtml}<img src="${escapeHtml(item.image_main) || ''}" alt="${escapeHtml(item.name) || ''}" class="listing-image" onerror="this.style.display='none'"><div class="listing-info"><h3>${escapeHtml(item.name) || 'Без названия'}</h3><div class="listing-meta"><span>${escapeHtml(item.district) || ''}</span><span>🚇 ${escapeHtml(item.metro) || ''}</span>${rooms ? `<span>🚪 ${escapeHtml(rooms)}</span>` : ''}${area ? `<span>📐 ${escapeHtml(area)}</span>` : ''}</div><div class="listing-price">от ${priceDisplay}${priceTo ? ` до ${priceTo} млн ₽` : ''} ${ppsqm ? `<span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}</div><div class="listing-status status-${statusKey}">${statusText}</div><button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button></div>`;
+    // ✅ ЛОГОТИП В КАРТОЧКЕ УБРАН (только на главной и в шапке)
+    card.innerHTML = `<img src="${escapeHtml(item.image_main) || ''}" alt="${escapeHtml(item.name) || ''}" class="listing-image" onerror="this.style.display='none'"><div class="listing-info"><h3>${escapeHtml(item.name) || 'Без названия'}</h3><div class="listing-meta"><span>${escapeHtml(item.district) || ''}</span><span>🚇 ${escapeHtml(item.metro) || ''}</span>${rooms ? `<span>🚪 ${escapeHtml(rooms)}</span>` : ''}${area ? `<span>📐 ${escapeHtml(area)}</span>` : ''}</div><div class="listing-price">от ${priceDisplay}${priceTo ? ` до ${priceTo} млн ₽` : ''} ${ppsqm ? `<span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}</div><div class="listing-status status-${statusKey}">${statusText}</div><button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button></div>`;
    
     container.appendChild(card);
-  });}
-
+  });
+}
 function initMap() {
   if (typeof L === 'undefined') return;
   const mapContainer = document.getElementById('mapContainer');
@@ -341,8 +340,8 @@ function openDetails(id) {
  
   const plansContainer = document.getElementById('modalFloorPlans');
   plansContainer.innerHTML = '';
-  if (item.floor_plans_text) {    const textDiv = document.createElement('div');
-    textDiv.className = 'floor-plans-text';
+  if (item.floor_plans_text) {
+    const textDiv = document.createElement('div');    textDiv.className = 'floor-plans-text';
     textDiv.textContent = item.floor_plans_text;
     plansContainer.appendChild(textDiv);
   }
@@ -390,8 +389,8 @@ function openDetails(id) {
     btn.style.marginBottom = '40px';
     modalContent.appendChild(btn);
   }
-  btn.textContent = '📞 Получить консультацию';  btn.onclick = () => openConsultForm(id);
-  document.getElementById('detailsModal').classList.remove('hidden');
+  btn.textContent = '📞 Получить консультацию';
+  btn.onclick = () => openConsultForm(id);  document.getElementById('detailsModal').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
 }
 
@@ -439,8 +438,8 @@ function submitConsultForm(event) {
   const name = document.getElementById('consultName').value;
   const phone = document.getElementById('consultPhone').value;
   if (phone.length < 18) {
-    tg?.showAlert('❌ Введите корректный номер телефона');    return;
-  }
+    tg?.showAlert('❌ Введите корректный номер телефона');
+    return;  }
 
   if (config.contact?.botToken && config.contact?.chatId) {
     const text = `🔔 Новая заявка!\n\n🏢 ${item.name}\n👤 ${name}\n📱 ${phone}`;
@@ -488,8 +487,8 @@ function submitConsultForm(event) {
 
 function escapeHtml(text) {
   if (!text) return '';
-  const div = document.createElement('div');  div.textContent = text;
-  return div.innerHTML;
+  const div = document.createElement('div');
+  div.textContent = text;  return div.innerHTML;
 }
 
 if (document.readyState === 'loading') {
