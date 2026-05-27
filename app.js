@@ -618,7 +618,7 @@ function submitConsultForm(event) {
     method: 'POST',
     body: JSON.stringify({
       secret: SECRET_KEY,
-      projectId: 'spb-newbuilds-app', // ⚠️ Убедись, что этот ID есть в скрипте!
+      projectId: 'demo-miniapp-realty', // ⚠️ Убедись, что этот ID есть в скрипте!
       title: item.name,
       leadName: name,
       leadPhone: phone,
