@@ -606,7 +606,7 @@ function submitConsultForm(event) {
   }
 
   // ⚠️ ЗАМЕНИ ЭТОТ URL НА СВОЙ ВЕБХУК ИЗ GOOGLE SCRIPT
-  const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/ТВОЙ_URL/exec';
+  const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzFGzj8iTpKzhDZHhSQj781HrqKqRnbA4u99Rk29bjlJ_bYhQyIKwll-5SP06WdE-E/exec';
   const SECRET_KEY = 'SecretParol999';
 
   const submitBtn = event.target.querySelector('button[type="submit"]');
