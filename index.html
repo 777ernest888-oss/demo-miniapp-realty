@@ -37,7 +37,7 @@
       </button>
       <div id="headerBrand" class="header-brand"></div>
     </header>
-   
+  
     <div class="filters-toggle">
       <button class="filters-toggle-btn" onclick="toggleFilters()">🔽 Фильтры</button>
     </div>
@@ -72,10 +72,9 @@
     <div id="mapContainer" class="map-container hidden"></div>
   </div>
 
-  <!-- Модалка деталей объекта (КРЕСТИК УДАЛЕН) -->
+  <!-- Модалка деталей объекта -->
   <div id="detailsModal" class="modal hidden">
     <div class="modal-content">
-      <!-- Строки с button class="close-btn" больше нет -->
       <div id="modalGallery" class="modal-gallery"></div>
       <div class="modal-body">
         <h2 id="modalTitle"></h2>
@@ -91,16 +90,21 @@
     </div>
   </div>
 
-  <!-- Модалка консультации (КРЕСТИК УДАЛЕН) -->
+  <!-- Модалка консультации (ДОБАВЛЕНО ПОЛЕ TELEGRAM) -->
   <div id="consultModal" class="modal hidden">
     <div class="modal-content form-modal">
-      <!-- Строки с button class="close-btn" больше нет -->
       <h3>Заказать консультацию</h3>
-      <p id="consultObjectName" class="form-object"></p>      <p class="form-hint">Оставьте контакты — мы перезвоним и ответим на все вопросы по объекту</p>
-      <form id="consultForm" onsubmit="submitConsultForm(event)">
-        <input type="text" id="consultName" placeholder="Ваше имя *" required>
+      <p id="consultObjectName" class="form-object"></p>
+      <p class="form-hint">Оставьте контакты — мы перезвоним и ответим на все вопросы по объекту</p>
+      <form id="consultForm" onsubmit="submitConsultForm(event)">        <input type="text" id="consultName" placeholder="Ваше имя *" required>
         <input type="tel" id="consultPhone" placeholder="Телефон *" required>
-        <button type="submit" class="btn-primary">Отправить заявку</button>
+       
+        <!-- ✅ ДОБАВЛЕНО: Поле Telegram -->
+        <input type="text" id="consultTelegram" placeholder="Telegram (необязательно, @username)"
+               pattern="^@?[a-zA-Z0-9_]{3,32}$" title="Только латиница, цифры и _"
+               style="margin-top: 12px;">
+       
+        <button type="submit" class="btn-primary" style="margin-top: 16px;">Отправить заявку</button>
       </form>
     </div>
   </div>
