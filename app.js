@@ -1,7 +1,7 @@
 // ==========================================
 //  ДАННЫЕ АГЕНТА (РЕЗЕРВНЫЕ / ПО УМОЛЧАНИЮ)
 // ==========================================
-const AGENT_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSs0IIptZEaB0yYYnhWKvcpjfhGbcvoASS2qJHEg_B5_ZsxM7cPmuq2XoywHqToe3MLM722DWhfT2wB/pub?output=csv';
+const AGENT_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTAJn5ah-8UjagF2CloZWriSpKLyMkD5RxLzYOHC7PCtcCe33iTs5NvqM2dLs8QLCuMIrkIOytK0PWy/pub?gid=1784165651&single=true&output=csv';
 
 const DEFAULT_AGENT_DATA = {
   name: '',
