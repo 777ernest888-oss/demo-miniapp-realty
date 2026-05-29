@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+
   <!-- Экран приветствия -->
   <div id="welcomeScreen" class="screen welcome">
     <div id="welcomeBrand" class="welcome-brand">
@@ -29,25 +30,30 @@
     <p class="loading-text">Загружаем объекты...</p>
   </div>
 
-  <!-- Основной контент -->
+  <!-- Основной контент (КАТАЛОГ) -->
   <div id="mainContent" class="screen main hidden">
     <header class="header">
+      <!-- ✅ КНОПКА МЕНЮ -->
+      <button class="menu-btn" onclick="openMenu()" aria-label="Меню">☰</button>
+
+      <!-- Кнопка Назад (для модалок и карты) -->
       <button id="customBackBtn" class="header-back-btn hidden" onclick="appBack()">
         <span class="back-arrow">←</span> Назад
       </button>
+     
       <div id="headerBrand" class="header-brand"></div>
     </header>
-  
+ 
     <div class="filters-toggle">
       <button class="filters-toggle-btn" onclick="toggleFilters()">🔽 Фильтры</button>
     </div>
-    <div id="filtersBlock" class="filters-block hidden">
-      <div class="filter-group">
+    <div id="filtersBlock" class="filters-block hidden">      <div class="filter-group">
         <label>💰 Цена до (млн ₽)</label>
         <div class="price-buttons">
           <button class="price-btn" data-price="5">До 5 млн</button>
           <button class="price-btn" data-price="10">До 10 млн</button>
-          <button class="price-btn" data-price="20">До 20 млн</button>          <button class="price-btn" data-price="50">До 50 млн</button>
+          <button class="price-btn" data-price="20">До 20 млн</button>
+          <button class="price-btn" data-price="50">До 50 млн</button>
           <button class="price-btn" data-price="100">До 100 млн</button>
         </div>
       </div>
@@ -72,7 +78,7 @@
     <div id="mapContainer" class="map-container hidden"></div>
   </div>
 
-  <!-- Модалка деталей объекта -->
+  <!-- МОДАЛКИ -->
   <div id="detailsModal" class="modal hidden">
     <div class="modal-content">
       <div id="modalGallery" class="modal-gallery"></div>
@@ -90,22 +96,78 @@
     </div>
   </div>
 
-  <!-- Модалка консультации (ДОБАВЛЕНО ПОЛЕ TELEGRAM) -->
-  <div id="consultModal" class="modal hidden">
-    <div class="modal-content form-modal">
+  <div id="consultModal" class="modal hidden">    <div class="modal-content form-modal">
       <h3>Заказать консультацию</h3>
       <p id="consultObjectName" class="form-object"></p>
       <p class="form-hint">Оставьте контакты — мы перезвоним и ответим на все вопросы по объекту</p>
-      <form id="consultForm" onsubmit="submitConsultForm(event)">        <input type="text" id="consultName" placeholder="Ваше имя *" required>
+      <form id="consultForm" onsubmit="submitConsultForm(event)">       
+        <input type="text" id="consultName" placeholder="Ваше имя *" required>
         <input type="tel" id="consultPhone" placeholder="Телефон *" required>
-       
-        <!-- ✅ ДОБАВЛЕНО: Поле Telegram -->
         <input type="text" id="consultTelegram" placeholder="Telegram (необязательно, @username)"
                pattern="^@?[a-zA-Z0-9_]{3,32}$" title="Только латиница, цифры и _"
                style="margin-top: 12px;">
-       
         <button type="submit" class="btn-primary" style="margin-top: 16px;">Отправить заявку</button>
       </form>
+    </div>
+  </div>
+
+  <!-- ✅ БУРГЕР-МЕНЮ -->
+  <div id="menuOverlay" class="menu-overlay hidden" onclick="closeMenu()"></div>
+  <div id="sideMenu" class="side-menu hidden">
+    <button class="menu-close" onclick="closeMenu()">×</button>
+    <nav class="menu-nav">
+      <button onclick="showPage('home')">🏠 Каталог</button>
+      <button onclick="showPage('about')">👤 Обо мне</button>
+      <button onclick="showPage('contacts')">📞 Контакты</button>
+    </nav>
+  </div>
+
+  <!-- ✅ СТРАНИЦА "ОБО МНЕ" -->
+  <div id="page-about" class="page hidden">
+    <div class="page-header">
+      <button class="page-back-btn" onclick="showPage('home')">← Назад</button>
+      <h2>Обо мне</h2>
+    </div>
+    <div class="page-content">
+      <p>Привет! Я — брокер по недвижимости. Помогаю подбирать объекты с максимальной доходностью и юридической чистотой.</p>
+      <p>🔍 <b>Как я работаю:</b></p>
+      <ul>
+        <li>Проверяю документы и историю застройщика.</li>
+        <li>Торгуюсь за скидку (часто до 5-10%).</li>
+        <li>Помогаю с ипотекой и одобрением.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ✅ СТРАНИЦА "КОНТАКТЫ" -->
+  <div id="page-contacts" class="page hidden">
+    <div class="page-header">
+      <button class="page-back-btn" onclick="showPage('home')">← Назад</button>
+      <h2>Контакты</h2>
+    </div>
+    <div class="page-content">     
+      <!-- Карточка Агента -->
+      <div id="agentCard" class="contact-card">
+        <div class="agent-avatar">👤</div>
+        <div class="agent-info">
+          <h3 id="agentName">Имя Агента</h3>
+          <p id="agentRole">Ваш персональный брокер</p>
+        </div>
+      </div>
+
+      <!-- Информация об Агентстве -->
+      <div id="agencyBlock" class="agency-block">
+        <h4>🏢 Агентство</h4>
+        <p id="agencyName">Название АН</p>
+        <p id="agencyAddress" class="address-text">📍 Адрес офиса</p>
+      </div>
+
+      <!-- Кнопки связи -->
+      <div class="contact-actions">
+        <button class="btn-tg" onclick="openDirectChat()">✈️ Написать в Telegram</button>
+        <button class="btn-phone" onclick="callAgent()">📞 Позвонить</button>
+      </div>
+
     </div>
   </div>
 
