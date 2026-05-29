@@ -14,7 +14,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .hidden { display: none !important; }
 .screen { min-height: 100vh; display: flex; flex-direction: column; }
 
-/* WELCOME SCREEN */
+/* =========================================
+   WELCOME SCREEN (ЛОГОТИПО ПО ЦЕНТРУ)
+   ========================================= */
 .welcome {
   position: relative;
   display: flex;
@@ -26,28 +28,33 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   background: var(--primary);
   box-sizing: border-box;
 }
+
+/* ✅ Исправлено: Логотип строго по центру */
 .welcome-brand {
   position: absolute;
-  top: 20px;
-  left: 20px;
+  top: 24px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 12px;
   z-index: 10;
+  width: max-content; /* Не растягивается */
 }
 .brand-logo {
   width: 50px;
   height: 50px;
   object-fit: contain;
   border-radius: 8px;
-  background: var(--white);
-  padding: 4px;
+  background: var(--white);  padding: 4px;
 }
 .brand-company {
   font-size: 18px;
   font-weight: 700;
   color: var(--white);
-  text-transform: uppercase;  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 .welcome-img {
   width: 100%;
@@ -56,7 +63,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   max-height: 55vh;
   border-radius: 16px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.35);
-  margin-top: 20px;
+  margin-top: 60px; /* Отступ сверху, чтобы не перекрывать лого */
   margin-bottom: 24px;
   object-fit: cover;
   display: block;
@@ -89,14 +96,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   font-weight: 700;
   cursor: pointer;
   width: 100%;
-  max-width: 480px;
-  transition: transform 0.2s;
+  max-width: 480px;  transition: transform 0.2s;
 }
 .btn-primary:active { transform: scale(0.98); }
 
-/* HEADER */
+/* =========================================
+   HEADER & BURGER MENU (КРУПНАЯ КНОПКА)
+   ========================================= */
 .header {
-  background: var(--primary);  padding: 14px 16px;
+  background: var(--primary);
+  padding: 12px 16px;
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -106,18 +115,42 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   z-index: 2000;
   box-shadow: 0 2px 8px rgba(0,0,0,0.1);
 }
+
+/* ✅ Исправлено: Крупная, красивая кнопка */
+.menu-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  font-size: 22px;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 12px;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  padding: 0;
+  line-height: 1;
+  z-index: 2002; /* Поверх остальных элементов */
+}
+.menu-btn:active {
+  background: rgba(255, 255, 255, 0.35);
+  transform: scale(0.95);
+}
+
 .header-brand {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-left: 12px;
-  flex-grow: 1;
+  margin-left: 4px;  flex-grow: 1;
   justify-content: center;
 }
 .header-brand .brand-logo { width: 36px; height: 36px; padding: 3px; }
 .header-brand .brand-title { font-size: 17px; font-weight: 700; margin: 0; }
 
-/* Кнопка "Назад" */
 .header-back-btn {
   background: #ffffff;
   color: var(--primary);
@@ -133,18 +166,9 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
   flex-shrink: 0;
 }
-.header-back-btn .back-arrow {
-  font-size: 16px;
-  font-weight: bold;
-  line-height: 1;
-}
-.header-back-btn:active {
-  background: #f0f0f0;
-  transform: scale(0.95);
-}
-.header-back-btn.hidden {
-  display: none !important;
-}
+.header-back-btn .back-arrow { font-size: 16px; font-weight: bold; line-height: 1; }
+.header-back-btn:active { background: #f0f0f0; transform: scale(0.95); }
+
 /* FILTERS */
 .filters-toggle { padding: 12px 16px; background: var(--white); border-bottom: 1px solid #eee; }
 .filters-toggle-btn { background: none; border: 1px solid var(--primary); color: var(--primary); padding: 8px 14px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 14px; }
@@ -170,8 +194,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .listing-image { width: 100%; height: 170px; object-fit: cover; }
 .listing-info { padding: 14px; }
 .listing-info h3 { font-size: 17px; margin-bottom: 8px; color: var(--primary); }
-.listing-meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; }
-.listing-meta span { background: #f0f2f5; padding: 4px 8px; border-radius: 4px; }
+.listing-meta { display: flex; flex-wrap: wrap; gap: 8px; font-size: 12px; color: var(--text-secondary); margin-bottom: 12px; }.listing-meta span { background: #f0f2f5; padding: 4px 8px; border-radius: 4px; }
 .listing-price { font-size: 19px; font-weight: 700; color: var(--accent); margin-bottom: 8px; }
 .price-per-sqm { font-size: 12px; color: var(--text-secondary); font-weight: 400; margin-left: 8px; }
 .listing-status { font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 4px; display: inline-block; margin-bottom: 12px; }
@@ -194,35 +217,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   padding: 70px 22px 22px 22px;
   position: relative;
 }
-/* КРЕСТИК ЗАКРЫТИЯ - ИСПРАВЛЕН */
-.close-btn {
-  position: fixed !important;
-  top: 15px !important;
-  right: 15px !important;
-  background: rgba(255, 255, 255, 0.98);
-  border: none;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  font-size: 22px;
-  cursor: pointer;
-  color: var(--text-secondary);
-  z-index: 3000 !important;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-  transition: background 0.2s, transform 0.2s;
-  line-height: 1;
-}
-.close-btn:hover {
-  background: var(--white);
-  transform: scale(1.05);
-}
-.close-btn:active {
-  transform: scale(0.95);
-}
-
 .modal-gallery { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 14px; padding-bottom: 8px; }
 .modal-main-image { width: 100%; border-radius: 8px; margin-bottom: 8px; }
 .modal-thumb { width: 75px; height: 55px; object-fit: cover; border-radius: 4px; cursor: pointer; }
@@ -239,114 +233,137 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .form-hint { font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; }
 .form-modal input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 12px; font-size: 16px; }
 
-/* УЛУЧШЕННОЕ ПУСТОЕ СОСТОЯНИЕ */
-.empty-state {
-  text-align: center;
-  padding: 40px 20px;
-  color: var(--text-secondary);  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  animation: fadeIn 0.3s ease;
-}
-.empty-icon { font-size: 48px; margin-bottom: 8px; }
-.empty-state h3 { font-size: 18px; font-weight: 700; color: var(--text); margin: 0; }
-.empty-state p { font-size: 14px; margin: 0; line-height: 1.5; }
-.btn-reset-filters {
-  background: var(--primary);
-  color: var(--white);
-  border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  margin-top: 8px;
-  transition: opacity 0.2s, transform 0.2s;
-}
-.btn-reset-filters:active { opacity: 0.8; transform: scale(0.98); }
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.empty-state {
-  text-align: center;
-  padding: 35px 16px;
-  color: var(--text-secondary);
-}
+.empty-state { text-align: center; padding: 35px 16px; color: var(--text-secondary); }
 .tg-btn { background: var(--primary); color: var(--white); border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; font-size: 14px; }
 
-
-/* ИНДИКАТОР ЗАГРУЗКИ */
-.loading {
-  background: var(--primary);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-}
-
-.loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid rgba(255, 255, 255, 0.3);
-  border-top-color: var(--accent);
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.loading-text {
-  color: var(--white);
-  font-size: 16px;
-  font-weight: 500;
-  animation: pulse 1.5s ease-in-out infinite;
-}
-
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
-}
-
-/* ПЛАВНЫЕ АНИМАЦИИ */
-.modal {
-  opacity: 0;
+/* LOADING */
+.loading { background: var(--primary); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
+.loading-spinner { width: 50px; height: 50px; border: 4px solid rgba(255, 255, 255, 0.3); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.loading-text { color: var(--white); font-size: 18px; font-weight: 600; }
+#loadingScreen { position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: var(--primary) !important; z-index: 9999 !important; display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
+#loadingScreen.hidden { display: none !important; }
+/* =========================================
+   MENU & PAGES
+   ========================================= */
+.menu-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 3000;
   transition: opacity 0.3s ease;
 }
+.menu-overlay.hidden { display: none; opacity: 0; }
+.menu-overlay:not(.hidden) { opacity: 1; }
 
-.modal:not(.hidden) {
-  opacity: 1;
+.side-menu {
+  position: fixed; top: 0; left: 0; width: 280px; height: 100%;
+  background: var(--white); z-index: 3001;
+  padding: 20px; display: flex; flex-direction: column;
+  transform: translateX(-100%); transition: transform 0.3s ease;
+  box-shadow: 2px 0 15px rgba(0,0,0,0.2);
+}
+.side-menu.hidden { transform: translateX(-100%); }
+.side-menu:not(.hidden) { transform: translateX(0); }
+
+.menu-close {
+  align-self: flex-end; background: none; border: none; font-size: 32px; color: #999; cursor: pointer; margin-bottom: 20px;
+}
+.menu-nav { display: flex; flex-direction: column; gap: 10px; }
+.menu-nav button {
+  background: #f8f9fa; border: none; padding: 15px; border-radius: 10px;
+  font-size: 16px; text-align: left; cursor: pointer; color: var(--text);
+  font-weight: 500; transition: background 0.2s;
+}
+.menu-nav button:active { background: #e2e6ea; }
+
+/* Styles for Pages (About, Contacts) */
+.page {
+  position: fixed; top: 0; left: 0; width: 100%; height: 100vh;
+  background: var(--bg); z-index: 1500;
+  display: none; flex-direction: column;
+  animation: fadeIn 0.2s ease;
+}
+.page.hidden { display: none !important; }
+.page:not(.hidden) { display: flex; }
+
+.page-header {
+  background: var(--primary); padding: 14px 16px; color: var(--white);
+  display: flex; align-items: center; gap: 15px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+.page-header h2 { margin: 0; font-size: 18px; font-weight: 600; }
+.page-back-btn {
+  background: rgba(255,255,255,0.2); border: none; color: var(--white);
+  padding: 6px 12px; border-radius: 8px; cursor: pointer; font-size: 14px;
+}.page-content { padding: 20px; overflow-y: auto; line-height: 1.6; color: var(--text); }
+.page-content ul { padding-left: 20px; margin-bottom: 15px; }
+.page-content li { margin-bottom: 8px; }
+
+/* Contact Page Specifics */
+.contact-card {
+  background: var(--white);
+  padding: 20px;
+  border-radius: 16px;
+  box-shadow: var(--shadow);
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 20px;
+}
+.agent-avatar {
+  width: 60px;
+  height: 60px;
+  background: var(--bg);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+}
+.agent-info h3 { margin: 0 0 5px 0; color: var(--primary); }
+.agent-info p { margin: 0; color: var(--text-secondary); font-size: 14px; }
+
+.agency-block {
+  background: var(--white);
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 25px;
+}
+.agency-block h4 { margin: 0 0 10px 0; color: var(--primary); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+.agency-block p { margin: 5px 0; font-size: 15px; }
+.address-text { color: var(--text-secondary); }
+
+.contact-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.btn-tg {
+  background: #0088cc;
+  color: white;
+  border: none;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 16px;  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+}
+.btn-phone {
+  background: var(--accent);
+  color: var(--primary);
+  border: none;
+  padding: 16px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
 }
 
-.modal-content {
-  transform: scale(0.9) translateY(20px);
-  transition: transform 0.3s ease;
-}
-.modal:not(.hidden) .modal-content {
-  transform: scale(1) translateY(0);
-}
-
-/* Анимация появления карточек */
-.listing-card {
-  opacity: 0;
-  transform: translateY(20px);
-  animation: fadeInUp 0.4s ease forwards;
-}
-
-@keyframes fadeInUp {
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-/* Задержка для каждой карточки (каскадный эффект) */
+/* Animations */
+.modal { opacity: 0; transition: opacity 0.3s ease; }
+.modal:not(.hidden) { opacity: 1; }
+.modal-content { transform: scale(0.9) translateY(20px); transition: transform 0.3s ease; }
+.modal:not(.hidden) .modal-content { transform: scale(1) translateY(0); }
+.listing-card { opacity: 0; transform: translateY(20px); animation: fadeInUp 0.4s ease forwards; }
+@keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
 .listing-card:nth-child(1) { animation-delay: 0.05s; }
 .listing-card:nth-child(2) { animation-delay: 0.1s; }
 .listing-card:nth-child(3) { animation-delay: 0.15s; }
@@ -357,73 +374,6 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .listing-card:nth-child(8) { animation-delay: 0.4s; }
 .listing-card:nth-child(9) { animation-delay: 0.45s; }
 .listing-card:nth-child(10) { animation-delay: 0.5s; }
-
-/* Плавное переключение вкладок */
-.view-toggle .view-btn {
-  transition: all 0.3s ease;
-}
-
-/* Плавное появление фильтров */
-.filters-block {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease;
-}
-
-.filters-block:not(.hidden) {
-  max-height: 500px;
-}
-
-/* Плавное появление картинки на главной */
-.welcome-img {
-  animation: fadeIn 0.6s ease;
-}
-/* Плавное появление кнопки */
-.btn-primary {
-  animation: fadeIn 0.6s ease 0.2s backwards;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-/* === ЖЕСТКИЙ СПИННЕР ЗАГРУЗКИ === */
-#loadingScreen {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  background: var(--primary) !important; /* Фон как на главной */
-  z-index: 9999 !important; /* Поверх всего */
-  display: flex !important;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 20px;
-}
-
-/* Чтобы скрытый экран точно исчезал */
-#loadingScreen.hidden {
-  display: none !important;
-}
-
-.loading-spinner {
-  width: 50px;
-  height: 50px;
-  border: 4px solid rgba(255, 255, 255, 0.3);
-  border-top-color: var(--accent); /* Желтый крутящийся элемент */
-  border-radius: 50%;
-  animation: spin 1s linear infinite;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-
-.loading-text {
-  color: var(--white);
-  font-size: 18px;
-  font-weight: 600;
-}
+.filters-block { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+.filters-block:not(.hidden) { max-height: 500px; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
