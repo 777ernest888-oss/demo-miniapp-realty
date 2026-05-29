@@ -1,3 +1,20 @@
+// ==========================================
+//  ДАННЫЕ АГЕНТА (РЕЗЕРВНЫЕ / ПО УМОЛЧАНИЮ)
+// ==========================================
+const AGENT_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSs0IIptZEaB0yYYnhWKvcpjfhGbcvoASS2qJHEg_B5_ZsxM7cPmuq2XoywHqToe3MLM722DWhfT2wB/pub?output=csv';
+
+const DEFAULT_AGENT_DATA = {
+  name: '',
+  role: '',
+  agencyName: '',
+  agencyAddress: '',
+  telegramUsername: 'your_username',
+  phone: '+79991234567'
+};
+
+let currentAgentData = { ...DEFAULT_AGENT_DATA };
+// ==========================================
+
 let tg;
 try {
   if (window.Telegram && window.Telegram.WebApp) {
@@ -11,7 +28,8 @@ try {
       MainButton: { setText: () => {}, show: () => {}, onClick: () => {}, hide: () => {} },
       showAlert: (msg) => alert(msg),
       initDataUnsafe: { user: {} },
-      close: () => window.close()
+      close: () => window.close(),
+      openTelegramLink: (url) => window.open(url)
     };
   }
 } catch (e) { console.error(e); }
@@ -22,8 +40,24 @@ let currentModalId = null;
 let map = null;
 let markers = [];
 let brandLogoUrl = null;
+let currentPage = 'home';
 
-// --- КАСТОМНАЯ КНОПКА "НАЗАД" ---
+// ✅ ЗАГРУЗКА ДАННЫХ АГЕНТА ИЗ ТАБЛИЦЫ
+async function loadAgentData() {
+  try {
+    const res = await fetch(AGENT_SHEET_CSV_URL);
+    if (!res.ok) throw new Error('Network error');
+    const csv = await res.text();    const parsed = parseCSV(csv);
+    if (parsed.length > 0) {
+      const remote = parsed[0];
+      currentAgentData = { ...DEFAULT_AGENT_DATA, ...remote };
+      console.log('✅ Agent data loaded from sheet');
+    }
+  } catch (e) {
+    console.warn('⚠️ Using default agent data:', e);
+  }
+}
+
 function showBack() {
   const btn = document.getElementById('customBackBtn');
   if (btn) btn.classList.remove('hidden');
@@ -35,26 +69,88 @@ function hideBack() {
 }
 
 function appBack() {
-  if (!document.getElementById('consultModal').classList.contains('hidden')) {
-    closeConsultModal();
-    return;
-  }
-  if (!document.getElementById('detailsModal').classList.contains('hidden')) {
-    closeModal();
-    return;
-  }
-  if (!document.getElementById('mapContainer').classList.contains('hidden')) {
-    switchView('list');
-    return;
-  }
-  if (tg.close) tg.close();}
-// -------------------------------
+  if (!document.getElementById('consultModal').classList.contains('hidden')) { closeConsultModal(); return; }
+  if (!document.getElementById('detailsModal').classList.contains('hidden')) { closeModal(); return; }
+  if (!document.getElementById('mapContainer').classList.contains('hidden')) { switchView('list'); return; }
+  if (currentPage !== 'home') { showPage('home'); return; }
+  if (tg.close) tg.close();
+}
 
 function startApp() {
   document.getElementById('welcomeScreen')?.classList.add('hidden');
   document.getElementById('mainContent')?.classList.remove('hidden');
   window.scrollTo(0, 0);
   hideBack();
+}
+
+function showPage(pageId) {
+  currentPage = pageId;
+  closeMenu();
+
+  const mainContent = document.getElementById('mainContent');
+  const pageAbout = document.getElementById('page-about');
+  const pageContacts = document.getElementById('page-contacts');
+
+  mainContent.classList.add('hidden');
+  pageAbout.classList.add('hidden');
+  pageContacts.classList.add('hidden');
+
+  if (pageId === 'home') {
+    mainContent.classList.remove('hidden');    hideBack();
+  } else if (pageId === 'about') {
+    pageAbout.classList.remove('hidden');
+    showBack();
+  } else if (pageId === 'contacts') {
+    renderContactsPage();
+    pageContacts.classList.remove('hidden');
+    showBack();
+  }
+  window.scrollTo(0, 0);
+}
+
+function renderContactsPage() {
+  const data = currentAgentData;
+
+  const nameEl = document.getElementById('agentName');
+  const roleEl = document.getElementById('agentRole');
+
+  if (data.name && data.name.trim()) { nameEl.textContent = data.name; nameEl.style.display = 'block'; }
+  else { nameEl.style.display = 'none'; }
+
+  if (data.role && data.role.trim()) { roleEl.textContent = data.role; roleEl.style.display = 'block'; }
+  else { roleEl.style.display = 'none'; }
+
+  const agencyBlock = document.getElementById('agencyBlock');
+  const agencyNameEl = document.getElementById('agencyName');
+  const agencyAddrEl = document.getElementById('agencyAddress');
+  let hasAgency = false;
+
+  if (data.agencyName && data.agencyName.trim()) { agencyNameEl.textContent = data.agencyName; agencyNameEl.style.display = 'block'; hasAgency = true; }
+  else { agencyNameEl.style.display = 'none'; }
+
+  if (data.agencyAddress && data.agencyAddress.trim()) { agencyAddrEl.textContent = '📍 ' + data.agencyAddress; agencyAddrEl.style.display = 'block'; hasAgency = true; }
+  else { agencyAddrEl.style.display = 'none'; }
+
+  agencyBlock.style.display = hasAgency ? 'block' : 'none';
+}
+
+function openMenu() {
+  document.getElementById('menuOverlay').classList.remove('hidden');
+  document.getElementById('sideMenu').classList.remove('hidden');
+}
+
+function closeMenu() {
+  document.getElementById('menuOverlay').classList.add('hidden');
+  document.getElementById('sideMenu').classList.add('hidden');
+}
+
+function openDirectChat() {
+  const username = currentAgentData.telegramUsername || 'your_username';  if (tg.openTelegramLink) tg.openTelegramLink('https://t.me/' + username);
+  else window.open('https://t.me/' + username);
+}
+
+function callAgent() {
+  window.location.href = 'tel:' + currentAgentData.phone;
 }
 
 function toggleFilters() {
@@ -89,22 +185,24 @@ function switchView(view) {
 
 async function init() {
   try {
+    await loadAgentData();
+
     const loadingScreen = document.getElementById('loadingScreen');
     if (loadingScreen) loadingScreen.classList.remove('hidden');
-  
+   
     const configRes = await fetch('config.json');
     config = await configRes.json();
     if (config.data?.sheetUrl) {
       listings = await loadFromGoogleSheets(config.data.sheetUrl);
-    }    applyTheme();
+    }        applyTheme();
     applyBranding();
     renderWelcome();
     renderFilters();
     renderListings(listings.filter(l => l.active));
     initPhoneMask();
-    initTelegramMask(); // ✅ Инициализация маски Telegram
+    initTelegramMask();
     hideBack();
-  
+ 
     if (loadingScreen) loadingScreen.classList.add('hidden');
   } catch (error) {
     console.error('Init Error:', error);
@@ -128,12 +226,12 @@ function applyBranding() {
   if (welcomeContainer) {
     const customTitle = config.brand.welcomeTitle || config.brand.name;
     const customLogo = config.brand.logo;
-  
+ 
     if (customLogo && customLogo !== 'logo.png') {
       const logoImg = welcomeContainer.querySelector('.brand-logo');
       if (logoImg) logoImg.src = customLogo;
     }
-  
+ 
     if (customTitle && customTitle.toUpperCase() !== 'КАТАЛОГ НОВОСТРОЕК') {
       const titleEl = welcomeContainer.querySelector('.brand-title');
       if (titleEl) titleEl.textContent = customTitle.toUpperCase();
@@ -194,7 +292,7 @@ function parseCSVLine(line) {
   let current = '';
   let inQuotes = false;
   for (let i = 0; i < line.length; i++) {
-    const char = line[i];    if (char === '"') inQuotes = !inQuotes;
+    const char = line[i];        if (char === '"') inQuotes = !inQuotes;
     else if (char === ',' && !inQuotes) { result.push(current); current = ''; }
     else current += char;
   }
@@ -243,7 +341,7 @@ function renderFilters() {
         const roomList = String(l.rooms).split(',').map(r => r.trim());
         roomList.forEach(r => { if (r && !allRooms.includes(r)) allRooms.push(r); });
       }
-    });    allRooms.sort();
+    });        allRooms.sort();
     roomsContainer.innerHTML = '';
     allRooms.forEach(r => {
       const label = document.createElement('label');
@@ -292,7 +390,7 @@ function filterListings() {
   renderListings(filtered);
   const mapContainer = document.getElementById('mapContainer');
   if (mapContainer && !mapContainer.classList.contains('hidden')) {
-    updateMapMarkers(filtered);  }
+    updateMapMarkers(filtered);    }
 }
 
 function resetFilters() {
@@ -338,21 +436,21 @@ function renderListings(data) {
       } else {
         priceDisplay = `${(item.price_from / 1000000).toFixed(1)} млн ₽`;
       }
-    }  
+    } 
     const priceTo = typeof item.price_to === 'number' ? item.price_to.toFixed(1) : '';
     const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
-    const area = (typeof item.area_min === 'number' && typeof item.area_max === 'number') ? `${item.area_min}–${item.area_max} м²` : '';    const rooms = item.rooms || '';
+    const area = (typeof item.area_min === 'number' && typeof item.area_max === 'number') ? `${item.area_min}–${item.area_max} м²` : '';        const rooms = item.rooms || '';
     const statusKey = (item.status || 'other').toString().replace(/\s+/g, '-');
     const statusText = item.status === 'Сдан' ? '✅ Сдан' : item.status === 'Строится' ? '🏗 Строится' : '🟡 Частично сдан';
-  
+ 
     const card = document.createElement('div');
     card.className = 'listing-card';
     card.onclick = function(e) {
       if (!e.target.closest('.consult-btn-inline')) openDetails(item.id);
     };
-  
+ 
     card.innerHTML = `<img src="${escapeHtml(item.image_main) || ''}" alt="${escapeHtml(item.name) || ''}" class="listing-image" onerror="this.style.display='none'"><div class="listing-info"><h3>${escapeHtml(item.name) || 'Без названия'}</h3><div class="listing-meta"><span>${escapeHtml(item.district) || ''}</span><span>🚇 ${escapeHtml(item.metro) || ''}</span>${rooms ? `<span>🚪 ${escapeHtml(rooms)}</span>` : ''}${area ? `<span>📐 ${escapeHtml(area)}</span>` : ''}</div><div class="listing-price">от ${priceDisplay}${priceTo ? ` до ${priceTo} млн ₽` : ''} ${ppsqm ? `<br><span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}</div><div class="listing-status status-${statusKey}">${statusText}</div><button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button></div>`;
-  
+ 
     container.appendChild(card);
   });
 }
@@ -385,15 +483,14 @@ function updateMapMarkers(filteredItems) {
 
   filteredItems.forEach(item => {
     if (!item.active || !item.lat || !item.lng) return;
-  
+ 
     let priceDisplay = '?';
     if (typeof item.price_from === 'number') {
       priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
     }
-       const marker = L.marker([item.lat, item.lng]).addTo(map);
-    const popupContent = `<div class="map-popup" data-id="${item.id}" style="cursor: pointer;"><b>${item.name}</b><br>от ${priceDisplay} млн ₽<small style="display: block; margin-top: 4px; color: #666;">Нажмите для деталей</small></div>`;
+       const marker = L.marker([item.lat, item.lng]).addTo(map);    const popupContent = `<div class="map-popup" data-id="${item.id}" style="cursor: pointer;"><b>${item.name}</b><br>от ${priceDisplay} млн ₽<small style="display: block; margin-top: 4px; color: #666;">Нажмите для деталей</small></div>`;
     marker.bindPopup(popupContent);
-  
+ 
     marker.on('popupopen', function() {
       const popupEl = document.querySelector(`.map-popup[data-id="${item.id}"]`);
       if (popupEl) {
@@ -402,7 +499,7 @@ function updateMapMarkers(filteredItems) {
         });
       }
     });
-  
+ 
     markers.push(marker);
   });
 
@@ -439,8 +536,8 @@ function openDetails(id) {
     textDiv.className = 'floor-plans-text';
     textDiv.textContent = item.floor_plans_text;
     plansContainer.appendChild(textDiv);
-  }  if (item.floor_plans_images) {
-    const galleryDiv = document.createElement('div');
+  } 
+  if (item.floor_plans_images) {    const galleryDiv = document.createElement('div');
     galleryDiv.className = 'floor-plans-gallery';
     item.floor_plans_images.split(',').map(u => u.trim()).filter(Boolean).forEach(url => {
       const img = document.createElement('img');
@@ -488,8 +585,8 @@ function openDetails(id) {
   document.getElementById('detailsModal').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
 
-  showBack();}
-
+  showBack();
+}
 function closeModal() {
   document.getElementById('detailsModal').classList.add('hidden');
   document.body.style.overflow = '';
@@ -512,7 +609,7 @@ function sendConsultRequest() {
   document.getElementById('consultObjectName').textContent = '🏢 ' + item.name;
   document.getElementById('consultName').value = '';
   document.getElementById('consultPhone').value = '+7 (';
-  document.getElementById('consultTelegram').value = ''; // ✅ Сброс поля Telegram
+  document.getElementById('consultTelegram').value = '';
   document.getElementById('consultModal').classList.remove('hidden');
 
   showBack();
@@ -537,25 +634,20 @@ function initPhoneMask() {
   });
   phoneInput.addEventListener('focus', function(e) { if (e.target.value === '') e.target.value = '+7 ('; });
 }
-// ✅ НОВАЯ ФУНКЦИЯ: Маска для Telegram (блокировка кириллицы)
-function initTelegramMask() {
-  const telegramInput = document.getElementById('consultTelegram');
+
+function initTelegramMask() {  const telegramInput = document.getElementById('consultTelegram');
   if (!telegramInput) return;
- 
+
   telegramInput.addEventListener('input', function(e) {
     let val = e.target.value;
-    // Оставляем только латиницу, цифры, @ и _
     val = val.replace(/[^a-zA-Z0-9_@]/g, '');
-    // @ только в начале
     if (val.includes('@') && !val.startsWith('@')) {
       val = '@' + val.replace(/@/g, '');
     }
-    // Ограничиваем длину (макс. 32 символа)
     if (val.length > 32) val = val.slice(0, 32);
     e.target.value = val;
   });
- 
-  // Блокируем вставку кириллицы
+
   telegramInput.addEventListener('paste', function(e) {
     e.preventDefault();
     let paste = (e.clipboardData || window.clipboardData).getData('text');
@@ -568,7 +660,6 @@ function initTelegramMask() {
   });
 }
 
-// ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ: Отправка через Google Script (без токенов!)
 function submitConsultForm(event) {
   event.preventDefault();
   const item = listings.find(l => l.id === currentModalId);
@@ -578,25 +669,22 @@ function submitConsultForm(event) {
   const phone = document.getElementById('consultPhone').value.trim();
   let telegram = document.getElementById('consultTelegram')?.value.trim() || '';
 
-  // Валидация имени
   if (!name || name.length < 2) {
     tg?.showAlert('❌ Введите имя (минимум 2 символа)');
     return;
   }
 
-  // Валидация телефона
   const phoneDigits = phone.replace(/\D/g, '');
-  if (phoneDigits.length < 10 || phoneDigits.length > 15) {    tg?.showAlert('❌ Введите корректный номер телефона');
+  if (phoneDigits.length < 10 || phoneDigits.length > 15) {   
+    tg?.showAlert('❌ Введите корректный номер телефона');
     return;
   }
 
-  // Валидация Telegram
   if (telegram) {
     const cyrillicRegex = /[а-яА-ЯёЁ]/;
     if (cyrillicRegex.test(telegram)) {
       tg?.showAlert('❌ Telegram не должен содержать кириллицу');
-      return;
-    }
+      return;    }
     const validRegex = /^@?[a-zA-Z0-9_]{3,32}$/;
     if (!validRegex.test(telegram)) {
       tg?.showAlert('❌ Неверный формат Telegram (только латиница, цифры, _)');
@@ -605,7 +693,6 @@ function submitConsultForm(event) {
     if (!telegram.startsWith('@')) telegram = '@' + telegram;
   }
 
-  // ⚠️ ЗАМЕНИ ЭТОТ URL НА СВОЙ ВЕБХУК ИЗ GOOGLE SCRIPT
   const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzFGzj8iTpKzhDZHhSQj781HrqKqRnbA4u99Rk29bjlJ_bYhQyIKwll-5SP06WdE-E/exec';
   const SECRET_KEY = 'SecretParol999';
 
@@ -618,7 +705,7 @@ function submitConsultForm(event) {
     method: 'POST',
     body: JSON.stringify({
       secret: SECRET_KEY,
-      projectId: 'demo-miniapp-realty', // ⚠️ Убедись, что этот ID есть в скрипте!
+      projectId: 'demo-miniapp-realty',
       title: item.name,
       leadName: name,
       leadPhone: phone,
@@ -635,7 +722,8 @@ function submitConsultForm(event) {
       throw new Error(data.error || 'Неизвестная ошибка');
     }
   })
-  .catch(err => {    console.error('Send error:', err);
+  .catch(err => {   
+    console.error('Send error:', err);
     tg?.showAlert('⚠️ Ошибка: ' + err.message);
   })
   .finally(() => {
@@ -645,8 +733,7 @@ function submitConsultForm(event) {
 }
 
 function escapeHtml(text) {
-  if (!text) return '';
-  const div = document.createElement('div');
+  if (!text) return '';  const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
 }
