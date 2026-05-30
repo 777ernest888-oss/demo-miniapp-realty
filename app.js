@@ -198,15 +198,18 @@ function openDirectChat() {
 }
 
 function callAgent() {
-  const phone = currentAgentData.phone;
+  let phone = currentAgentData.phone;
  
-  if (!phone || phone.trim() === '') {
+  if (!phone) {
     tg?.showAlert('❌ Телефон не указан в таблице');
     return;
   }
  
-  // Очищаем номер: оставляем только цифры и +
-  let cleanPhone = phone.toString().replace(/[^\d+]/g, '');
+  // Преобразуем в строку (на случай если пришло число)
+  phone = phone.toString();
+ 
+  // Очищаем: оставляем только цифры и +
+  let cleanPhone = phone.replace(/[^\d+]/g, '');
  
   // Если номер начинается с 7 или 8 и имеет 11 цифр, добавляем +
   if (cleanPhone.length === 11 && (cleanPhone.startsWith('7') || cleanPhone.startsWith('8'))) {
@@ -221,7 +224,6 @@ function callAgent() {
   console.log('📞 Звоним на номер:', cleanPhone);
   window.location.href = 'tel:' + cleanPhone;
 }
-
 function toggleFilters() {
   const block = document.getElementById('filtersBlock');
   const btn = document.querySelector('.filters-toggle-btn');
