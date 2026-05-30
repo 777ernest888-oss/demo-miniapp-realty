@@ -4,13 +4,13 @@
     "logo": "logo.png",
     "primaryColor": "#34495e",
     "accentColor": "#3498db",
-    
+    "welcomeTitle": "КАТАЛОГ НОВОСТРОЕК"
   },
   "data": {
-    "sheetUrl": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSs0IIptZEaBOyYYnhWKvcpjfhGbcvoASS2qJHEg_B5_ZsxM7cPmuq2XoywHqToe3MLM722DWhfT2wB/pub?output=csv"
+    "sheetUrl": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSs0IIptZEaB0yYYnhWKvcpjfhGbcvoASS2qJHEg_B5_ZsxM7cPmuq2XoywHqToe3MLM722DWhfT2wB/pub?output=csv"
   },
   "contact": {
-    "botLink": "https://t.me/demo_newbuilds_bot"
+    "botlink": "https://t.me/demo_newbuilds_bot"
   },
   "texts": {
     "ctaButton": "Получить консультацию",
@@ -20,6 +20,6 @@
   "features": {
     "showWelcomeScreen": true,
     "showMap": true,
-    "showFilters": true
+    "showConsultButton": true
   }
 }
