@@ -4,7 +4,7 @@
     "logo": "logo.png",
     "primaryColor": "#34495e",
     "accentColor": "#3498db",
-    ...
+    
   },
   "data": {
     "sheetUrl": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSs0IIptZEaBOyYYnhWKvcpjfhGbcvoASS2qJHEg_B5_ZsxM7cPmuq2XoywHqToe3MLM722DWhfT2wB/pub?output=csv"
