@@ -198,18 +198,28 @@ function openDirectChat() {
 }
 
 function callAgent() {
-  let phone = currentAgentData.phone || '';
-  // Удаляем все нецифровые символы кроме +
-  phone = phone.replace(/[^\d+]/g, '');
-  // Если нет + в начале, добавляем его
-  if (!phone.startsWith('+') && phone.length > 10) {
-    phone = '+' + phone;
+  const phone = currentAgentData.phone;
+ 
+  if (!phone || phone.trim() === '') {
+    tg?.showAlert('❌ Телефон не указан в таблице');
+    return;
   }
-  if (phone) {
-    window.location.href = 'tel:' + phone;
-  } else {
-    tg?.showAlert('❌ Телефон не указан');
+ 
+  // Очищаем номер: оставляем только цифры и +
+  let cleanPhone = phone.toString().replace(/[^\d+]/g, '');
+ 
+  // Если номер начинается с 7 или 8 и имеет 11 цифр, добавляем +
+  if (cleanPhone.length === 11 && (cleanPhone.startsWith('7') || cleanPhone.startsWith('8'))) {
+    cleanPhone = '+' + cleanPhone;
   }
+ 
+  // Если всё ещё нет +, но номер длинный, добавляем
+  if (!cleanPhone.startsWith('+') && cleanPhone.length >= 11) {
+    cleanPhone = '+' + cleanPhone;
+  }
+ 
+  console.log('📞 Звоним на номер:', cleanPhone);
+  window.location.href = 'tel:' + cleanPhone;
 }
 
 function toggleFilters() {
