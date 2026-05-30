@@ -198,7 +198,13 @@ function openDirectChat() {
 }
 
 function callAgent() {
-  const phone = currentAgentData.phone;
+  let phone = currentAgentData.phone || '';
+  // Удаляем все нецифровые символы кроме +
+  phone = phone.replace(/[^\d+]/g, '');
+  // Если нет + в начале, добавляем его
+  if (!phone.startsWith('+') && phone.length > 10) {
+    phone = '+' + phone;
+  }
   if (phone) {
     window.location.href = 'tel:' + phone;
   } else {
