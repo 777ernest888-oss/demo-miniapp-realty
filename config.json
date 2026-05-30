@@ -1,12 +1,10 @@
 {
   "brand": {
-    "name": "Demo NewBuilds",
+    "name": "DEMO NEWBUILDS",
     "logo": "logo.png",
-    "primaryColor": "#1a365d",
-    "accentColor": "#d4af37",
-    "welcomeImage": "welcome-bg.jpg",
-    "welcomeTitle": "КАТАЛОГ НОВОСТРОЕК",
-    "welcomeSubtitle": "Подберём квартиру под ваш бюджет"
+    "primaryColor": "#34495e",   /* Было #1a365d -> Теперь Графит */
+    "accentColor": "#3498db",    /* Было #d4af37 -> Теперь Лазурь */
+    ...
   },
   "data": {
     "sheetUrl": "https://docs.google.com/spreadsheets/d/e/2PACX-1vSs0IIptZEaBOyYYnhWKvcpjfhGbcvoASS2qJHEg_B5_ZsxM7cPmuq2XoywHqToe3MLM722DWhfT2wB/pub?output=csv"
