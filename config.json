@@ -2,8 +2,8 @@
   "brand": {
     "name": "DEMO NEWBUILDS",
     "logo": "logo.png",
-    "primaryColor": "#34495e",   /* Было #1a365d -> Теперь Графит */
-    "accentColor": "#3498db",    /* Было #d4af37 -> Теперь Лазурь */
+    "primaryColor": "#34495e",
+    "accentColor": "#3498db",
     ...
   },
   "data": {
