@@ -1,7 +1,6 @@
 {
   "client": {
     "projectId": "demo-miniapp-realty",
-    "name": "Демонстрационная версия",
     "scriptUrl": "https://script.google.com/macros/s/AKfycbzFGzj8iTpKzhDZHhSQj781HrqKqRnbA4u99Rk29bjlJ_bYhQyIKwll-5SP06WdE-E/exec"
   },
   "sheets": {
@@ -14,7 +13,7 @@
     "accentColor": "#3498DB",
     "logo": "logo.png",
     "welcomeTitle": "КАТАЛОГ НОВОСТРОЕК",
-    "name": "DEMO NEWBUILDS"
+    "name": "Демонстрационная версия"
   },
   "features": {
     "showWelcomeScreen": true,
