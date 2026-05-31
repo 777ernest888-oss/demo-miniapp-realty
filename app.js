@@ -353,6 +353,8 @@ function applyBranding() {
   if (welcomeContainer) {
     const customTitle = config.branding.welcomeTitle || config.branding.name;
     const customLogo = config.branding.logo;
+    const companyEl = welcomeContainer.querySelector('.brand-company');
+if (companyEl) companyEl.textContent = config.branding.name;
 
     if (customLogo && customLogo !== 'logo.png') {
       const logoImg = welcomeContainer.querySelector('.brand-logo');
