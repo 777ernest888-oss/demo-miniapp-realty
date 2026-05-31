@@ -263,7 +263,7 @@ async function init() {
     await loadAgentData();
     await loadPagesData();
 
-    // 2. Загружаем конфиг (с обработкой ошибок)
+    // 2. Загружаем конфиг ТОЛЬКО для брендинга (не для объектов!)
     try {
       const configRes = await fetch('config.json');
       config = await configRes.json();
@@ -271,11 +271,10 @@ async function init() {
       console.warn('⚠️ Config not loaded, using defaults');
     }
 
-    // 3. Загружаем объекты: из конфига ИЛИ запасная ссылка
-    const listingsUrl = config.data?.sheetUrl || LISTINGS_CSV_URL;
-    if (listingsUrl) {
-      listings = await loadFromGoogleSheets(listingsUrl);
-    }
+    // 3. ✅ ЗАГРУЖАЕМ ОБЪЕКТЫ ТОЛЬКО ИЗ LISTINGS_CSV_URL (игнорируем config!)
+    console.log('📥 Loading listings from:', LISTINGS_CSV_URL);
+    listings = await loadFromGoogleSheets(LISTINGS_CSV_URL);
+    console.log('✅ Listings loaded:', listings.length, 'items');
   
     applyTheme();
     applyBranding();
@@ -292,8 +291,8 @@ async function init() {
     console.error('Init Error:', error);
     const loadingScreen = document.getElementById('loadingScreen');
     if (loadingScreen) loadingScreen.classList.add('hidden');
-  }}
-
+  }
+}
 function applyTheme() {
   if (!config.brand) return;
   document.documentElement.style.setProperty('--primary', config.brand.primaryColor || '#1a365d');
@@ -341,8 +340,8 @@ function applyBranding() {
 }
 
 async function loadFromGoogleSheets(url) {
-  let csvUrl = url.replace('pubhtml', 'pub');  if (!csvUrl.includes('output=csv')) {
-    csvUrl += (csvUrl.includes('?') ? '&' : '?') + 'output=csv';
+  let csvUrl = url.replace('pubhtml', 'pub');
+  if (!csvUrl.includes('output=csv')) {    csvUrl += (csvUrl.includes('?') ? '&' : '?') + 'output=csv';
   }
   const response = await fetch(csvUrl);
   return parseCSV(await response.text());
@@ -390,8 +389,8 @@ function renderWelcome() {
     return;
   }
 }
-function renderFilters() {
-  const districts = [...new Set(listings.map(l => l.district).filter(Boolean))].sort();
+
+function renderFilters() {  const districts = [...new Set(listings.map(l => l.district).filter(Boolean))].sort();
   const districtContainer = document.getElementById('districtCheckboxes');
   if (districtContainer) {
     districtContainer.innerHTML = '';
@@ -439,8 +438,8 @@ function renderFilters() {
       if (this.classList.contains('active')) {
         this.classList.remove('active');
       } else {
-        document.querySelectorAll('.price-btn').forEach(b => b.classList.remove('active'));        this.classList.add('active');
-      }
+        document.querySelectorAll('.price-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');      }
       filterListings();
     });
   });
@@ -488,8 +487,8 @@ function renderListings(data) {
   container.innerHTML = '';
 
   if (listings.length === 0) {
-    container.innerHTML = `      <div class="empty-state">
-        <div class="empty-icon">🏗</div>
+    container.innerHTML = `
+      <div class="empty-state">        <div class="empty-icon">🏗</div>
         <h3>База пуста</h3>
         <p>Объекты ещё не добавлены.</p>
       </div>
@@ -537,8 +536,8 @@ function renderListings(data) {
     container.appendChild(card);
   });
 }
-function initMap() {
-  if (typeof L === 'undefined') {
+
+function initMap() {  if (typeof L === 'undefined') {
     console.error('Leaflet not loaded');
     return;
   }
@@ -586,8 +585,8 @@ function updateMapMarkers(filteredItems) {
 
     markers.push(marker);
   });
-   if (markers.length > 0) {
-    const group = new L.featureGroup(markers);
+
+  if (markers.length > 0) {    const group = new L.featureGroup(markers);
     map.fitBounds(group.getBounds().pad(0.1));
   }
 }
@@ -635,8 +634,8 @@ function openDetails(id) {
   if (!item.floor_plans_text && !item.floor_plans_images) {
     plansContainer.innerHTML = '<p style="color: var(--text-secondary)">Информация уточняется</p>';
   }
-   const gallery = document.getElementById('modalGallery');
-  gallery.innerHTML = '';
+
+  const gallery = document.getElementById('modalGallery');  gallery.innerHTML = '';
   if (item.image_main) {
     const mainImg = document.createElement('img');
     mainImg.src = item.image_main;
@@ -684,8 +683,8 @@ function closeModal() {
 function openConsultForm(id, event) {
   if (event) event.stopPropagation();
   currentModalId = id;
-  sendConsultRequest();}
-
+  sendConsultRequest();
+}
 function sendConsultRequest() {
   const item = listings.find(l => l.id === currentModalId);
   if (!item) return;
@@ -733,8 +732,8 @@ function initTelegramMask() {
   });
 
   telegramInput.addEventListener('paste', function(e) {
-    e.preventDefault();    let paste = (e.clipboardData || window.clipboardData).getData('text');
-    paste = paste.replace(/[^a-zA-Z0-9_@]/g, '');
+    e.preventDefault();
+    let paste = (e.clipboardData || window.clipboardData).getData('text');    paste = paste.replace(/[^a-zA-Z0-9_@]/g, '');
     if (paste.includes('@') && !paste.startsWith('@')) {
       paste = '@' + paste.replace(/@/g, '');
     }
@@ -782,8 +781,8 @@ function submitConsultForm(event) {
 
   const submitBtn = event.target.querySelector('button[type="submit"]');
   const originalText = submitBtn.textContent;
-  submitBtn.textContent = 'Отправка...';  submitBtn.disabled = true;
-
+  submitBtn.textContent = 'Отправка...';
+  submitBtn.disabled = true;
   fetch(GOOGLE_SCRIPT_URL, {
     method: 'POST',
     body: JSON.stringify({
