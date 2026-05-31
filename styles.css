@@ -24,7 +24,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .welcome-main-title { font-size: 24px; font-weight: 800; color: var(--white); margin: 0 0 10px 0; }
 .welcome-sub { color: rgba(255,255,255,0.85); margin-bottom: 20px; font-size: 16px; }
 
-/* ✅ ОБНОВЛЁННАЯ КНОПКА */
+/* КНОПКА */
 .btn-primary {
   background: var(--accent);
   color: #ffffff !important;
@@ -59,7 +59,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 /* FILTERS */
 .filters-toggle { padding: 12px 16px; background: var(--white); border-bottom: 1px solid #eee; }
 .filters-toggle-btn { background: none; border: 1px solid var(--primary); color: var(--primary); padding: 8px 14px; border-radius: 8px; cursor: pointer; width: 100%; font-size: 14px; }
-.filters-block { background: var(--white); padding: 14px 16px; border-bottom: 1px solid #eee; }
+.filters-block { background: var(--white); padding: 14px 16px; border-bottom: 1px solid #eee; max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
+.filters-block:not(.hidden) { max-height: 500px; }
 .filter-group { margin-bottom: 14px; }
 .filter-group label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
 .price-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -76,7 +77,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 
 /* LISTINGS */
 .listings { padding: 14px 16px; flex: 1; overflow-y: auto; }
-.listing-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 14px; overflow: hidden; cursor: pointer; transition: transform 0.2s; }
+.listing-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 14px; overflow: hidden; cursor: pointer; transition: transform 0.2s; opacity: 0; transform: translateY(20px); animation: fadeInUp 0.4s ease forwards; }
 .listing-card:active { transform: scale(0.99); }
 .listing-image { width: 100%; height: 170px; object-fit: cover; }
 .listing-info { padding: 14px; }
@@ -92,11 +93,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .map-container { height: calc(100vh - 130px); }
 
 /* MODALS */
-.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; }
-.modal-content { background: var(--white); width: 92%; max-width: 520px; max-height: 90vh; overflow-y: auto; border-radius: var(--radius); padding: 70px 22px 22px 22px; position: relative; }
-.modal-gallery { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 14px; padding-bottom: 8px; }
+.modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; transition: opacity 0.3s ease; }
+.modal:not(.hidden) { opacity: 1; }
+.modal-content { background: var(--white); width: 92%; max-width: 520px; max-height: 90vh; overflow-y: auto; border-radius: var(--radius); padding: 70px 22px 22px 22px; position: relative; transform: scale(0.9) translateY(20px); transition: transform 0.3s ease; }
+.modal:not(.hidden) .modal-content { transform: scale(1) translateY(0); }.modal-gallery { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 14px; padding-bottom: 8px; }
 .modal-main-image { width: 100%; border-radius: 8px; margin-bottom: 8px; }
-.modal-thumb { width: 75px; height: 55px; object-fit: cover; border-radius: 4px; cursor: pointer; }.modal-price { font-size: 22px; font-weight: 700; color: var(--accent); margin-bottom: 12px; }
+.modal-thumb { width: 75px; height: 55px; object-fit: cover; border-radius: 4px; cursor: pointer; }
+.modal-price { font-size: 22px; font-weight: 700; color: var(--accent); margin-bottom: 12px; }
 .modal-meta { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; font-size: 14px; color: var(--text-secondary); }
 .modal-desc { font-size: 14px; line-height: 1.5; margin-bottom: 14px; }
 .modal-features ul { padding-left: 20px; margin-bottom: 14px; }
@@ -142,29 +145,13 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .contact-card { background: var(--white); padding: 20px; border-radius: 16px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
 .agent-avatar { width: 60px; height: 60px; background: var(--bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; }
 .agent-info h3 { margin: 0 0 5px 0; color: var(--primary); }
-.agent-info p { margin: 0; color: var(--text-secondary); font-size: 14px; }
-.agency-block { background: var(--white); padding: 15px; border-radius: 12px; margin-bottom: 25px; }
+.agent-info p { margin: 0; color: var(--text-secondary); font-size: 14px; }.agency-block { background: var(--white); padding: 15px; border-radius: 12px; margin-bottom: 25px; }
 .agency-block h4 { margin: 0 0 10px 0; color: var(--primary); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
-.agency-block p { margin: 5px 0; font-size: 15px; }.address-text { color: var(--text-secondary); }
+.agency-block p { margin: 5px 0; font-size: 15px; }
+.address-text { color: var(--text-secondary); }
 .contact-actions { display: flex; flex-direction: column; gap: 12px; }
 .btn-tg { background: #0088cc; color: white; border: none; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; }
 .btn-phone { background: var(--accent); color: var(--primary); border: none; padding: 16px; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; width: 100%; }
-.modal { opacity: 0; transition: opacity 0.3s ease; }
-.modal:not(.hidden) { opacity: 1; }
-.modal-content { transform: scale(0.9) translateY(20px); transition: transform 0.3s ease; }
-.modal:not(.hidden) .modal-content { transform: scale(1) translateY(0); }
-.listing-card { opacity: 0; transform: translateY(20px); animation: fadeInUp 0.4s ease forwards; }
+
 @keyframes fadeInUp { to { opacity: 1; transform: translateY(0); } }
-.listing-card:nth-child(1) { animation-delay: 0.05s; }
-.listing-card:nth-child(2) { animation-delay: 0.1s; }
-.listing-card:nth-child(3) { animation-delay: 0.15s; }
-.listing-card:nth-child(4) { animation-delay: 0.2s; }
-.listing-card:nth-child(5) { animation-delay: 0.25s; }
-.listing-card:nth-child(6) { animation-delay: 0.3s; }
-.listing-card:nth-child(7) { animation-delay: 0.35s; }
-.listing-card:nth-child(8) { animation-delay: 0.4s; }
-.listing-card:nth-child(9) { animation-delay: 0.45s; }
-.listing-card:nth-child(10) { animation-delay: 0.5s; }
-.filters-block { max-height: 0; overflow: hidden; transition: max-height 0.3s ease; }
-.filters-block:not(.hidden) { max-height: 500px; }
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
