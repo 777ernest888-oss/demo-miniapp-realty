@@ -1,28 +1,17 @@
 // ==========================================
-//  НАСТРОЙКИ: ССЫЛКИ НА GOOGLE ТАБЛИЦЫ
-//  Вставь сюда свои опубликованные CSV-ссылки
+//  ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
 // ==========================================
-const AGENT_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTAJn5ah-8UjagF2CloZWriSpKLyMkD5RxLzYOHC7PCtcCe33iTs5NvqM2dLs8QLCuMIrkIOytK0PWy/pub?gid=1784165651&single=true&output=csv'; // Вкладка AgentData
-const PAGES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTAJn5ah-8UjagF2CloZWriSpKLyMkD5RxLzYOHC7PCtcCe33iTs5NvqM2dLs8QLCuMIrkIOytK0PWy/pub?gid=374222153&single=true&output=csv'; // Вкладка Pages
-
-// ✅ ССЫЛКА ДЛЯ ОБЪЕКТОВ (вставлена твоя ссылка)
-const LISTINGS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTAJn5ah-8UjagF2CloZWriSpKLyMkD5RxLzYOHC7PCtcCe33iTs5NvqM2dLs8QLCuMIrkIOytK0PWy/pub?gid=0&single=true&output=csv';
-// ==========================================
-
-// Данные по умолчанию (пустые, всё берётся из таблицы)
-const DEFAULT_AGENT_DATA = {
-  name: '',
-  role: '',
-  agencyName: '',
-  agencyAddress: '',
-  telegramUsername: '',
-  phone: ''
-};
-
-let currentAgentData = { ...DEFAULT_AGENT_DATA };
-let pagesData = {}; // Тексты страниц
-
+let config = {};
+let listings = [];
+let currentAgentData = {};
+let pagesData = {};
+let currentModalId = null;
+let map = null;
+let markers = [];
+let currentPage = 'home';
 let tg;
+
+// Инициализация Telegram WebApp
 try {
   if (window.Telegram && window.Telegram.WebApp) {
     tg = window.Telegram.WebApp;
@@ -41,23 +30,30 @@ try {
   }
 } catch (e) { console.error(e); }
 
-let config = {};
-let listings = [];
-let currentModalId = null;
-let map = null;
-let markers = [];
-let brandLogoUrl = null;
-let currentPage = 'home';
-// ✅ ЗАГРУЗКА ДАННЫХ АГЕНТА
-async function loadAgentData() {
+// ==========================================
+//  ✅ ЗАГРУЗКА КОНФИГА (ЕДИНЫЙ ИСТОЧНИК)
+// ==========================================
+async function loadClientConfig() {
   try {
-    const res = await fetch(AGENT_SHEET_CSV_URL);
+    const response = await fetch('client-config.json');
+    config = await response.json();
+    console.log('✅ Client config loaded');
+  } catch (error) {
+    console.error('❌ Failed to load config:', error);
+    alert('Ошибка загрузки конфигурации!');
+  }
+}
+
+// ==========================================
+//  ЗАГРУЗКА ДАННЫХ АГЕНТА
+// ==========================================
+async function loadAgentData() {  try {
+    const res = await fetch(config.sheets.agentData);
     if (!res.ok) throw new Error('Network error');
     const csv = await res.text();
     const parsed = parseCSV(csv);
     if (parsed.length > 0) {
-      const remote = parsed[0];
-      currentAgentData = { ...DEFAULT_AGENT_DATA, ...remote };
+      currentAgentData = parsed[0];
       console.log('✅ Agent data loaded from sheet');
     }
   } catch (e) {
@@ -65,10 +61,12 @@ async function loadAgentData() {
   }
 }
 
-// ✅ ЗАГРУЗКА ТЕКСТОВ СТРАНИЦ
+// ==========================================
+//  ЗАГРУЗКА ТЕКСТОВ СТРАНИЦ
+// ==========================================
 async function loadPagesData() {
   try {
-    const res = await fetch(PAGES_CSV_URL);
+    const res = await fetch(config.sheets.pages);
     if (!res.ok) throw new Error('Network error');
     const csv = await res.text();
     const rows = parseCSV(csv);
@@ -87,6 +85,58 @@ async function loadPagesData() {
   }
 }
 
+// ==========================================
+//  ЗАГРУЗКА ОБЪЕКТОВ ИЗ GOOGLE SHEETS
+// ==========================================
+async function loadFromGoogleSheets(url) {
+  let csvUrl = url.replace('pubhtml', 'pub');
+  if (!csvUrl.includes('output=csv')) {
+    csvUrl += (csvUrl.includes('?') ? '&' : '?') + 'output=csv';
+  }
+  const response = await fetch(csvUrl);
+  return parseCSV(await response.text());
+}
+// ==========================================
+//  PARSE CSV
+// ==========================================
+function parseCSV(csv) {
+  const lines = csv.trim().split('\n');
+  if (lines.length < 2) return [];
+  const headers = parseCSVLine(lines[0]).map(h => h.trim());
+  const result = [];
+  for (let i = 1; i < lines.length; i++) {
+    if (!lines[i].trim()) continue;
+    const values = parseCSVLine(lines[i]);
+    const obj = {};
+    headers.forEach((header, index) => {
+      let value = values[index] !== undefined ? values[index].trim() : '';
+      if (value === 'TRUE') value = true;
+      else if (value === 'FALSE') value = false;
+      else if (!isNaN(value) && value !== '') value = Number(value);
+      obj[header] = value;
+    });
+    result.push(obj);
+  }
+  return result;
+}
+
+function parseCSVLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i];  
+    if (char === '"') inQuotes = !inQuotes;
+    else if (char === ',' && !inQuotes) { result.push(current); current = ''; }
+    else current += char;
+  }
+  result.push(current);
+  return result;
+}
+
+// ==========================================
+//  НАВИГАЦИЯ
+// ==========================================
 function showBack() {
   const btn = document.getElementById('customBackBtn');
   if (btn) btn.classList.remove('hidden');
@@ -131,7 +181,6 @@ function showPage(pageId) {
     pageContacts.classList.remove('hidden');
     showBack();
   } else {
-    // ДИНАМИЧЕСКАЯ ПОДГРУЗКА ТЕКСТА ИЗ ТАБЛИЦЫ
     const data = pagesData[pageId];
     const targetPage = document.getElementById(`page-${pageId}`);
   
@@ -141,12 +190,11 @@ function showPage(pageId) {
       targetPage.classList.remove('hidden');
       showBack();
     } else {
-      // Фоллбэк: если страницы нет в таблице, показываем заглушку
       if (targetPage) {
         targetPage.querySelector('.page-header h2').textContent = pageId === 'about' ? 'Обо мне' : 'Информация';
         targetPage.querySelector('.page-content').innerHTML = '<p>Информация загружается...</p>';
-        targetPage.classList.remove('hidden');        showBack();
-      } else {
+        targetPage.classList.remove('hidden');
+        showBack();      } else {
         mainContent.classList.remove('hidden');
         hideBack();
       }
@@ -194,8 +242,8 @@ function closeMenu() {
 function openDirectChat() {
   const username = currentAgentData.telegramUsername || '';
   if (username) {
-    if (tg.openTelegramLink) tg.openTelegramLink('https://t.me/' + username);    else window.open('https://t.me/' + username);
-  } else {
+    if (tg.openTelegramLink) tg.openTelegramLink('https://t.me/' + username);
+    else window.open('https://t.me/' + username);  } else {
     tg?.showAlert('❌ Telegram не указан');
   }
 }
@@ -208,18 +256,13 @@ function callAgent() {
     return;
   }
 
-  // Преобразуем в строку (на случай если пришло число)
   phone = phone.toString();
-
-  // Очищаем: оставляем только цифры и +
   let cleanPhone = phone.replace(/[^\d+]/g, '');
 
-  // Если номер начинается с 7 или 8 и имеет 11 цифр, добавляем +
   if (cleanPhone.length === 11 && (cleanPhone.startsWith('7') || cleanPhone.startsWith('8'))) {
     cleanPhone = '+' + cleanPhone;
   }
 
-  // Если всё ещё нет +, но номер длинный, добавляем
   if (!cleanPhone.startsWith('+') && cleanPhone.length >= 11) {
     cleanPhone = '+' + cleanPhone;
   }
@@ -243,13 +286,13 @@ function switchView(view) {
   const listContainer = document.getElementById('listingsContainer');
   const mapContainer = document.getElementById('mapContainer');
   if (view === 'list') {
-    listBtn.classList.add('active');    mapBtn.classList.remove('active');
+    listBtn.classList.add('active');
+    mapBtn.classList.remove('active');
     listContainer.classList.remove('hidden');
     mapContainer.classList.add('hidden');
     hideBack();
   } else {
-    listBtn.classList.remove('active');
-    mapBtn.classList.add('active');
+    listBtn.classList.remove('active');    mapBtn.classList.add('active');
     listContainer.classList.add('hidden');
     mapContainer.classList.remove('hidden');
     showBack();
@@ -257,25 +300,23 @@ function switchView(view) {
   }
 }
 
+// ==========================================
+//  ✅ ГЛАВНАЯ ФУНКЦИЯ ИНИЦИАЛИЗАЦИИ
+// ==========================================
 async function init() {
   try {
-    // 1. Загружаем данные из таблиц
+    // 1. Загружаем конфиг (ОБЯЗАТЕЛЬНО первым!)
+    await loadClientConfig();
+
+    // 2. Загружаем данные
     await loadAgentData();
     await loadPagesData();
 
-    // 2. Загружаем конфиг ТОЛЬКО для брендинга (не для объектов!)
-    try {
-      const configRes = await fetch('config.json');
-      config = await configRes.json();
-    } catch (e) {
-      console.warn('⚠️ Config not loaded, using defaults');
-    }
-
-    // 3. ✅ ЗАГРУЖАЕМ ОБЪЕКТЫ ТОЛЬКО ИЗ LISTINGS_CSV_URL (игнорируем config!)
-    console.log('📥 Loading listings from:', LISTINGS_CSV_URL);
-    listings = await loadFromGoogleSheets(LISTINGS_CSV_URL);
+    // 3. Загружаем объекты
+    listings = await loadFromGoogleSheets(config.sheets.listings);
     console.log('✅ Listings loaded:', listings.length, 'items');
   
+    // 4. Применяем настройки
     applyTheme();
     applyBranding();
     renderWelcome();
@@ -293,21 +334,24 @@ async function init() {
     if (loadingScreen) loadingScreen.classList.add('hidden');
   }
 }
+
+// ==========================================
+//  БРЕНДИНГ И СТИЛИ
+// ==========================================
 function applyTheme() {
-  if (!config.brand) return;
-  document.documentElement.style.setProperty('--primary', config.brand.primaryColor || '#1a365d');
-  document.documentElement.style.setProperty('--accent', config.brand.accentColor || '#d4af37');
-}
+  if (!config.branding) return;
+  document.documentElement.style.setProperty('--primary', config.branding.primaryColor || '#1a365d');
+  document.documentElement.style.setProperty('--accent', config.branding.accentColor || '#d4af37');}
 
 function applyBranding() {
-  if (!config.brand) return;
+  if (!config.branding) return;
 
   const welcomeContainer = document.getElementById('welcomeBrand');
   const headerContainer = document.getElementById('headerBrand');
 
   if (welcomeContainer) {
-    const customTitle = config.brand.welcomeTitle || config.brand.name;
-    const customLogo = config.brand.logo;
+    const customTitle = config.branding.welcomeTitle || config.branding.name;
+    const customLogo = config.branding.logo;
 
     if (customLogo && customLogo !== 'logo.png') {
       const logoImg = welcomeContainer.querySelector('.brand-logo');
@@ -321,65 +365,20 @@ function applyBranding() {
   }
   if (headerContainer) {
     headerContainer.innerHTML = '';
-    if (config.brand.logo) {
+    if (config.branding.logo) {
       const logo = document.createElement('img');
-      logo.src = config.brand.logo;
+      logo.src = config.branding.logo;
       logo.className = 'brand-logo';
       logo.alt = 'Logo';
       headerContainer.appendChild(logo);
     }
-    if (config.brand.name) {
+    if (config.branding.name) {
       const title = document.createElement('h1');
-      title.textContent = config.brand.name.toUpperCase();
+      title.textContent = config.branding.name.toUpperCase();
       title.className = 'brand-title';
       headerContainer.appendChild(title);
     }
   }
-
-  brandLogoUrl = config.brand.logo || null;
-}
-
-async function loadFromGoogleSheets(url) {
-  let csvUrl = url.replace('pubhtml', 'pub');
-  if (!csvUrl.includes('output=csv')) {    csvUrl += (csvUrl.includes('?') ? '&' : '?') + 'output=csv';
-  }
-  const response = await fetch(csvUrl);
-  return parseCSV(await response.text());
-}
-
-function parseCSV(csv) {
-  const lines = csv.trim().split('\n');
-  if (lines.length < 2) return [];
-  const headers = parseCSVLine(lines[0]).map(h => h.trim());
-  const result = [];
-  for (let i = 1; i < lines.length; i++) {
-    if (!lines[i].trim()) continue;
-    const values = parseCSVLine(lines[i]);
-    const obj = {};
-    headers.forEach((header, index) => {
-      let value = values[index] !== undefined ? values[index].trim() : '';
-      if (value === 'TRUE') value = true;
-      else if (value === 'FALSE') value = false;
-      else if (!isNaN(value) && value !== '') value = Number(value);
-      obj[header] = value;
-    });
-    result.push(obj);
-  }
-  return result;
-}
-
-function parseCSVLine(line) {
-  const result = [];
-  let current = '';
-  let inQuotes = false;
-  for (let i = 0; i < line.length; i++) {
-    const char = line[i];  
-    if (char === '"') inQuotes = !inQuotes;
-    else if (char === ',' && !inQuotes) { result.push(current); current = ''; }
-    else current += char;
-  }
-  result.push(current);
-  return result;
 }
 
 function renderWelcome() {
@@ -390,7 +389,10 @@ function renderWelcome() {
   }
 }
 
-function renderFilters() {  const districts = [...new Set(listings.map(l => l.district).filter(Boolean))].sort();
+// ==========================================
+//  ФИЛЬТРЫ// ==========================================
+function renderFilters() {
+  const districts = [...new Set(listings.map(l => l.district).filter(Boolean))].sort();
   const districtContainer = document.getElementById('districtCheckboxes');
   if (districtContainer) {
     districtContainer.innerHTML = '';
@@ -437,9 +439,9 @@ function renderFilters() {  const districts = [...new Set(listings.map(l => l.di
     btn.addEventListener('click', function() {
       if (this.classList.contains('active')) {
         this.classList.remove('active');
-      } else {
-        document.querySelectorAll('.price-btn').forEach(b => b.classList.remove('active'));
-        this.classList.add('active');      }
+      } else {        document.querySelectorAll('.price-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
+      }
       filterListings();
     });
   });
@@ -481,14 +483,17 @@ function resetFilters() {
   renderListings(listings.filter(l => l.active));
 }
 
+// ==========================================
+//  ОТРИСОВКА ОБЪЕКТОВ
+// ==========================================
 function renderListings(data) {
   const container = document.getElementById('listingsContainer');
-  if (!container) return;
-  container.innerHTML = '';
+  if (!container) return;  container.innerHTML = '';
 
   if (listings.length === 0) {
     container.innerHTML = `
-      <div class="empty-state">        <div class="empty-icon">🏗</div>
+      <div class="empty-state">
+        <div class="empty-icon">🏗</div>
         <h3>База пуста</h3>
         <p>Объекты ещё не добавлены.</p>
       </div>
@@ -532,12 +537,15 @@ function renderListings(data) {
     };
 
     card.innerHTML = `<img src="${escapeHtml(item.image_main) || ''}" alt="${escapeHtml(item.name) || ''}" class="listing-image" onerror="this.style.display='none'"><div class="listing-info"><h3>${escapeHtml(item.name) || 'Без названия'}</h3><div class="listing-meta"><span>${escapeHtml(item.district) || ''}</span><span>🚇 ${escapeHtml(item.metro) || ''}</span>${rooms ? `<span>🚪 ${escapeHtml(rooms)}</span>` : ''}${area ? `<span>📐 ${escapeHtml(area)}</span>` : ''}</div><div class="listing-price">от ${priceDisplay}${priceTo ? ` до ${priceTo} млн ₽` : ''} ${ppsqm ? `<br><span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}</div><div class="listing-status status-${statusKey}">${statusText}</div><button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button></div>`;
-
     container.appendChild(card);
   });
 }
 
-function initMap() {  if (typeof L === 'undefined') {
+// ==========================================
+//  КАРТА
+// ==========================================
+function initMap() {
+  if (typeof L === 'undefined') {
     console.error('Leaflet not loaded');
     return;
   }
@@ -578,19 +586,22 @@ function updateMapMarkers(filteredItems) {
       const popupEl = document.querySelector(`.map-popup[data-id="${item.id}"]`);
       if (popupEl) {
         popupEl.addEventListener('click', function() {
-          openDetails(item.id);
-        });
+          openDetails(item.id);        });
       }
     });
 
     markers.push(marker);
   });
 
-  if (markers.length > 0) {    const group = new L.featureGroup(markers);
+  if (markers.length > 0) {
+    const group = new L.featureGroup(markers);
     map.fitBounds(group.getBounds().pad(0.1));
   }
 }
 
+// ==========================================
+//  МОДАЛЬНОЕ ОКНО ДЕТАЛЕЙ
+// ==========================================
 function openDetails(id) {
   const item = listings.find(l => l.id === id);
   if (!item) return;
@@ -624,8 +635,7 @@ function openDetails(id) {
     galleryDiv.className = 'floor-plans-gallery';
     item.floor_plans_images.split(',').map(u => u.trim()).filter(Boolean).forEach(url => {
       const img = document.createElement('img');
-      img.src = url;
-      img.className = 'floor-plan-image';
+      img.src = url;      img.className = 'floor-plan-image';
       img.onclick = () => window.open(url, '_blank');
       galleryDiv.appendChild(img);
     });
@@ -635,7 +645,8 @@ function openDetails(id) {
     plansContainer.innerHTML = '<p style="color: var(--text-secondary)">Информация уточняется</p>';
   }
 
-  const gallery = document.getElementById('modalGallery');  gallery.innerHTML = '';
+  const gallery = document.getElementById('modalGallery');
+  gallery.innerHTML = '';
   if (item.image_main) {
     const mainImg = document.createElement('img');
     mainImg.src = item.image_main;
@@ -674,17 +685,20 @@ function closeModal() {
   document.getElementById('detailsModal').classList.add('hidden');
   document.body.style.overflow = '';
   currentModalId = null;
-
   if (document.getElementById('mapContainer').classList.contains('hidden')) {
     hideBack();
   }
 }
 
+// ==========================================
+//  ФОРМА КОНСУЛЬТАЦИИ
+// ==========================================
 function openConsultForm(id, event) {
   if (event) event.stopPropagation();
   currentModalId = id;
   sendConsultRequest();
 }
+
 function sendConsultRequest() {
   const item = listings.find(l => l.id === currentModalId);
   if (!item) return;
@@ -720,7 +734,6 @@ function initPhoneMask() {
 function initTelegramMask() {
   const telegramInput = document.getElementById('consultTelegram');
   if (!telegramInput) return;
-
   telegramInput.addEventListener('input', function(e) {
     let val = e.target.value;
     val = val.replace(/[^a-zA-Z0-9_@]/g, '');
@@ -733,7 +746,8 @@ function initTelegramMask() {
 
   telegramInput.addEventListener('paste', function(e) {
     e.preventDefault();
-    let paste = (e.clipboardData || window.clipboardData).getData('text');    paste = paste.replace(/[^a-zA-Z0-9_@]/g, '');
+    let paste = (e.clipboardData || window.clipboardData).getData('text');
+    paste = paste.replace(/[^a-zA-Z0-9_@]/g, '');
     if (paste.includes('@') && !paste.startsWith('@')) {
       paste = '@' + paste.replace(/@/g, '');
     }
@@ -768,25 +782,22 @@ function submitConsultForm(event) {
       tg?.showAlert('❌ Telegram не должен содержать кириллицу');
       return;
     }
-    const validRegex = /^@?[a-zA-Z0-9_]{3,32}$/;
-    if (!validRegex.test(telegram)) {
+    const validRegex = /^@?[a-zA-Z0-9_]{3,32}$/;    if (!validRegex.test(telegram)) {
       tg?.showAlert('❌ Неверный формат Telegram (только латиница, цифры, _)');
       return;
     }
     if (!telegram.startsWith('@')) telegram = '@' + telegram;
   }
 
-  const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzFGzj8iTpKzhDZHhSQj781HrqKqRnbA4u99Rk29bjlJ_bYhQyIKwll-5SP06WdE-E/exec';
-  const SECRET_KEY = 'SecretParol999';
-
   const submitBtn = event.target.querySelector('button[type="submit"]');
   const originalText = submitBtn.textContent;
   submitBtn.textContent = 'Отправка...';
   submitBtn.disabled = true;
-  fetch(GOOGLE_SCRIPT_URL, {
+
+  fetch(config.client.scriptUrl, {
     method: 'POST',
     body: JSON.stringify({
-      secret: SECRET_KEY,
+      secret: config.client.secretKey,
       projectId: 'demo-miniapp-realty',
       title: item.name,
       leadName: name,
@@ -814,13 +825,18 @@ function submitConsultForm(event) {
   });
 }
 
+// ==========================================
+//  УТИЛИТЫ
+// ==========================================
 function escapeHtml(text) {
   if (!text) return '';
   const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+  div.textContent = text;  return div.innerHTML;
 }
 
+// ==========================================
+//  ЗАПУСК ПРИЛОЖЕНИЯ
+// ==========================================
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
 } else {
