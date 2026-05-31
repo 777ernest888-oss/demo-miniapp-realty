@@ -1,7 +1,7 @@
 {
   "client": {
     "projectId": "demo-miniapp-realty",
-    "name": "Новостройки СПб",
+    "name": "Демонстрационная версия",
     "scriptUrl": "https://script.google.com/macros/s/AKfycbzFGzj8iTpKzhDZHhSQj781HrqKqRnbA4u99Rk29bjlJ_bYhQyIKwll-5SP06WdE-E/exec"
   },
   "sheets": {
