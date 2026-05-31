@@ -66,7 +66,7 @@
    
     <div class="view-toggle">
       <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>
-      <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">️ Карта</button>
+      <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺️ Карта</button>
     </div>
    
     <div id="listingsContainer" class="listings"></div>
@@ -81,11 +81,11 @@
       <h2 id="modalTitle"></h2>
       <div id="modalPrice" class="modal-price"></div>
       <div id="modalMeta" class="modal-meta"></div>
-      <h3> Описание</h3>
+      <h3>📖 Описание</h3>
       <div id="modalDescription" class="modal-desc"></div>
       <h3>✨ Преимущества</h3>
       <div id="modalFeatures" class="modal-features"></div>
-      <h3> Планировки</h3>
+      <h3>📐 Планировки</h3>
       <div id="modalFloorPlans" class="floor-plans"></div>
       <button id="modalConsultBtn" class="tg-btn">Заказать консультацию</button>
     </div>
@@ -111,7 +111,7 @@
   <div id="sideMenu" class="side-menu hidden">
     <button class="menu-close" onclick="closeMenu()">×</button>
     <nav class="menu-nav">
-      <button onclick="showPage('home')"> Каталог</button>
+      <button onclick="showPage('home')">🏠 Каталог</button>
       <button onclick="showPage('about')">👤 Обо мне</button>
       <button onclick="showPage('contacts')">📞 Контакты</button>
     </nav>
@@ -125,7 +125,7 @@
     </div>
     <div class="page-content">
       <p>Привет! Я — брокер по недвижимости. Помогаю подбирать объекты с максимальной доходностью и юридической чистотой.</p>
-      <h3> Как я работаю:</h3>
+      <h3>🔍 Как я работаю:</h3>
       <ul>
         <li>Проверяю документы и историю застройщика.</li>
         <li>Торгуюсь за скидку (часто до 5-10%).</li>
@@ -142,7 +142,7 @@
     </div>
     <div class="page-content">
       <div class="contact-card">
-        <div class="agent-avatar"></div>
+        <div class="agent-avatar">👤</div>
         <div class="agent-info">
           <h3 id="agentName">Имя Агента</h3>
           <p id="agentRole">Ваш персональный брокер</p>        </div>
@@ -161,6 +161,7 @@
     </div>
   </div>
 
+  <!-- Кнопка назад -->
   <button id="customBackBtn" class="header-back-btn hidden" onclick="appBack()">
     <span class="back-arrow">←</span>
     <span>Назад</span>
