@@ -18,19 +18,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .welcome { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 16px; background: var(--primary); }
 .welcome-brand { position: absolute; top: 24px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: center; gap: 12px; z-index: 10; width: max-content; }
 .brand-logo { width: 50px; height: 50px; object-fit: contain; border-radius: 8px; background: var(--white); padding: 4px; }
-.brand-company {
-  font-size: 14px;  /* Уменьшил с 18px до 14px */
-  font-weight: 600;  /* Чуть легче с 700 */
-  color: var(--white);
-  text-transform: none;  /* Убрал uppercase — теперь будет как в HTML */
-  letter-spacing: 0.3px;
-}
+.brand-company { font-size: 14px; font-weight: 600; color: var(--white); text-transform: none; letter-spacing: 0.3px; }
 .welcome-img { width: 100%; max-width: 480px; height: auto; max-height: 55vh; border-radius: 16px; box-shadow: 0 8px 24px rgba(0,0,0,0.35); margin-top: 60px; margin-bottom: 24px; object-fit: cover; display: block; }
 .welcome-bottom { text-align: center; width: 100%; max-width: 480px; }
 .welcome-main-title { font-size: 24px; font-weight: 800; color: var(--white); margin: 0 0 10px 0; }
 .welcome-sub { color: rgba(255,255,255,0.85); margin-bottom: 20px; font-size: 16px; }
 
-/* КНОПКА */
 .btn-primary {
   background: var(--accent);
   color: #ffffff !important;
@@ -52,12 +45,12 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
 }
 
-/* HEADER & BURGER */
-.header { background: var(--primary); padding: 10px 12px; display: flex; align-items: center; justify-content: flex-start; color: var(--white); position: sticky; top: 0; z-index: 2000; box-shadow: 0 2px 8px rgba(0,0,0,0.1); gap: 8px; }.menu-btn { background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); color: #ffffff; font-size: 22px; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s ease; padding: 0; line-height: 1; z-index: 2002; }
-.menu-btn:active { background: rgba(255, 255, 255, 0.35); transform: scale(0.95); }
+/* HEADER */
+.header { background: var(--primary); padding: 10px 12px; display: flex; align-items: center; justify-content: flex-start; color: var(--white); position: sticky; top: 0; z-index: 2000; box-shadow: 0 2px 8px rgba(0,0,0,0.1); gap: 8px; }
+.menu-btn { background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); color: #ffffff; font-size: 22px; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s ease; padding: 0; line-height: 1; z-index: 2002; }.menu-btn:active { background: rgba(255, 255, 255, 0.35); transform: scale(0.95); }
 .header-brand { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; overflow: hidden; justify-content: center; }
 .header-brand .brand-logo { width: 32px; height: 32px; padding: 3px; flex-shrink: 0; }
-.header-brand .brand-title { font-size: clamp(12px, 4vw, 16px); font-weight: 700; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
+.header-brand .brand-title { font-size: clamp(14px, 5vw, 20px); font-weight: 700; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
 .header-back-btn { background: #ffffff; color: var(--primary); border: none; padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 6px rgba(0,0,0,0.2); flex-shrink: 0; white-space: nowrap; position: fixed; top: 70px; left: 12px; z-index: 1999; }
 .header-back-btn .back-arrow { font-size: 14px; font-weight: bold; line-height: 1; }
 .header-back-btn:active { background: #f0f0f0; transform: scale(0.95); }
@@ -102,8 +95,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; transition: opacity 0.3s ease; }
 .modal:not(.hidden) { opacity: 1; }
 .modal-content { background: var(--white); width: 92%; max-width: 520px; max-height: 90vh; overflow-y: auto; border-radius: var(--radius); padding: 70px 22px 22px 22px; position: relative; transform: scale(0.9) translateY(20px); transition: transform 0.3s ease; }
-.modal:not(.hidden) .modal-content { transform: scale(1) translateY(0); }.modal-gallery { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 14px; padding-bottom: 8px; }
-.modal-main-image { width: 100%; border-radius: 8px; margin-bottom: 8px; }
+.modal:not(.hidden) .modal-content { transform: scale(1) translateY(0); }
+.modal-gallery { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 14px; padding-bottom: 8px; }.modal-main-image { width: 100%; border-radius: 8px; margin-bottom: 8px; }
 .modal-thumb { width: 75px; height: 55px; object-fit: cover; border-radius: 4px; cursor: pointer; }
 .modal-price { font-size: 22px; font-weight: 700; color: var(--accent); margin-bottom: 12px; }
 .modal-meta { display: flex; flex-direction: column; gap: 8px; margin-bottom: 14px; font-size: 14px; color: var(--text-secondary); }
@@ -151,8 +144,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .contact-card { background: var(--white); padding: 20px; border-radius: 16px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
 .agent-avatar { width: 60px; height: 60px; background: var(--bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; }
 .agent-info h3 { margin: 0 0 5px 0; color: var(--primary); }
-.agent-info p { margin: 0; color: var(--text-secondary); font-size: 14px; }.agency-block { background: var(--white); padding: 15px; border-radius: 12px; margin-bottom: 25px; }
-.agency-block h4 { margin: 0 0 10px 0; color: var(--primary); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
+.agent-info p { margin: 0; color: var(--text-secondary); font-size: 14px; }
+.agency-block { background: var(--white); padding: 15px; border-radius: 12px; margin-bottom: 25px; }.agency-block h4 { margin: 0 0 10px 0; color: var(--primary); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
 .agency-block p { margin: 5px 0; font-size: 15px; }
 .address-text { color: var(--text-secondary); }
 .contact-actions { display: flex; flex-direction: column; gap: 12px; }
