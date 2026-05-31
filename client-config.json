@@ -2,9 +2,6 @@
   "client": {
     "projectId": "demo-miniapp-realty",
     "name": "Новостройки СПб",
-    "botToken": "8946632348:AAFzhRu_pnh4i6Nznt7vhTQYLvez0WpAPIo",
-    "chatId": "2038206387",
-    "secretKey": "SecretParol999",
     "scriptUrl": "https://script.google.com/macros/s/AKfycbzFGzj8iTpKzhDZHhSQj781HrqKqRnbA4u99Rk29bjlJ_bYhQyIKwll-5SP06WdE-E/exec"
   },
   "sheets": {
