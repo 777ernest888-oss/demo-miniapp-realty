@@ -4,6 +4,9 @@
 // ==========================================
 const AGENT_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTAJn5ah-8UjagF2CloZWriSpKLyMkD5RxLzYOHC7PCtcCe33iTs5NvqM2dLs8QLCuMIrkIOytK0PWy/pub?gid=1784165651&single=true&output=csv'; // Вкладка AgentData
 const PAGES_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTAJn5ah-8UjagF2CloZWriSpKLyMkD5RxLzYOHC7PCtcCe33iTs5NvqM2dLs8QLCuMIrkIOytK0PWy/pub?gid=374222153&single=true&output=csv'; // Вкладка Pages
+
+// ✅ ССЫЛКА ДЛЯ ОБЪЕКТОВ (вставлена твоя ссылка)
+const LISTINGS_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTAJn5ah-8UjagF2CloZWriSpKLyMkD5RxLzYOHC7PCtcCe33iTs5NvqM2dLs8QLCuMIrkIOytK0PWy/pub?gid=0&single=true&output=csv';
 // ==========================================
 
 // Данные по умолчанию (пустые, всё берётся из таблицы)
@@ -45,9 +48,9 @@ let map = null;
 let markers = [];
 let brandLogoUrl = null;
 let currentPage = 'home';
-
 // ✅ ЗАГРУЗКА ДАННЫХ АГЕНТА
-async function loadAgentData() {  try {
+async function loadAgentData() {
+  try {
     const res = await fetch(AGENT_SHEET_CSV_URL);
     if (!res.ok) throw new Error('Network error');
     const csv = await res.text();
@@ -69,7 +72,7 @@ async function loadPagesData() {
     if (!res.ok) throw new Error('Network error');
     const csv = await res.text();
     const rows = parseCSV(csv);
-   
+  
     rows.forEach(row => {
       if (row.page && row.title) {
         pagesData[row.page] = {
@@ -93,10 +96,10 @@ function hideBack() {
   const btn = document.getElementById('customBackBtn');
   if (btn) btn.classList.add('hidden');
 }
-
 function appBack() {
   if (!document.getElementById('consultModal').classList.contains('hidden')) { closeConsultModal(); return; }
-  if (!document.getElementById('detailsModal').classList.contains('hidden')) { closeModal(); return; }  if (!document.getElementById('mapContainer').classList.contains('hidden')) { switchView('list'); return; }
+  if (!document.getElementById('detailsModal').classList.contains('hidden')) { closeModal(); return; }
+  if (!document.getElementById('mapContainer').classList.contains('hidden')) { switchView('list'); return; }
   if (currentPage !== 'home') { showPage('home'); return; }
   if (tg.close) tg.close();
 }
@@ -131,7 +134,7 @@ function showPage(pageId) {
     // ДИНАМИЧЕСКАЯ ПОДГРУЗКА ТЕКСТА ИЗ ТАБЛИЦЫ
     const data = pagesData[pageId];
     const targetPage = document.getElementById(`page-${pageId}`);
-   
+  
     if (data && targetPage) {
       targetPage.querySelector('.page-header h2').textContent = data.title;
       targetPage.querySelector('.page-content').innerHTML = data.content;
@@ -142,10 +145,10 @@ function showPage(pageId) {
       if (targetPage) {
         targetPage.querySelector('.page-header h2').textContent = pageId === 'about' ? 'Обо мне' : 'Информация';
         targetPage.querySelector('.page-content').innerHTML = '<p>Информация загружается...</p>';
-        targetPage.classList.remove('hidden');
-        showBack();
+        targetPage.classList.remove('hidden');        showBack();
       } else {
-        mainContent.classList.remove('hidden');        hideBack();
+        mainContent.classList.remove('hidden');
+        hideBack();
       }
     }
   }
@@ -191,39 +194,40 @@ function closeMenu() {
 function openDirectChat() {
   const username = currentAgentData.telegramUsername || '';
   if (username) {
-    if (tg.openTelegramLink) tg.openTelegramLink('https://t.me/' + username);
-    else window.open('https://t.me/' + username);
+    if (tg.openTelegramLink) tg.openTelegramLink('https://t.me/' + username);    else window.open('https://t.me/' + username);
   } else {
-    tg?.showAlert('❌ Telegram не указан');  }
+    tg?.showAlert('❌ Telegram не указан');
+  }
 }
 
 function callAgent() {
   let phone = currentAgentData.phone;
- 
+
   if (!phone) {
     tg?.showAlert('❌ Телефон не указан в таблице');
     return;
   }
- 
+
   // Преобразуем в строку (на случай если пришло число)
   phone = phone.toString();
- 
+
   // Очищаем: оставляем только цифры и +
   let cleanPhone = phone.replace(/[^\d+]/g, '');
- 
+
   // Если номер начинается с 7 или 8 и имеет 11 цифр, добавляем +
   if (cleanPhone.length === 11 && (cleanPhone.startsWith('7') || cleanPhone.startsWith('8'))) {
     cleanPhone = '+' + cleanPhone;
   }
- 
+
   // Если всё ещё нет +, но номер длинный, добавляем
   if (!cleanPhone.startsWith('+') && cleanPhone.length >= 11) {
     cleanPhone = '+' + cleanPhone;
   }
- 
+
   console.log('📞 Звоним на номер:', cleanPhone);
   window.location.href = 'tel:' + cleanPhone;
 }
+
 function toggleFilters() {
   const block = document.getElementById('filtersBlock');
   const btn = document.querySelector('.filters-toggle-btn');
@@ -239,8 +243,7 @@ function switchView(view) {
   const listContainer = document.getElementById('listingsContainer');
   const mapContainer = document.getElementById('mapContainer');
   if (view === 'list') {
-    listBtn.classList.add('active');
-    mapBtn.classList.remove('active');
+    listBtn.classList.add('active');    mapBtn.classList.remove('active');
     listContainer.classList.remove('hidden');
     mapContainer.classList.add('hidden');
     hideBack();
@@ -260,14 +263,20 @@ async function init() {
     await loadAgentData();
     await loadPagesData();
 
-    // 2. Остальная инициализация
-    const loadingScreen = document.getElementById('loadingScreen');    if (loadingScreen) loadingScreen.classList.remove('hidden');
-   
-    const configRes = await fetch('config.json');
-    config = await configRes.json();
-    if (config.data?.sheetUrl) {
-      listings = await loadFromGoogleSheets(config.data.sheetUrl);
-    }   
+    // 2. Загружаем конфиг (с обработкой ошибок)
+    try {
+      const configRes = await fetch('config.json');
+      config = await configRes.json();
+    } catch (e) {
+      console.warn('⚠️ Config not loaded, using defaults');
+    }
+
+    // 3. Загружаем объекты: из конфига ИЛИ запасная ссылка
+    const listingsUrl = config.data?.sheetUrl || LISTINGS_CSV_URL;
+    if (listingsUrl) {
+      listings = await loadFromGoogleSheets(listingsUrl);
+    }
+  
     applyTheme();
     applyBranding();
     renderWelcome();
@@ -276,14 +285,14 @@ async function init() {
     initPhoneMask();
     initTelegramMask();
     hideBack();
- 
+
+    const loadingScreen = document.getElementById('loadingScreen');
     if (loadingScreen) loadingScreen.classList.add('hidden');
   } catch (error) {
     console.error('Init Error:', error);
     const loadingScreen = document.getElementById('loadingScreen');
     if (loadingScreen) loadingScreen.classList.add('hidden');
-  }
-}
+  }}
 
 function applyTheme() {
   if (!config.brand) return;
@@ -300,12 +309,12 @@ function applyBranding() {
   if (welcomeContainer) {
     const customTitle = config.brand.welcomeTitle || config.brand.name;
     const customLogo = config.brand.logo;
- 
+
     if (customLogo && customLogo !== 'logo.png') {
       const logoImg = welcomeContainer.querySelector('.brand-logo');
       if (logoImg) logoImg.src = customLogo;
     }
- 
+
     if (customTitle && customTitle.toUpperCase() !== 'КАТАЛОГ НОВОСТРОЕК') {
       const titleEl = welcomeContainer.querySelector('.brand-title');
       if (titleEl) titleEl.textContent = customTitle.toUpperCase();
@@ -332,8 +341,7 @@ function applyBranding() {
 }
 
 async function loadFromGoogleSheets(url) {
-  let csvUrl = url.replace('pubhtml', 'pub');
-  if (!csvUrl.includes('output=csv')) {
+  let csvUrl = url.replace('pubhtml', 'pub');  if (!csvUrl.includes('output=csv')) {
     csvUrl += (csvUrl.includes('?') ? '&' : '?') + 'output=csv';
   }
   const response = await fetch(csvUrl);
@@ -360,12 +368,13 @@ function parseCSV(csv) {
   }
   return result;
 }
+
 function parseCSVLine(line) {
   const result = [];
   let current = '';
   let inQuotes = false;
   for (let i = 0; i < line.length; i++) {
-    const char = line[i];   
+    const char = line[i];  
     if (char === '"') inQuotes = !inQuotes;
     else if (char === ',' && !inQuotes) { result.push(current); current = ''; }
     else current += char;
@@ -381,7 +390,6 @@ function renderWelcome() {
     return;
   }
 }
-
 function renderFilters() {
   const districts = [...new Set(listings.map(l => l.district).filter(Boolean))].sort();
   const districtContainer = document.getElementById('districtCheckboxes');
@@ -408,13 +416,14 @@ function renderFilters() {
   }
 
   const roomsContainer = document.getElementById('roomsCheckboxes');
-  if (roomsContainer) {    const allRooms = [];
+  if (roomsContainer) {
+    const allRooms = [];
     listings.forEach(l => {
       if (l.rooms) {
         const roomList = String(l.rooms).split(',').map(r => r.trim());
         roomList.forEach(r => { if (r && !allRooms.includes(r)) allRooms.push(r); });
       }
-    });   
+    });  
     allRooms.sort();
     roomsContainer.innerHTML = '';
     allRooms.forEach(r => {
@@ -430,8 +439,7 @@ function renderFilters() {
       if (this.classList.contains('active')) {
         this.classList.remove('active');
       } else {
-        document.querySelectorAll('.price-btn').forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
+        document.querySelectorAll('.price-btn').forEach(b => b.classList.remove('active'));        this.classList.add('active');
       }
       filterListings();
     });
@@ -457,13 +465,14 @@ function filterListings() {
       const itemRooms = String(item.rooms).split(',').map(r => r.trim());
       const hasMatch = selectedRooms.some(r => itemRooms.includes(r));
       if (!hasMatch) return false;
-    }    return true;
+    }
+    return true;
   });
 
   renderListings(filtered);
   const mapContainer = document.getElementById('mapContainer');
   if (mapContainer && !mapContainer.classList.contains('hidden')) {
-    updateMapMarkers(filtered); 
+    updateMapMarkers(filtered);
   }
 }
 
@@ -479,8 +488,7 @@ function renderListings(data) {
   container.innerHTML = '';
 
   if (listings.length === 0) {
-    container.innerHTML = `
-      <div class="empty-state">
+    container.innerHTML = `      <div class="empty-state">
         <div class="empty-icon">🏗</div>
         <h3>База пуста</h3>
         <p>Объекты ещё не добавлены.</p>
@@ -506,29 +514,29 @@ function renderListings(data) {
     let priceDisplay = '?';
     if (typeof item.price_from === 'number') {
       if (item.price_from < 1000) {
-        priceDisplay = `${item.price_from.toFixed(1)} млн ₽`;      } else {
+        priceDisplay = `${item.price_from.toFixed(1)} млн ₽`;
+      } else {
         priceDisplay = `${(item.price_from / 1000000).toFixed(1)} млн ₽`;
       }
-    } 
+    }
     const priceTo = typeof item.price_to === 'number' ? item.price_to.toFixed(1) : '';
     const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
-    const area = (typeof item.area_min === 'number' && typeof item.area_max === 'number') ? `${item.area_min}–${item.area_max} м²` : '';   
+    const area = (typeof item.area_min === 'number' && typeof item.area_max === 'number') ? `${item.area_min}–${item.area_max} м²` : '';  
     const rooms = item.rooms || '';
     const statusKey = (item.status || 'other').toString().replace(/\s+/g, '-');
     const statusText = item.status === 'Сдан' ? '✅ Сдан' : item.status === 'Строится' ? '🏗 Строится' : '🟡 Частично сдан';
- 
+
     const card = document.createElement('div');
     card.className = 'listing-card';
     card.onclick = function(e) {
       if (!e.target.closest('.consult-btn-inline')) openDetails(item.id);
     };
- 
+
     card.innerHTML = `<img src="${escapeHtml(item.image_main) || ''}" alt="${escapeHtml(item.name) || ''}" class="listing-image" onerror="this.style.display='none'"><div class="listing-info"><h3>${escapeHtml(item.name) || 'Без названия'}</h3><div class="listing-meta"><span>${escapeHtml(item.district) || ''}</span><span>🚇 ${escapeHtml(item.metro) || ''}</span>${rooms ? `<span>🚪 ${escapeHtml(rooms)}</span>` : ''}${area ? `<span>📐 ${escapeHtml(area)}</span>` : ''}</div><div class="listing-price">от ${priceDisplay}${priceTo ? ` до ${priceTo} млн ₽` : ''} ${ppsqm ? `<br><span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}</div><div class="listing-status status-${statusKey}">${statusText}</div><button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button></div>`;
- 
+
     container.appendChild(card);
   });
 }
-
 function initMap() {
   if (typeof L === 'undefined') {
     console.error('Leaflet not loaded');
@@ -555,16 +563,18 @@ function updateMapMarkers(filteredItems) {
   markers.forEach(m => map.removeLayer(m));
   markers = [];
 
-  filteredItems.forEach(item => {    if (!item.active || !item.lat || !item.lng) return;
- 
+  filteredItems.forEach(item => {
+    if (!item.active || !item.lat || !item.lng) return;
+
     let priceDisplay = '?';
     if (typeof item.price_from === 'number') {
       priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
     }
-       const marker = L.marker([item.lat, item.lng]).addTo(map);
+      
+    const marker = L.marker([item.lat, item.lng]).addTo(map);
     const popupContent = `<div class="map-popup" data-id="${item.id}" style="cursor: pointer;"><b>${item.name}</b><br>от ${priceDisplay} млн ₽<small style="display: block; margin-top: 4px; color: #666;">Нажмите для деталей</small></div>`;
     marker.bindPopup(popupContent);
- 
+
     marker.on('popupopen', function() {
       const popupEl = document.querySelector(`.map-popup[data-id="${item.id}"]`);
       if (popupEl) {
@@ -573,11 +583,10 @@ function updateMapMarkers(filteredItems) {
         });
       }
     });
- 
+
     markers.push(marker);
   });
-
-  if (markers.length > 0) {
+   if (markers.length > 0) {
     const group = new L.featureGroup(markers);
     map.fitBounds(group.getBounds().pad(0.1));
   }
@@ -604,12 +613,13 @@ function openDetails(id) {
   featuresDiv.innerHTML = item.features ? `<ul>${item.features.split(',').map(f => `<li>${escapeHtml(f.trim())}</li>`).join('')}</ul>` : '<p style="color: var(--text-secondary)">Информация уточняется</p>';
 
   const plansContainer = document.getElementById('modalFloorPlans');
-  plansContainer.innerHTML = '';  if (item.floor_plans_text) {
+  plansContainer.innerHTML = '';
+  if (item.floor_plans_text) {
     const textDiv = document.createElement('div');
     textDiv.className = 'floor-plans-text';
     textDiv.textContent = item.floor_plans_text;
     plansContainer.appendChild(textDiv);
-  } 
+  }
   if (item.floor_plans_images) {
     const galleryDiv = document.createElement('div');
     galleryDiv.className = 'floor-plans-gallery';
@@ -625,8 +635,7 @@ function openDetails(id) {
   if (!item.floor_plans_text && !item.floor_plans_images) {
     plansContainer.innerHTML = '<p style="color: var(--text-secondary)">Информация уточняется</p>';
   }
-
-  const gallery = document.getElementById('modalGallery');
+   const gallery = document.getElementById('modalGallery');
   gallery.innerHTML = '';
   if (item.image_main) {
     const mainImg = document.createElement('img');
@@ -653,7 +662,8 @@ function openDetails(id) {
     btn.style.marginTop = '20px';
     btn.style.marginBottom = '40px';
     modalContent.appendChild(btn);
-  }  btn.textContent = '📞 Получить консультацию';
+  }
+  btn.textContent = '📞 Получить консультацию';
   btn.onclick = () => openConsultForm(id);
   document.getElementById('detailsModal').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
@@ -674,8 +684,7 @@ function closeModal() {
 function openConsultForm(id, event) {
   if (event) event.stopPropagation();
   currentModalId = id;
-  sendConsultRequest();
-}
+  sendConsultRequest();}
 
 function sendConsultRequest() {
   const item = listings.find(l => l.id === currentModalId);
@@ -702,7 +711,8 @@ function closeConsultModal() {
 function initPhoneMask() {
   const phoneInput = document.getElementById('consultPhone');
   if (!phoneInput) return;
-  phoneInput.addEventListener('input', function(e) {    let x = e.target.value.replace(/\D/g, '').match(/(\d{0,1})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
+  phoneInput.addEventListener('input', function(e) {
+    let x = e.target.value.replace(/\D/g, '').match(/(\d{0,1})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
     e.target.value = !x[2] ? '+7 (' : '+7 (' + x[2] + (x[3] ? ') ' + x[3] : '') + (x[4] ? '-' + x[4] : '') + (x[5] ? '-' + x[5] : '');
   });
   phoneInput.addEventListener('focus', function(e) { if (e.target.value === '') e.target.value = '+7 ('; });
@@ -723,8 +733,7 @@ function initTelegramMask() {
   });
 
   telegramInput.addEventListener('paste', function(e) {
-    e.preventDefault();
-    let paste = (e.clipboardData || window.clipboardData).getData('text');
+    e.preventDefault();    let paste = (e.clipboardData || window.clipboardData).getData('text');
     paste = paste.replace(/[^a-zA-Z0-9_@]/g, '');
     if (paste.includes('@') && !paste.startsWith('@')) {
       paste = '@' + paste.replace(/@/g, '');
@@ -749,9 +758,10 @@ function submitConsultForm(event) {
   }
 
   const phoneDigits = phone.replace(/\D/g, '');
-  if (phoneDigits.length < 10 || phoneDigits.length > 15) {   
+  if (phoneDigits.length < 10 || phoneDigits.length > 15) {  
     tg?.showAlert('❌ Введите корректный номер телефона');
-    return;  }
+    return;
+  }
 
   if (telegram) {
     const cyrillicRegex = /[а-яА-ЯёЁ]/;
@@ -772,8 +782,7 @@ function submitConsultForm(event) {
 
   const submitBtn = event.target.querySelector('button[type="submit"]');
   const originalText = submitBtn.textContent;
-  submitBtn.textContent = 'Отправка...';
-  submitBtn.disabled = true;
+  submitBtn.textContent = 'Отправка...';  submitBtn.disabled = true;
 
   fetch(GOOGLE_SCRIPT_URL, {
     method: 'POST',
@@ -796,11 +805,12 @@ function submitConsultForm(event) {
       throw new Error(data.error || 'Неизвестная ошибка');
     }
   })
-  .catch(err => {   
+  .catch(err => {  
     console.error('Send error:', err);
     tg?.showAlert('⚠️ Ошибка: ' + err.message);
   })
-  .finally(() => {    submitBtn.textContent = originalText;
+  .finally(() => {
+    submitBtn.textContent = originalText;
     submitBtn.disabled = false;
   });
 }
