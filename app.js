@@ -1,3 +1,6 @@
+// ==========================================
+//  ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ
+// ==========================================
 let config = {};
 let listings = [];
 let currentAgentData = {};
@@ -44,10 +47,10 @@ async function loadAgentData() {
     const csv = await res.text();
     const parsed = parseCSV(csv);
     if (parsed.length > 0) {
-      currentAgentData = parsed[0];
-      console.log('✅ Agent data loaded');
+      currentAgentData = parsed[0];      console.log('✅ Agent data loaded');
     }
-  } catch (e) { console.warn('⚠️ Agent data error:', e); }}
+  } catch (e) { console.warn('⚠️ Agent data error:', e); }
+}
 
 async function loadPagesData() {
   try {
@@ -61,7 +64,7 @@ async function loadPagesData() {
       }
     });
     console.log('✅ Pages data loaded');
-  } catch (e) { console.warn('️ Pages data error:', e); }
+  } catch (e) { console.warn('⚠️ Pages data error:', e); }
 }
 
 async function loadFromGoogleSheets(url) {
@@ -93,10 +96,10 @@ function parseCSV(csv) {
   }
   return result;
 }
-
 function parseCSVLine(line) {
   const result = [];
-  let current = '';  let inQuotes = false;
+  let current = '';
+  let inQuotes = false;
   for (let i = 0; i < line.length; i++) {
     const char = line[i];
     if (char === '"') inQuotes = !inQuotes;
@@ -142,10 +145,10 @@ function showPage(pageId) {
   } else if (pageId === 'contacts') {
     renderContactsPage();
     document.getElementById('page-contacts').classList.remove('hidden');
-    showBack();
-  } else {
+    showBack();  } else {
     const data = pagesData[pageId];
-    const targetPage = document.getElementById(`page-${pageId}`);    if (data && targetPage) {
+    const targetPage = document.getElementById(`page-${pageId}`);
+    if (data && targetPage) {
       targetPage.querySelector('.page-header h2').textContent = data.title;
       targetPage.querySelector('.page-content').innerHTML = data.content;
       targetPage.classList.remove('hidden');
@@ -191,10 +194,10 @@ function openDirectChat() {
   } else {
     tg?.showAlert('❌ Telegram не указан');
   }
-}
-function callAgent() {
+}function callAgent() {
   let phone = currentAgentData.phone;
-  if (!phone) { tg?.showAlert('❌ Телефон не указан'); return; }  let cleanPhone = phone.toString().replace(/[^\d+]/g, '');
+  if (!phone) { tg?.showAlert('❌ Телефон не указан'); return; }
+  let cleanPhone = phone.toString().replace(/[^\d+]/g, '');
   if (cleanPhone.length === 11 && (cleanPhone.startsWith('7') || cleanPhone.startsWith('8'))) cleanPhone = '+' + cleanPhone;
   if (!cleanPhone.startsWith('+') && cleanPhone.length >= 11) cleanPhone = '+' + cleanPhone;
   window.location.href = 'tel:' + cleanPhone;
@@ -240,10 +243,10 @@ async function init() {
     if (loadingScreen) loadingScreen.classList.add('hidden');
   } catch (error) {
     console.error('Init Error:', error);
-    const loadingScreen = document.getElementById('loadingScreen');
-    if (loadingScreen) loadingScreen.classList.add('hidden');
+    const loadingScreen = document.getElementById('loadingScreen');    if (loadingScreen) loadingScreen.classList.add('hidden');
   }
 }
+
 function applyTheme() {
   if (!config.branding) return;
   document.documentElement.style.setProperty('--primary', config.branding.primaryColor || '#3D5266');
@@ -290,9 +293,9 @@ function renderWelcome() {
     document.getElementById('mainContent')?.classList.remove('hidden');
   }
 }
-
 function renderFilters() {
-  // ✅ ИСПРАВЛЕНО: districts (без пробела) и правильные стрелочные функции  const districts = [...new Set(listings.map(l => l.district).filter(Boolean))].sort();
+  // ✅ ИСПРАВЛЕНО: districts (без пробела) и правильные стрелочные функции
+  const districts = [...new Set(listings.map(l => l.district).filter(Boolean))].sort();
   const districtContainer = document.getElementById('districtCheckboxes');
   if (districtContainer) {
     districtContainer.innerHTML = '';
@@ -338,10 +341,10 @@ function renderFilters() {
     btn.addEventListener('click', function() {
       if (this.classList.contains('active')) this.classList.remove('active');
       else {
-        document.querySelectorAll('.price-btn').forEach(b => b.classList.remove('active'));
-        this.classList.add('active');
+        document.querySelectorAll('.price-btn').forEach(b => b.classList.remove('active'));        this.classList.add('active');
       }
-      filterListings();    });
+      filterListings();
+    });
   });
   document.querySelectorAll('.filter-checkbox').forEach(cb => cb.addEventListener('change', filterListings));
 }
@@ -387,10 +390,10 @@ function renderListings(data) {
   }
   if (!data || data.length === 0) {
     container.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><h3>Ничего не найдено</h3><p>Попробуйте изменить параметры поиска.</p><button class="btn-reset-filters" onclick="resetFilters()">🔄 Сбросить фильтры</button></div>`;
-    return;
-  }
+    return;  }
 
-  data.forEach(item => {    let priceDisplay = '?';
+  data.forEach(item => {
+    let priceDisplay = '?';
     if (typeof item.price_from === 'number') {
       priceDisplay = item.price_from < 1000 ? `${item.price_from.toFixed(1)} млн ₽` : `${(item.price_from / 1000000).toFixed(1)} млн ₽`;
     }
@@ -398,7 +401,7 @@ function renderListings(data) {
     const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
     const area = (typeof item.area_min === 'number' && typeof item.area_max === 'number') ? `${item.area_min}–${item.area_max} м²` : '';
     const statusKey = (item.status || 'other').toString().replace(/\s+/g, '-');
-    const statusText = item.status === 'Сдан' ? '✅ Сдан' : item.status === 'Строится' ? '🏗 Строится' : ' Частично сдан';
+    const statusText = item.status === 'Сдан' ? '✅ Сдан' : item.status === 'Строится' ? '🏗 Строится' : '🟡 Частично сдан';
 
     const card = document.createElement('div');
     card.className = 'listing-card';
@@ -436,10 +439,10 @@ function initMap() {
 
 function updateMapMarkers(filteredItems) {
   if (!map) return;
-  markers.forEach(m => map.removeLayer(m));
-  markers = [];
+  markers.forEach(m => map.removeLayer(m));  markers = [];
   filteredItems.forEach(item => {
-    if (!item.active || !item.lat || !item.lng) return;    let priceDisplay = '?';
+    if (!item.active || !item.lat || !item.lng) return;
+    let priceDisplay = '?';
     if (typeof item.price_from === 'number') {
       priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
     }
@@ -485,10 +488,10 @@ function openDetails(id) {
     textDiv.textContent = item.floor_plans_text;
     plansContainer.appendChild(textDiv);
   }
-  if (item.floor_plans_images) {
-    const galleryDiv = document.createElement('div');
+  if (item.floor_plans_images) {    const galleryDiv = document.createElement('div');
     galleryDiv.className = 'floor-plans-gallery';
-    item.floor_plans_images.split(',').map(u => u.trim()).filter(Boolean).forEach(url => {      const img = document.createElement('img');
+    item.floor_plans_images.split(',').map(u => u.trim()).filter(Boolean).forEach(url => {
+      const img = document.createElement('img');
       img.src = url;
       img.className = 'floor-plan-image';
       img.onclick = () => window.open(url, '_blank');
@@ -534,10 +537,10 @@ function openDetails(id) {
 
 function closeModal() {
   document.getElementById('detailsModal').classList.add('hidden');
-  document.body.style.overflow = '';
-  currentModalId = null;
+  document.body.style.overflow = '';  currentModalId = null;
   if (document.getElementById('mapContainer').classList.contains('hidden')) hideBack();
 }
+
 function openConsultForm(id, event) {
   if (event) event.stopPropagation();
   currentModalId = id;
@@ -583,10 +586,10 @@ function submitConsultForm(event) {
   event.preventDefault();
   const item = listings.find(l => l.id === currentModalId);
   if (!item) return;
-
   const name = document.getElementById('consultName').value.trim();
   const phone = document.getElementById('consultPhone').value.trim();
   let telegram = document.getElementById('consultTelegram')?.value.trim() || '';
+
   if (!name || name.length < 2) { tg?.showAlert('❌ Введите имя'); return; }
   if (phone.replace(/\D/g, '').length < 10) { tg?.showAlert('❌ Введите корректный телефон'); return; }
   if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) { tg?.showAlert('❌ Telegram только латиницей'); return; }
@@ -632,6 +635,5 @@ function escapeHtml(text) {
 
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', init);
-} else {
-  init();
+} else {  init();
 }
