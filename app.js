@@ -11,7 +11,6 @@ let markers = [];
 let currentPage = 'home';
 let tg;
 
-// Инициализация Telegram WebApp
 try {
   if (window.Telegram && window.Telegram.WebApp) {
     tg = window.Telegram.WebApp;
@@ -30,9 +29,6 @@ try {
   }
 } catch (e) { console.error(e); }
 
-// ==========================================
-//  ✅ ЗАГРУЗКА КОНФИГА
-// ==========================================
 async function loadClientConfig() {
   try {
     const response = await fetch('client-config.json');
@@ -44,17 +40,14 @@ async function loadClientConfig() {
   }
 }
 
-// ==========================================
-//  ЗАГРУЗКА ДАННЫХ
-// ==========================================
-async function loadAgentData() {  try {
+async function loadAgentData() {
+  try {
     const res = await fetch(config.sheets.agentData);
     if (!res.ok) throw new Error('Network error');
     const csv = await res.text();
     const parsed = parseCSV(csv);
     if (parsed.length > 0) {
-      currentAgentData = parsed[0];
-      console.log('✅ Agent data loaded');
+      currentAgentData = parsed[0];      console.log('✅ Agent data loaded');
     }
   } catch (e) { console.warn('⚠️ Agent data error:', e); }
 }
@@ -71,7 +64,7 @@ async function loadPagesData() {
       }
     });
     console.log('✅ Pages data loaded');
-  } catch (e) { console.warn('️ Pages data error:', e); }
+  } catch (e) { console.warn('⚠️ Pages data error:', e); }
 }
 
 async function loadFromGoogleSheets(url) {
@@ -83,9 +76,6 @@ async function loadFromGoogleSheets(url) {
   return parseCSV(await response.text());
 }
 
-// ==========================================
-//  PARSE CSV
-// ==========================================
 function parseCSV(csv) {
   const lines = csv.trim().split('\n');
   if (lines.length < 2) return [];
@@ -96,7 +86,8 @@ function parseCSV(csv) {
     const values = parseCSVLine(lines[i]);
     const obj = {};
     headers.forEach((header, index) => {
-      let value = values[index] !== undefined ? values[index].trim() : '';      if (value === 'TRUE') value = true;
+      let value = values[index] !== undefined ? values[index].trim() : '';
+      if (value === 'TRUE') value = true;
       else if (value === 'FALSE') value = false;
       else if (!isNaN(value) && value !== '') value = Number(value);
       obj[header] = value;
@@ -105,7 +96,6 @@ function parseCSV(csv) {
   }
   return result;
 }
-
 function parseCSVLine(line) {
   const result = [];
   let current = '';
@@ -120,17 +110,16 @@ function parseCSVLine(line) {
   return result;
 }
 
-// ==========================================
-//  НАВИГАЦИЯ
-// ==========================================
 function showBack() {
   const btn = document.getElementById('customBackBtn');
   if (btn) btn.classList.remove('hidden');
 }
+
 function hideBack() {
   const btn = document.getElementById('customBackBtn');
   if (btn) btn.classList.add('hidden');
 }
+
 function appBack() {
   if (!document.getElementById('consultModal').classList.contains('hidden')) { closeConsultModal(); return; }
   if (!document.getElementById('detailsModal').classList.contains('hidden')) { closeModal(); return; }
@@ -138,14 +127,17 @@ function appBack() {
   if (currentPage !== 'home') { showPage('home'); return; }
   if (tg.close) tg.close();
 }
+
 function startApp() {
   document.getElementById('welcomeScreen')?.classList.add('hidden');
   document.getElementById('mainContent')?.classList.remove('hidden');
   window.scrollTo(0, 0);
   hideBack();
 }
+
 function showPage(pageId) {
-  currentPage = pageId;  closeMenu();
+  currentPage = pageId;
+  closeMenu();
   document.getElementById('mainContent').classList.add('hidden');
   document.getElementById('page-about').classList.add('hidden');
   document.getElementById('page-contacts').classList.add('hidden');
@@ -153,8 +145,7 @@ function showPage(pageId) {
   if (pageId === 'home') {
     document.getElementById('mainContent').classList.remove('hidden');
     hideBack();
-  } else if (pageId === 'contacts') {
-    renderContactsPage();
+  } else if (pageId === 'contacts') {    renderContactsPage();
     document.getElementById('page-contacts').classList.remove('hidden');
     showBack();
   } else {
@@ -179,6 +170,7 @@ function showPage(pageId) {
   }
   window.scrollTo(0, 0);
 }
+
 function renderContactsPage() {
   const data = currentAgentData;
   const nameEl = document.getElementById('agentName');
@@ -194,13 +186,16 @@ function renderContactsPage() {
   document.getElementById('agencyName').textContent = data.agencyName || '';
   document.getElementById('agencyAddress').textContent = data.agencyAddress ? '📍 ' + data.agencyAddress : '';
 }
-function openMenu() {  document.getElementById('menuOverlay').classList.remove('hidden');
+
+function openMenu() {
+  document.getElementById('menuOverlay').classList.remove('hidden');
   document.getElementById('sideMenu').classList.remove('hidden');
 }
+
 function closeMenu() {
   document.getElementById('menuOverlay').classList.add('hidden');
-  document.getElementById('sideMenu').classList.add('hidden');
-}
+  document.getElementById('sideMenu').classList.add('hidden');}
+
 function openDirectChat() {
   const username = currentAgentData.telegramUsername || '';
   if (username) {
@@ -209,6 +204,7 @@ function openDirectChat() {
     tg?.showAlert('❌ Telegram не указан');
   }
 }
+
 function callAgent() {
   let phone = currentAgentData.phone;
   if (!phone) { tg?.showAlert('❌ Телефон не указан'); return; }
@@ -217,12 +213,14 @@ function callAgent() {
   if (!cleanPhone.startsWith('+') && cleanPhone.length >= 11) cleanPhone = '+' + cleanPhone;
   window.location.href = 'tel:' + cleanPhone;
 }
+
 function toggleFilters() {
   const block = document.getElementById('filtersBlock');
   const btn = document.querySelector('.filters-toggle-btn');
   block.classList.toggle('hidden');
-  btn.textContent = block.classList.contains('hidden') ? ' Фильтры' : '🔼 Скрыть фильтры';
+  btn.textContent = block.classList.contains('hidden') ? '🔽 Фильтры' : '🔼 Скрыть фильтры';
 }
+
 function switchView(view) {
   const listBtn = document.getElementById('listViewBtn');
   const mapBtn = document.getElementById('mapViewBtn');
@@ -240,15 +238,12 @@ function switchView(view) {
   }
 }
 
-// ==========================================
-//  ✅ ИНИЦИАЛИЗАЦИЯ
-// ==========================================
-async function init() {  try {
+async function init() {
+  try {
     await loadClientConfig();
     applyTheme();
     applyBranding();
-    await loadAgentData();
-    await loadPagesData();
+    await loadAgentData();    await loadPagesData();
     listings = await loadFromGoogleSheets(config.sheets.listings);
     renderWelcome();
     renderFilters();
@@ -265,9 +260,6 @@ async function init() {  try {
   }
 }
 
-// ==========================================
-//  БРЕНДИНГ
-// ==========================================
 function applyTheme() {
   if (!config.branding) return;
   document.documentElement.style.setProperty('--primary', config.branding.primaryColor || '#3D5266');
@@ -277,22 +269,18 @@ function applyTheme() {
 function applyBranding() {
   if (!config.branding) return;
  
-  // Обновляем название компании
   const companyEl = document.getElementById('companyName');
   if (companyEl && config.branding.name) companyEl.textContent = config.branding.name;
 
-  // Обновляем заголовок
   const titleEl = document.getElementById('welcomeTitle');
   if (titleEl && config.branding.welcomeTitle) titleEl.textContent = config.branding.welcomeTitle;
 
-  // Обновляем подзаголовок
   const taglineEl = document.getElementById('welcomeTagline');
   if (taglineEl && config.branding.tagline) taglineEl.textContent = config.branding.tagline;
 
-  // Обновляем кнопку
   const btnEl = document.getElementById('welcomeButton');
   if (btnEl && config.branding.buttonText) btnEl.textContent = config.branding.buttonText;
-  // Обновляем шапку
+
   const headerContainer = document.getElementById('headerBrand');
   if (headerContainer) {
     headerContainer.innerHTML = '';
@@ -304,8 +292,7 @@ function applyBranding() {
       headerContainer.appendChild(logo);
     }
     if (config.branding.name) {
-      const title = document.createElement('h1');
-      title.textContent = config.branding.name.toUpperCase();
+      const title = document.createElement('h1');      title.textContent = config.branding.name;
       title.className = 'brand-title';
       headerContainer.appendChild(title);
     }
@@ -319,9 +306,6 @@ function renderWelcome() {
   }
 }
 
-// ==========================================
-//  ФИЛЬТРЫ
-// ==========================================
 function renderFilters() {
   const districts = [...new Set(listings.map(l => l.district).filter(Boolean))].sort();
   const districtContainer = document.getElementById('districtCheckboxes');
@@ -341,7 +325,8 @@ function renderFilters() {
     metroContainer.innerHTML = '';
     metros.forEach(m => {
       const label = document.createElement('label');
-      label.className = 'checkbox-label';      label.innerHTML = `<input type="checkbox" value="${escapeHtml(m)}" class="filter-checkbox" data-filter="metro"><span>${escapeHtml(m)}</span>`;
+      label.className = 'checkbox-label';
+      label.innerHTML = `<input type="checkbox" value="${escapeHtml(m)}" class="filter-checkbox" data-filter="metro"><span>${escapeHtml(m)}</span>`;
       metroContainer.appendChild(label);
     });
   }
@@ -356,8 +341,7 @@ function renderFilters() {
     });
     allRooms.sort();
     roomsContainer.innerHTML = '';
-    allRooms.forEach(r => {
-      const label = document.createElement('label');
+    allRooms.forEach(r => {      const label = document.createElement('label');
       label.className = 'checkbox-label';
       label.innerHTML = `<input type="checkbox" value="${escapeHtml(r)}" class="filter-checkbox" data-filter="rooms"><span>${escapeHtml(r)}</span>`;
       roomsContainer.appendChild(label);
@@ -390,7 +374,8 @@ function filterListings() {
     if (selectedDistricts.length > 0 && !selectedDistricts.includes(item.district)) return false;
     if (selectedMetros.length > 0 && !selectedMetros.includes(item.metro)) return false;
     if (selectedRooms.length > 0 && item.rooms) {
-      const itemRooms = String(item.rooms).split(',').map(r => r.trim());      if (!selectedRooms.some(r => itemRooms.includes(r))) return false;
+      const itemRooms = String(item.rooms).split(',').map(r => r.trim());
+      if (!selectedRooms.some(r => itemRooms.includes(r))) return false;
     }
     return true;
   });
@@ -405,10 +390,6 @@ function resetFilters() {
   document.querySelectorAll('.filter-checkbox').forEach(cb => cb.checked = false);
   renderListings(listings.filter(l => l.active));
 }
-
-// ==========================================
-//  ОТРИСОВКА ОБЪЕКТОВ
-// ==========================================
 function renderListings(data) {
   const container = document.getElementById('listingsContainer');
   if (!container) return;
@@ -419,7 +400,7 @@ function renderListings(data) {
     return;
   }
   if (!data || data.length === 0) {
-    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><h3>Ничего не найдено</h3><p>Попробуйте изменить параметры поиска.</p><button class="btn-reset-filters" onclick="resetFilters()"> Сбросить фильтры</button></div>`;
+    container.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><h3>Ничего не найдено</h3><p>Попробуйте изменить параметры поиска.</p><button class="btn-reset-filters" onclick="resetFilters()">🔄 Сбросить фильтры</button></div>`;
     return;
   }
 
@@ -439,7 +420,8 @@ function renderListings(data) {
     card.onclick = (e) => { if (!e.target.closest('.consult-btn-inline')) openDetails(item.id); };
     card.innerHTML = `
       <img src="${escapeHtml(item.image_main) || ''}" alt="${escapeHtml(item.name) || ''}" class="listing-image" onerror="this.style.display='none'">
-      <div class="listing-info">        <h3>${escapeHtml(item.name) || 'Без названия'}</h3>
+      <div class="listing-info">
+        <h3>${escapeHtml(item.name) || 'Без названия'}</h3>
         <div class="listing-meta">
           <span>${escapeHtml(item.district) || ''}</span>
           <span>🚇 ${escapeHtml(item.metro) || ''}</span>
@@ -454,14 +436,10 @@ function renderListings(data) {
   });
 }
 
-// ==========================================
-//  КАРТА
-// ==========================================
 function initMap() {
   if (typeof L === 'undefined') return;
   const mapContainer = document.getElementById('mapContainer');
-  if (!mapContainer) return;
-  if (!map) {
+  if (!mapContainer) return;  if (!map) {
     map = L.map('mapContainer').setView([59.9343, 30.3351], 11);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
   }
@@ -488,14 +466,12 @@ function updateMapMarkers(filteredItems) {
     });
     markers.push(marker);
   });
-  if (markers.length > 0) {    const group = new L.featureGroup(markers);
+  if (markers.length > 0) {
+    const group = new L.featureGroup(markers);
     map.fitBounds(group.getBounds().pad(0.1));
   }
 }
 
-// ==========================================
-//  МОДАЛКИ
-// ==========================================
 function openDetails(id) {
   const item = listings.find(l => l.id === id);
   if (!item) return;
@@ -512,8 +488,7 @@ function openDetails(id) {
     <div class="meta-row"><span>🚇 ${escapeHtml(item.metro) || ''}</span></div>
     <div class="meta-row"><span>🏗 ${escapeHtml(item.class) || ''} • ${escapeHtml(item.finishing) || ''}</span></div>
     <div class="meta-row"><span>📅 ${escapeHtml(item.completion_soonest || item.completion_all) || ''}</span></div>`;
-  document.getElementById('modalDescription').textContent = item.description || 'Описание отсутствует';
-  document.getElementById('modalFeatures').innerHTML = item.features ? `<ul>${item.features.split(',').map(f => `<li>${escapeHtml(f.trim())}</li>`).join('')}</ul>` : '<p>Информация уточняется</p>';
+  document.getElementById('modalDescription').textContent = item.description || 'Описание отсутствует';  document.getElementById('modalFeatures').innerHTML = item.features ? `<ul>${item.features.split(',').map(f => `<li>${escapeHtml(f.trim())}</li>`).join('')}</ul>` : '<p>Информация уточняется</p>';
  
   const plansContainer = document.getElementById('modalFloorPlans');
   plansContainer.innerHTML = '';
@@ -537,7 +512,8 @@ function openDetails(id) {
   }
   if (!item.floor_plans_text && !item.floor_plans_images) plansContainer.innerHTML = '<p>Информация уточняется</p>';
 
-  const gallery = document.getElementById('modalGallery');  gallery.innerHTML = '';
+  const gallery = document.getElementById('modalGallery');
+  gallery.innerHTML = '';
   if (item.image_main) {
     const mainImg = document.createElement('img');
     mainImg.src = item.image_main;
@@ -561,8 +537,7 @@ function openDetails(id) {
     btn.id = 'modalConsultBtn';
     btn.className = 'tg-btn';
     btn.style.marginTop = '20px';
-    modalContent.appendChild(btn);
-  }
+    modalContent.appendChild(btn);  }
   btn.textContent = '📞 Получить консультацию';
   btn.onclick = () => openConsultForm(id);
   document.getElementById('detailsModal').classList.remove('hidden');
@@ -577,16 +552,14 @@ function closeModal() {
   if (document.getElementById('mapContainer').classList.contains('hidden')) hideBack();
 }
 
-// ==========================================
-//  ФОРМА ЗАЯВКИ
-// ==========================================
 function openConsultForm(id, event) {
   if (event) event.stopPropagation();
   currentModalId = id;
   const item = listings.find(l => l.id === id);
   if (item) {
     document.getElementById('consultObjectName').textContent = '🏢 ' + item.name;
-    document.getElementById('consultName').value = '';    document.getElementById('consultPhone').value = '+7 (';
+    document.getElementById('consultName').value = '';
+    document.getElementById('consultPhone').value = '+7 (';
     document.getElementById('consultTelegram').value = '';
     document.getElementById('consultModal').classList.remove('hidden');
     showBack();
@@ -613,8 +586,7 @@ function initTelegramMask() {
   const input = document.getElementById('consultTelegram');
   if (!input) return;
   input.addEventListener('input', function(e) {
-    let val = e.target.value.replace(/[^a-zA-Z0-9_@]/g, '');
-    if (val.includes('@') && !val.startsWith('@')) val = '@' + val.replace(/@/g, '');
+    let val = e.target.value.replace(/[^a-zA-Z0-9_@]/g, '');    if (val.includes('@') && !val.startsWith('@')) val = '@' + val.replace(/@/g, '');
     if (val.length > 32) val = val.slice(0, 32);
     e.target.value = val;
   });
@@ -631,13 +603,14 @@ function submitConsultForm(event) {
 
   if (!name || name.length < 2) { tg?.showAlert('❌ Введите имя'); return; }
   if (phone.replace(/\D/g, '').length < 10) { tg?.showAlert('❌ Введите корректный телефон'); return; }
-  if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) { tg?.showAlert(' Telegram только латиницей'); return; }
+  if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) { tg?.showAlert('❌ Telegram только латиницей'); return; }
 
   const submitBtn = event.target.querySelector('button[type="submit"]');
   const originalText = submitBtn.textContent;
-  submitBtn.textContent = 'Отправка...';  submitBtn.disabled = true;
+  submitBtn.textContent = 'Отправка...';
+  submitBtn.disabled = true;
 
-  // ✅ БЕЗОПАСНО: secret удалён. Сервер найдёт токен по projectId
+  // ✅ УБРАЛ secret - сервер найдёт токен по projectId
   fetch(config.client.scriptUrl, {
     method: 'POST',
     body: JSON.stringify({
@@ -663,7 +636,6 @@ function submitConsultForm(event) {
     submitBtn.disabled = false;
   });
 }
-
 function escapeHtml(text) {
   if (!text) return '';
   const div = document.createElement('div');
