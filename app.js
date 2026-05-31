@@ -223,7 +223,7 @@ function renderContactsPage() {
   if (data.agencyName && data.agencyName.trim()) { agencyNameEl.textContent = data.agencyName; agencyNameEl.style.display = 'block'; hasAgency = true; }
   else { agencyNameEl.style.display = 'none'; }
 
-  if (data.agencyAddress && data.agencyAddress.trim()) { agencyAddrEl.textContent = ' ' + data.agencyAddress; agencyAddrEl.style.display = 'block'; hasAgency = true; }
+  if (data.agencyAddress && data.agencyAddress.trim()) { agencyAddrEl.textContent = '📍 ' + data.agencyAddress; agencyAddrEl.style.display = 'block'; hasAgency = true; }
   else { agencyAddrEl.style.display = 'none'; }
 
   agencyBlock.style.display = hasAgency ? 'block' : 'none';
@@ -252,7 +252,7 @@ function callAgent() {
   let phone = currentAgentData.phone;
 
   if (!phone) {
-    tg?.showAlert(' Телефон не указан в таблице');
+    tg?.showAlert('❌ Телефон не указан в таблице');
     return;
   }
 
@@ -275,7 +275,7 @@ function toggleFilters() {
   const btn = document.querySelector('.filters-toggle-btn');
   if (block && btn) {
     block.classList.toggle('hidden');
-    btn.textContent = block.classList.contains('hidden') ? '🔽 Фильтры' : '🔼 Скрыть фильтры';
+    btn.textContent = block.classList.contains('hidden') ? ' Фильтры' : '🔼 Скрыть фильтры';
   }
 }
 
@@ -341,7 +341,7 @@ async function init() {
 // ==========================================
 function applyTheme() {
   if (!config.branding) return;
-  document.documentElement.style.setProperty('--primary', config.branding.primaryColor || '#1a365d');  document.documentElement.style.setProperty('--accent', config.branding.accentColor || '#d4af37');
+  document.documentElement.style.setProperty('--primary', config.branding.primaryColor || '#3D5266');  document.documentElement.style.setProperty('--accent', config.branding.accentColor || '#3498DB');
 }
 
 function applyBranding() {
@@ -350,22 +350,34 @@ function applyBranding() {
   const welcomeContainer = document.getElementById('welcomeBrand');
   const headerContainer = document.getElementById('headerBrand');
 
-  if (welcomeContainer) {
-    const customTitle = config.branding.welcomeTitle || config.branding.name;
-    const customLogo = config.branding.logo;
-    const companyEl = welcomeContainer.querySelector('.brand-company');
-if (companyEl) companyEl.textContent = config.branding.name;
+  // ✅ Обновление title вкладки браузера
+  document.title = config.branding.welcomeTitle || config.branding.name;
 
+  if (welcomeContainer) {
+    // Название компании
+    const companyEl = welcomeContainer.querySelector('.brand-company');
+    if (companyEl && config.branding.name) {
+      companyEl.textContent = config.branding.name;
+    }
+
+    // Логотип
+    const customLogo = config.branding.logo;
     if (customLogo && customLogo !== 'logo.png') {
       const logoImg = welcomeContainer.querySelector('.brand-logo');
       if (logoImg) logoImg.src = customLogo;
     }
 
-    if (customTitle && customTitle.toUpperCase() !== 'КАТАЛОГ НОВОСТРОЕК') {
-      const titleEl = welcomeContainer.querySelector('.brand-title');
-      if (titleEl) titleEl.textContent = customTitle.toUpperCase();
-    }
+    // ✅ Динамическая смена заголовка, подзаголовка и кнопки
+    const titleEl = document.getElementById('welcomeTitle');
+    if (titleEl && config.branding.welcomeTitle) titleEl.textContent = config.branding.welcomeTitle;
+
+    const taglineEl = document.getElementById('welcomeTagline');
+    if (taglineEl && config.branding.tagline) taglineEl.textContent = config.branding.tagline;
+
+    const btnEl = document.getElementById('welcomeButton');
+    if (btnEl && config.branding.buttonText) btnEl.textContent = config.branding.buttonText;
   }
+
   if (headerContainer) {
     headerContainer.innerHTML = '';
     if (config.branding.logo) {
@@ -378,8 +390,7 @@ if (companyEl) companyEl.textContent = config.branding.name;
     if (config.branding.name) {
       const title = document.createElement('h1');
       title.textContent = config.branding.name.toUpperCase();
-      title.className = 'brand-title';
-      headerContainer.appendChild(title);
+      title.className = 'brand-title';      headerContainer.appendChild(title);
     }
   }
 }
@@ -392,9 +403,11 @@ function renderWelcome() {
   }
 }
 
-// ==========================================//  ФИЛЬТРЫ
+// ==========================================
+//  ФИЛЬТРЫ
 // ==========================================
 function renderFilters() {
+  // ✅ Исправлены стрелочные функции и шаблонные строки
   const districts = [...new Set(listings.map(l => l.district).filter(Boolean))].sort();
   const districtContainer = document.getElementById('districtCheckboxes');
   if (districtContainer) {
@@ -426,8 +439,7 @@ function renderFilters() {
       if (l.rooms) {
         const roomList = String(l.rooms).split(',').map(r => r.trim());
         roomList.forEach(r => { if (r && !allRooms.includes(r)) allRooms.push(r); });
-      }
-    });  
+      }    });  
     allRooms.sort();
     roomsContainer.innerHTML = '';
     allRooms.forEach(r => {
@@ -441,7 +453,8 @@ function renderFilters() {
   document.querySelectorAll('.price-btn').forEach(btn => {
     btn.addEventListener('click', function() {
       if (this.classList.contains('active')) {
-        this.classList.remove('active');      } else {
+        this.classList.remove('active');
+      } else {
         document.querySelectorAll('.price-btn').forEach(b => b.classList.remove('active'));
         this.classList.add('active');
       }
@@ -475,8 +488,7 @@ function filterListings() {
 
   renderListings(filtered);
   const mapContainer = document.getElementById('mapContainer');
-  if (mapContainer && !mapContainer.classList.contains('hidden')) {
-    updateMapMarkers(filtered);
+  if (mapContainer && !mapContainer.classList.contains('hidden')) {    updateMapMarkers(filtered);
   }
 }
 
@@ -490,7 +502,8 @@ function resetFilters() {
 //  ОТРИСОВКА ОБЪЕКТОВ
 // ==========================================
 function renderListings(data) {
-  const container = document.getElementById('listingsContainer');  if (!container) return;
+  const container = document.getElementById('listingsContainer');
+  if (!container) return;
   container.innerHTML = '';
 
   if (listings.length === 0) {
@@ -524,14 +537,13 @@ function renderListings(data) {
         priceDisplay = `${item.price_from.toFixed(1)} млн ₽`;
       } else {
         priceDisplay = `${(item.price_from / 1000000).toFixed(1)} млн ₽`;
-      }
-    }
+      }    }
     const priceTo = typeof item.price_to === 'number' ? item.price_to.toFixed(1) : '';
     const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
     const area = (typeof item.area_min === 'number' && typeof item.area_max === 'number') ? `${item.area_min}–${item.area_max} м²` : '';  
     const rooms = item.rooms || '';
     const statusKey = (item.status || 'other').toString().replace(/\s+/g, '-');
-    const statusText = item.status === 'Сдан' ? '✅ Сдан' : item.status === 'Строится' ? '🏗 Строится' : '🟡 Частично сдан';
+    const statusText = item.status === 'Сдан' ? '✅ Сдан' : item.status === 'Строится' ? '🏗 Строится' : ' Частично сдан';
 
     const card = document.createElement('div');
     card.className = 'listing-card';
@@ -539,7 +551,9 @@ function renderListings(data) {
       if (!e.target.closest('.consult-btn-inline')) openDetails(item.id);
     };
 
-    card.innerHTML = `<img src="${escapeHtml(item.image_main) || ''}" alt="${escapeHtml(item.name) || ''}" class="listing-image" onerror="this.style.display='none'"><div class="listing-info"><h3>${escapeHtml(item.name) || 'Без названия'}</h3><div class="listing-meta"><span>${escapeHtml(item.district) || ''}</span><span>🚇 ${escapeHtml(item.metro) || ''}</span>${rooms ? `<span> ${escapeHtml(rooms)}</span>` : ''}${area ? `<span>📐 ${escapeHtml(area)}</span>` : ''}</div><div class="listing-price">от ${priceDisplay}${priceTo ? ` до ${priceTo} млн ₽` : ''} ${ppsqm ? `<br><span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}</div><div class="listing-status status-${statusKey}">${statusText}</div><button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)"> Получить консультацию</button></div>`;
+    // ✅ Исправлены шаблонные строки и кавычки
+    card.innerHTML = `<img src="${escapeHtml(item.image_main) || ''}" alt="${escapeHtml(item.name) || ''}" class="listing-image" onerror="this.style.display='none'"><div class="listing-info"><h3>${escapeHtml(item.name) || 'Без названия'}</h3><div class="listing-meta"><span>${escapeHtml(item.district) || ''}</span><span> ${escapeHtml(item.metro) || ''}</span>${rooms ? `<span>🚪 ${escapeHtml(rooms)}</span>` : ''}${area ? `<span>📐 ${escapeHtml(area)}</span>` : ''}</div><div class="listing-price">от ${priceDisplay}${priceTo ? ` до ${priceTo} млн ₽` : ''} ${ppsqm ? `<br><span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}</div><div class="listing-status status-${statusKey}">${statusText}</div><button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button></div>`;
+
     container.appendChild(card);
   });
 }
@@ -572,7 +586,6 @@ function updateMapMarkers(filteredItems) {
 
   markers.forEach(m => map.removeLayer(m));
   markers = [];
-
   filteredItems.forEach(item => {
     if (!item.active || !item.lat || !item.lng) return;
 
@@ -588,7 +601,8 @@ function updateMapMarkers(filteredItems) {
     marker.on('popupopen', function() {
       const popupEl = document.querySelector(`.map-popup[data-id="${item.id}"]`);
       if (popupEl) {
-        popupEl.addEventListener('click', function() {          openDetails(item.id);
+        popupEl.addEventListener('click', function() {
+          openDetails(item.id);
         });
       }
     });
@@ -618,10 +632,9 @@ function openDetails(id) {
   const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
   document.getElementById('modalPrice').innerHTML = `от <b>${priceDisplay}</b> млн ₽ ${ppsqm ? `<span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}`;
 
-  document.getElementById('modalMeta').innerHTML = `<div class="meta-row"><span>📍 ${escapeHtml(item.address) || ''}</span></div><div class="meta-row"><span>🚇 ${escapeHtml(item.metro) || ''}</span></div><div class="meta-row"><span>🏗 ${escapeHtml(item.class) || ''} • ${escapeHtml(item.finishing) || ''}</span></div><div class="meta-row"><span>📅 ${escapeHtml(item.completion_soonest || item.completion_all) || ''}</span></div>`;
+  document.getElementById('modalMeta').innerHTML = `<div class="meta-row"><span> ${escapeHtml(item.address) || ''}</span></div><div class="meta-row"><span> ${escapeHtml(item.metro) || ''}</span></div><div class="meta-row"><span> ${escapeHtml(item.class) || ''} • ${escapeHtml(item.finishing) || ''}</span></div><div class="meta-row"><span>📅 ${escapeHtml(item.completion_soonest || item.completion_all) || ''}</span></div>`;
 
   document.getElementById('modalDescription').textContent = item.description || 'Описание отсутствует';
-
   const featuresDiv = document.getElementById('modalFeatures');
   featuresDiv.innerHTML = item.features ? `<ul>${item.features.split(',').map(f => `<li>${escapeHtml(f.trim())}</li>`).join('')}</ul>` : '<p style="color: var(--text-secondary)">Информация уточняется</p>';
 
@@ -637,212 +650,4 @@ function openDetails(id) {
     const galleryDiv = document.createElement('div');
     galleryDiv.className = 'floor-plans-gallery';
     item.floor_plans_images.split(',').map(u => u.trim()).filter(Boolean).forEach(url => {
-      const img = document.createElement('img');      img.src = url;
-      img.className = 'floor-plan-image';
-      img.onclick = () => window.open(url, '_blank');
-      galleryDiv.appendChild(img);
-    });
-    plansContainer.appendChild(galleryDiv);
-  }
-  if (!item.floor_plans_text && !item.floor_plans_images) {
-    plansContainer.innerHTML = '<p style="color: var(--text-secondary)">Информация уточняется</p>';
-  }
-
-  const gallery = document.getElementById('modalGallery');
-  gallery.innerHTML = '';
-  if (item.image_main) {
-    const mainImg = document.createElement('img');
-    mainImg.src = item.image_main;
-    mainImg.className = 'modal-main-image';
-    gallery.appendChild(mainImg);
-  }
-  if (item.images_gallery) {
-    item.images_gallery.split(',').map(u => u.trim()).filter(Boolean).forEach(url => {
-      const img = document.createElement('img');
-      img.src = url;
-      img.className = 'modal-thumb';
-      img.onclick = () => window.open(url, '_blank');
-      gallery.appendChild(img);
-    });
-  }
-
-  const modalContent = document.querySelector('#detailsModal .modal-content');
-  let btn = document.getElementById('modalConsultBtn');
-  if (!btn) {
-    btn = document.createElement('button');
-    btn.id = 'modalConsultBtn';
-    btn.className = 'tg-btn';
-    btn.style.marginTop = '20px';
-    btn.style.marginBottom = '40px';
-    modalContent.appendChild(btn);
-  }
-  btn.textContent = ' Получить консультацию';
-  btn.onclick = () => openConsultForm(id);
-  document.getElementById('detailsModal').classList.remove('hidden');
-  document.body.style.overflow = 'hidden';
-
-  showBack();
-}
-
-function closeModal() {
-  document.getElementById('detailsModal').classList.add('hidden');
-  document.body.style.overflow = '';  currentModalId = null;
-
-  if (document.getElementById('mapContainer').classList.contains('hidden')) {
-    hideBack();
-  }
-}
-
-// ==========================================
-//  ФОРМА КОНСУЛЬТАЦИИ
-// ==========================================
-function openConsultForm(id, event) {
-  if (event) event.stopPropagation();
-  currentModalId = id;
-  sendConsultRequest();
-}
-
-function sendConsultRequest() {
-  const item = listings.find(l => l.id === currentModalId);
-  if (!item) return;
-  document.getElementById('consultObjectName').textContent = ' ' + item.name;
-  document.getElementById('consultName').value = '';
-  document.getElementById('consultPhone').value = '+7 (';
-  document.getElementById('consultTelegram').value = '';
-  document.getElementById('consultModal').classList.remove('hidden');
-
-  showBack();
-}
-
-function closeConsultModal() {
-  document.getElementById('consultModal').classList.add('hidden');
-  document.getElementById('consultForm').reset();
-
-  if (document.getElementById('detailsModal').classList.contains('hidden') &&
-      document.getElementById('mapContainer').classList.contains('hidden')) {
-    hideBack();
-  }
-}
-
-function initPhoneMask() {
-  const phoneInput = document.getElementById('consultPhone');
-  if (!phoneInput) return;
-  phoneInput.addEventListener('input', function(e) {
-    let x = e.target.value.replace(/\D/g, '').match(/(\d{0,1})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
-    e.target.value = !x[2] ? '+7 (' : '+7 (' + x[2] + (x[3] ? ') ' + x[3] : '') + (x[4] ? '-' + x[4] : '') + (x[5] ? '-' + x[5] : '');
-  });
-  phoneInput.addEventListener('focus', function(e) { if (e.target.value === '') e.target.value = '+7 ('; });
-}
-
-function initTelegramMask() {
-  const telegramInput = document.getElementById('consultTelegram');  if (!telegramInput) return;
-
-  telegramInput.addEventListener('input', function(e) {
-    let val = e.target.value;
-    val = val.replace(/[^a-zA-Z0-9_@]/g, '');
-    if (val.includes('@') && !val.startsWith('@')) {
-      val = '@' + val.replace(/@/g, '');
-    }
-    if (val.length > 32) val = val.slice(0, 32);
-    e.target.value = val;
-  });
-
-  telegramInput.addEventListener('paste', function(e) {
-    e.preventDefault();
-    let paste = (e.clipboardData || window.clipboardData).getData('text');
-    paste = paste.replace(/[^a-zA-Z0-9_@]/g, '');
-    if (paste.includes('@') && !paste.startsWith('@')) {
-      paste = '@' + paste.replace(/@/g, '');
-    }
-    if (paste.length > 32) paste = paste.slice(0, 32);
-    e.target.value = paste;
-  });
-}
-
-function submitConsultForm(event) {
-  event.preventDefault();
-  const item = listings.find(l => l.id === currentModalId);
-  if (!item) return;
-
-  const name = document.getElementById('consultName').value.trim();
-  const phone = document.getElementById('consultPhone').value.trim();
-  let telegram = document.getElementById('consultTelegram')?.value.trim() || '';
-
-  if (!name || name.length < 2) {
-    tg?.showAlert('❌ Введите имя (минимум 2 символа)');
-    return;
-  }
-
-  const phoneDigits = phone.replace(/\D/g, '');
-  if (phoneDigits.length < 10 || phoneDigits.length > 15) {  
-    tg?.showAlert(' Введите корректный номер телефона');
-    return;
-  }
-
-  if (telegram) {
-    const cyrillicRegex = /[а-яА-ЯёЁ]/;
-    if (cyrillicRegex.test(telegram)) {
-      tg?.showAlert('❌ Telegram не должен содержать кириллицу');
-      return;
-    }    const validRegex = /^@?[a-zA-Z0-9_]{3,32}$/;
-    if (!validRegex.test(telegram)) {
-      tg?.showAlert('❌ Неверный формат Telegram (только латиница, цифры, _)');
-      return;
-    }
-    if (!telegram.startsWith('@')) telegram = '@' + telegram;
-  }
-
-  const submitBtn = event.target.querySelector('button[type="submit"]');
-  const originalText = submitBtn.textContent;
-  submitBtn.textContent = 'Отправка...';
-  submitBtn.disabled = true;
-
-  // ✅ ИСПРАВЛЕНО: projectId теперь берётся из конфига
-  fetch(config.client.scriptUrl, {
-    method: 'POST',
-    body: JSON.stringify({
-      secret: config.client.secretKey,
-      projectId: config.client.projectId, // <-- ДИНАМИЧЕСКИЙ ID ПРОЕКТА
-      title: item.name,
-      leadName: name,
-      leadPhone: phone,
-      leadTelegram: telegram || 'Не указан'
-    })
-  })
-  .then(res => res.json())
-  .then(data => {
-    if (data.success) {
-      closeConsultModal();
-      tg?.showAlert('✅ Заявка отправлена!');
-      event.target.reset();
-    } else {
-      throw new Error(data.error || 'Неизвестная ошибка');
-    }
-  })
-  .catch(err => {  
-    console.error('Send error:', err);
-    tg?.showAlert('⚠️ Ошибка: ' + err.message);
-  })
-  .finally(() => {
-    submitBtn.textContent = originalText;
-    submitBtn.disabled = false;
-  });
-}
-
-// ==========================================
-//  УТИЛИТЫ
-// ==========================================
-function escapeHtml(text) {
-  if (!text) return '';  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
-}
-
-// ==========================================
-//  ЗАПУСК ПРИЛОЖЕНИЯ
-// ==========================================
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
-} else {
-  init();
-}
+      const img = document.createElement('
