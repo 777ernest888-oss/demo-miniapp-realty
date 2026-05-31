@@ -1,5 +1,6 @@
 {
   "client": {
+    "projectId": "demo-miniapp-realty",
     "name": "Новостройки СПб",
     "botToken": "8946632348:AAFzhRu_pnh4i6Nznt7vhTQYLvez0WpAPIo",
     "chatId": "2038206387",
