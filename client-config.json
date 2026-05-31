@@ -13,7 +13,9 @@
     "accentColor": "#3498DB",
     "logo": "logo.png",
     "welcomeTitle": "КАТАЛОГ НОВОСТРОЕК",
-    "name": "Демонстрационная версия"
+    "name": "Демонстрационная версия",
+    "tagline": "Подберём квартиру под ваш бюджет",
+    "buttonText": "НАЧАТЬ ПОДБОР"
   },
   "features": {
     "showWelcomeScreen": true,
