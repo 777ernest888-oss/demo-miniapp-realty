@@ -10,12 +10,15 @@
     "listings": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTAJn5ah-8UjagF2CloZWriSpKLyMkD5RxLzYOHC7PCtcCe33iTs5NvqM2dLs8QLCuMIrkIOytK0PWy/pub?gid=0&single=true&output=csv"
   },
   "branding": {
-    "primaryColor": "#3D5266",
-    "accentColor": "#3498DB",
-    "logo": "logo.png",
-    "welcomeTitle": "КАТАЛОГ НОВОСТРОЕК",
-    "name": "Демонстрационная версия"
-  },
+  "primaryColor": "#3D5266",
+  "accentColor": "#3498DB",
+  "logo": "logo.png",
+  "agentPhoto": "agent-photo.jpg",
+  "welcomeTitle": "КАТАЛОГ НОВОСТРОЕК",
+  "name": "Демонстрационная версия",
+  "tagline": "Подберём квартиру под ваш бюджет",
+  "buttonText": "НАЧАТЬ ПОДБОР"
+},
   "features": {
     "showWelcomeScreen": true,
     "enableMap": true,
