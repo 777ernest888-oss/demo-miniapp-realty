@@ -46,7 +46,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
 }
 
-/* HEADER & BURGER - КНОПКА НАЗАД ВСТРОЕНА */
+/* HEADER & BURGER */
 .header {   background: var(--primary);
   padding: 10px 12px;
   display: flex;
