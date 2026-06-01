@@ -221,11 +221,29 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .page-content { padding: 20px; overflow-y: auto; line-height: 1.6; color: var(--text); }
 .page-content ul { padding-left: 20px; margin-bottom: 15px; }
 .page-content li { margin-bottom: 8px; }
+
+/* ✅ КОНТАКТЫ & АВАТАР */
 .contact-card { background: var(--white); padding: 20px; border-radius: 16px; box-shadow: var(--shadow); display: flex; align-items: center; gap: 15px; margin-bottom: 20px; }
-.agent-avatar { width: 60px; height: 60px; background: var(--bg); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 30px; }
+.agent-avatar {
+  width: 60px;
+  height: 60px;
+  background: var(--bg);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  overflow: hidden; /* ✅ Обрезает фото по кругу */
+  flex-shrink: 0;
+}
+.agent-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* ✅ Фото заполняет круг без искажений */
+  display: block;
+}
 .agent-info h3 { margin: 0 0 5px 0; color: var(--primary); }
-.agent-info p { margin: 0; color: var(--text-secondary); font-size: 14px; }
-.agency-block { background: var(--white); padding: 15px; border-radius: 12px; margin-bottom: 25px; }
+.agent-info p { margin: 0; color: var(--text-secondary); font-size: 14px; }.agency-block { background: var(--white); padding: 15px; border-radius: 12px; margin-bottom: 25px; }
 .agency-block h4 { margin: 0 0 10px 0; color: var(--primary); font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; }
 .agency-block p { margin: 5px 0; font-size: 15px; }
 .address-text { color: var(--text-secondary); }
@@ -243,7 +261,8 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   display: flex;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   gap: 8px;
   padding-bottom: 8px;
 }
@@ -273,8 +292,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 }
 
 .dot {
-  width: 8px;
-  height: 8px;
+  width: 8px;  height: 8px;
   border-radius: 50%;
   background: #cbd5e1;
   transition: background 0.2s;
