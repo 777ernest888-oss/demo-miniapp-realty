@@ -9,9 +9,7 @@
   --shadow: 0 4px 12px rgba(0,0,0,0.08);
 }
 
-/* ✅ ИСПРАВЛЕНО: Добавлен селектор * */
 * { box-sizing: border-box; margin: 0; padding: 0; }
-
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); }
 .hidden { display: none !important; }
 .screen { min-height: 100vh; display: flex; flex-direction: column; }
@@ -26,7 +24,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .welcome-main-title { font-size: 24px; font-weight: 800; color: var(--white); margin: 0 0 10px 0; }
 .welcome-sub { color: rgba(255,255,255,0.85); margin-bottom: 20px; font-size: 16px; }
 
-/* ✅ ОБНОВЛЁННАЯ КНОПКА */
+/* BUTTON */
 .btn-primary {
   background: var(--accent);
   color: #ffffff !important;
@@ -47,37 +45,98 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
   transform: scale(0.98);
   box-shadow: 0 2px 6px rgba(52, 152, 219, 0.3);
 }
-/* HEADER & BURGER */
-.header { background: var(--primary); padding: 10px 12px; display: flex; align-items: center; justify-content: flex-start; color: var(--white); position: sticky; top: 0; z-index: 2000; box-shadow: 0 2px 8px rgba(0,0,0,0.1); gap: 8px; }
-.menu-btn { background: rgba(255, 255, 255, 0.15); border: 1px solid rgba(255, 255, 255, 0.3); color: #ffffff; font-size: 22px; width: 40px; height: 40px; border-radius: 10px; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s ease; padding: 0; line-height: 1; z-index: 2002; }
-.menu-btn:active { background: rgba(255, 255, 255, 0.35); transform: scale(0.95); }
-.header-brand { display: flex; align-items: center; gap: 8px; flex: 1; min-width: 0; overflow: hidden; justify-content: center; }
-.header-brand .brand-logo { width: 32px; height: 32px; padding: 3px; flex-shrink: 0; }
-.header-brand .brand-title { font-size: clamp(12px, 4vw, 16px); font-weight: 700; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
 
-/* ✅ КНОПКА НАЗАД (ИСПРАВЛЕНА ПОЗИЦИЯ) */
+/* HEADER & BURGER - КНОПКА НАЗАД ВСТРОЕНА */
+.header {   background: var(--primary);
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  color: var(--white);
+  position: sticky;
+  top: 0;
+  z-index: 2000;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+.menu-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  font-size: 22px;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  padding: 0;
+  line-height: 1;
+  z-index: 2002;
+}
+.menu-btn:active {
+  background: rgba(255, 255, 255, 0.35);
+  transform: scale(0.95);
+}
+
+/* ✅ КНОПКА НАЗАД - ВСТРОЕНА В ШАПКУ */
 .header-back-btn {
-  position: fixed;       /* Фиксируем на экране */
-  top: 16px;             /* Отступ сверху */
-  left: 16px;            /* Отступ слева */
-  z-index: 9999;         /* Поверх ВСЕГО (модалки, карты и т.д.) */
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  color: var(--primary);
+  background: rgba(255, 255, 255, 0.2);
+  color: var(--white);
   border: none;
-  padding: 10px 16px;
-  border-radius: 24px;
+  padding: 8px 14px;
+  border-radius: 20px;
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
   display: flex;
   align-items: center;
-  gap: 6px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-  transition: transform 0.2s;
+  gap: 4px;   transition: all 0.2s;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
-.header-back-btn:active { transform: scale(0.96); }
-.header-back-btn .back-arrow { font-size: 16px; line-height: 1; }
+.header-back-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+.header-back-btn:active {
+  transform: scale(0.95);
+}
+.header-back-btn .back-arrow {
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  justify-content: center;
+}
+.header-brand .brand-logo {
+  width: 32px;
+  height: 32px;
+  padding: 3px;
+  flex-shrink: 0;
+}
+.header-brand .brand-title {
+  font-size: clamp(12px, 4vw, 16px);
+  font-weight: 700;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.2;
+  color: var(--white);
+}
 
 /* FILTERS */
 .filters-toggle { padding: 12px 16px; background: var(--white); border-bottom: 1px solid #eee; }
@@ -86,8 +145,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .filters-block:not(.hidden) { max-height: 500px; }
 .filter-group { margin-bottom: 14px; }
 .filter-group label { display: block; font-weight: 600; margin-bottom: 8px; font-size: 14px; }
-.price-buttons { display: flex; gap: 8px; flex-wrap: wrap; }
-.price-btn { flex: 1; min-width: 60px; padding: 8px; border: 1px solid #ddd; background: var(--white); border-radius: 6px; cursor: pointer; font-size: 12px; }
+.price-buttons { display: flex; gap: 8px; flex-wrap: wrap; }.price-btn { flex: 1; min-width: 60px; padding: 8px; border: 1px solid #ddd; background: var(--white); border-radius: 6px; cursor: pointer; font-size: 12px; }
 .price-btn.active { background: var(--primary); color: var(--white); border-color: var(--primary); }
 .checkbox-group { display: flex; flex-direction: column; gap: 8px; }
 .checkbox-label { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
@@ -97,6 +155,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .view-toggle { display: flex; padding: 12px 16px; gap: 10px; background: var(--bg); }
 .view-btn { flex: 1; padding: 10px; border: 1px solid #ddd; background: var(--white); border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; }
 .view-btn.active { background: var(--primary); color: var(--white); border-color: var(--primary); }
+
 /* LISTINGS */
 .listings { padding: 14px 16px; flex: 1; overflow-y: auto; }
 .listing-card { background: var(--white); border-radius: var(--radius); box-shadow: var(--shadow); margin-bottom: 14px; overflow: hidden; cursor: pointer; transition: transform 0.2s; opacity: 0; transform: translateY(20px); animation: fadeInUp 0.4s ease forwards; }
@@ -135,8 +194,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .form-modal h3 { margin-bottom: 12px; }
 .form-object { font-weight: 600; margin-bottom: 8px; color: var(--primary); }
 .form-hint { font-size: 12px; color: var(--text-secondary); margin-bottom: 14px; }
-.form-modal input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 12px; font-size: 16px; }
-.empty-state { text-align: center; padding: 35px 16px; color: var(--text-secondary); }
+.form-modal input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; margin-bottom: 12px; font-size: 16px; }.empty-state { text-align: center; padding: 35px 16px; color: var(--text-secondary); }
 .tg-btn { background: var(--primary); color: var(--white); border: none; padding: 12px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; font-size: 14px; }
 
 /* LOADING */
@@ -146,6 +204,7 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 .loading-text { color: var(--white); font-size: 18px; font-weight: 600; }
 #loadingScreen { position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: var(--primary) !important; z-index: 9999 !important; display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: 20px; }
 #loadingScreen.hidden { display: none !important; }
+
 /* MENU & PAGES */
 .menu-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 3000; transition: opacity 0.3s ease; }
 .menu-overlay.hidden { display: none; opacity: 0; }
