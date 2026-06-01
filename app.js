@@ -56,7 +56,7 @@ async function loadAgentData() {  try {
       currentAgentData = parsed[0];
       console.log('✅ Agent data loaded');
     }
-  } catch (e) { console.warn('️ Agent data error:', e); }
+  } catch (e) { console.warn('⚠️ Agent data error:', e); }
 }
 
 async function loadPagesData() {
@@ -189,7 +189,7 @@ function renderContactsPage() {
   const hasAgency = data.agencyName || data.agencyAddress;
   document.getElementById('agencyBlock').style.display = hasAgency ? 'block' : 'none';
   document.getElementById('agencyName').textContent = data.agencyName || '';
-  document.getElementById('agencyAddress').textContent = data.agencyAddress ? ' ' + data.agencyAddress : '';
+  document.getElementById('agencyAddress').textContent = data.agencyAddress ? '📍 ' + data.agencyAddress : '';
 }
 
 function openMenu() {
@@ -271,13 +271,9 @@ function applyTheme() {
   document.documentElement.style.setProperty('--accent', config.branding.accentColor || '#3498DB');
 }
 
-// ==========================================
-//  ✅ БРЕНДИНГ (ИСПРАВЛЕНО: НЕ УДАЛЯЕТ ШАПКУ)
-// ==========================================
 function applyBranding() {
   if (!config.branding) return;
 
-  // Обновляем приветствие
   const companyEl = document.getElementById('companyName');
   if (companyEl && config.branding.name) companyEl.textContent = config.branding.name;
 
@@ -290,15 +286,13 @@ function applyBranding() {
   const btnEl = document.getElementById('welcomeButton');
   if (btnEl && config.branding.buttonText) btnEl.textContent = config.branding.buttonText;
 
-  // Обновляем заголовок в шапке (не пересоздавая элементы!)
   const headerTitle = document.getElementById('headerTitle');
-  if (headerTitle && config.branding.name) {    headerTitle.textContent = config.branding.name.toUpperCase();
+  if (headerTitle && config.branding.name) {
+    headerTitle.textContent = config.branding.name.toUpperCase();
   }
 
-  // Обновляем логотип в шапке
   const headerLogo = document.querySelector('#headerBrand .brand-logo');
-  if (headerLogo && config.branding.logo) {
-    headerLogo.src = config.branding.logo;
+  if (headerLogo && config.branding.logo) {    headerLogo.src = config.branding.logo;
   }
 }
 
@@ -341,13 +335,13 @@ function renderFilters() {
   if (roomsContainer) {
     const allRooms = [];
     listings.forEach(l => {
-      if (l.rooms) {        String(l.rooms).split(',').map(r => r.trim()).forEach(r => { if (r && !allRooms.includes(r)) allRooms.push(r); });
+      if (l.rooms) {
+        String(l.rooms).split(',').map(r => r.trim()).forEach(r => { if (r && !allRooms.includes(r)) allRooms.push(r); });
       }
     });
     allRooms.sort();
     roomsContainer.innerHTML = '';
-    allRooms.forEach(r => {
-      const label = document.createElement('label');
+    allRooms.forEach(r => {      const label = document.createElement('label');
       label.className = 'checkbox-label';
       label.innerHTML = `<input type="checkbox" value="${escapeHtml(r)}" class="filter-checkbox" data-filter="rooms"><span>${escapeHtml(r)}</span>`;
       roomsContainer.appendChild(label);
@@ -390,12 +384,12 @@ function filterListings() {
   const mapContainer = document.getElementById('mapContainer');
   if (mapContainer && !mapContainer.classList.contains('hidden')) updateMapMarkers(filtered);
 }
+
 function resetFilters() {
   document.querySelectorAll('.price-btn').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll('.filter-checkbox').forEach(cb => cb.checked = false);
   renderListings(listings.filter(l => l.active));
 }
-
 // ==========================================
 //  ✅ КАРТОЧКИ
 // ==========================================
@@ -434,18 +428,18 @@ function renderListings(data) {
         <div class="listing-meta">
           <span>${escapeHtml(item.district) || ''}</span>
           <span>🚇 ${escapeHtml(item.metro) || ''}</span>
-          ${item.rooms ? `<span> ${escapeHtml(item.rooms)}</span>` : ''}
-          ${area ? `<span> ${escapeHtml(area)}</span>` : ''}
+          ${item.rooms ? `<span>🚪 ${escapeHtml(item.rooms)}</span>` : ''}
+          ${area ? `<span>📐 ${escapeHtml(area)}</span>` : ''}
         </div>
         <div class="listing-price">от ${priceDisplay}${priceTo ? ` до ${priceTo} млн ₽` : ''} ${ppsqm ? `<br><span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}</div>
         <div class="listing-status status-${statusKey}">${statusText}</div>
-        <button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button>      </div>`;
+        <button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button>
+      </div>`;
     container.appendChild(card);
   });
 }
 
-function initMap() {
-  if (typeof L === 'undefined') return;
+function initMap() {  if (typeof L === 'undefined') return;
   const mapContainer = document.getElementById('mapContainer');
   if (!mapContainer) return;
   if (!map) {
@@ -481,74 +475,125 @@ function updateMapMarkers(filteredItems) {
   }
 }
 
+// ==========================================
+//  ✅ ОТКРЫТИЕ ДЕТАЛЕЙ (С КАРУСЕЛЯМИ)
+// ==========================================
 function openDetails(id) {
   const item = listings.find(l => l.id === id);
   if (!item) return;
   currentModalId = id;
+
   document.getElementById('modalTitle').textContent = item.name || '';
+ 
   let priceDisplay = '?';
   if (typeof item.price_from === 'number') {
-    priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);  }
-  const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
+    priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
+  }  const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
   document.getElementById('modalPrice').innerHTML = `от <b>${priceDisplay}</b> млн ₽ ${ppsqm ? `<span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}`;
+
   document.getElementById('modalMeta').innerHTML = `
     <div class="meta-row"><span>📍 ${escapeHtml(item.address) || ''}</span></div>
     <div class="meta-row"><span>🚇 ${escapeHtml(item.metro) || ''}</span></div>
     <div class="meta-row"><span>🏗 ${escapeHtml(item.class) || ''} • ${escapeHtml(item.finishing) || ''}</span></div>
-    <div class="meta-row"><span>📅 ${escapeHtml(item.completion_soonest || item.completion_all) || ''}</span></div>`;
+    <div class="meta-row"><span> ${escapeHtml(item.completion_soonest || item.completion_all) || ''}</span></div>`;
+
   document.getElementById('modalDescription').textContent = item.description || 'Описание отсутствует';
-  document.getElementById('modalFeatures').innerHTML = item.features ? `<ul>${item.features.split(',').map(f => `<li>${escapeHtml(f.trim())}</li>`).join('')}</ul>` : '<p>Информация уточняется</p>';
+  document.getElementById('modalFeatures').innerHTML = item.features ? `<ul>${item.features.split(',').map(f => `<li>${escapeHtml(f.trim())}</li>`).join('')}</ul>` : '<p style="color: var(--text-secondary)">Информация уточняется</p>';
  
+  // ==========================================
+  // ✅ ГАЛЕРЕЯ (Слайдер)
+  // ==========================================
+  const galleryContainer = document.getElementById('modalGallery');
+  galleryContainer.innerHTML = '';
+ 
+  let allImages = [];
+  if (item.image_main) allImages.push(item.image_main);
+  if (item.images_gallery) {
+    allImages = allImages.concat(item.images_gallery.split(',').map(u => u.trim()).filter(u => u));
+  }
+
+  if (allImages.length > 0) {
+    const track = document.createElement('div');
+    track.className = 'carousel-track';
+    const dotsContainer = document.createElement('div');
+    dotsContainer.className = 'carousel-dots';
+
+    allImages.forEach((url, index) => {
+      const slide = document.createElement('div');
+      slide.className = 'slide';
+      const img = document.createElement('img');
+      img.src = url;
+      img.onclick = () => window.open(url, '_blank');
+      slide.appendChild(img);
+      track.appendChild(slide);
+
+      const dot = document.createElement('div');
+      dot.className = `dot ${index === 0 ? 'active' : ''}`;
+      dot.onclick = () => track.scrollTo({ left: slide.offsetLeft, behavior: 'smooth' });
+      dotsContainer.appendChild(dot);
+    });
+
+    galleryContainer.appendChild(track);
+    galleryContainer.appendChild(dotsContainer);
+
+    track.addEventListener('scroll', () => {
+      const index = Math.round(track.scrollLeft / track.offsetWidth);      dotsContainer.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index));
+    });
+  } else {
+    galleryContainer.innerHTML = '<p style="color: var(--text-secondary); text-align:center; padding: 20px;">Фото нет</p>';
+  }
+
+  // ==========================================
+  // ✅ ПЛАНИРОВКИ (Слайдер)
+  // ==========================================
   const plansContainer = document.getElementById('modalFloorPlans');
   plansContainer.innerHTML = '';
-  if (item.floor_plans_text) {
-    const textDiv = document.createElement('div');
-    textDiv.className = 'floor-plans-text';
-    textDiv.textContent = item.floor_plans_text;
-    plansContainer.appendChild(textDiv);
-  }
+ 
+  let plansImages = [];
   if (item.floor_plans_images) {
-    const galleryDiv = document.createElement('div');
-    galleryDiv.className = 'floor-plans-gallery';
-    item.floor_plans_images.split(',').map(u => u.trim()).filter(Boolean).forEach(url => {
-      const img = document.createElement('img');
-      img.src = url;
-      img.className = 'floor-plan-image';
-      img.onclick = () => window.open(url, '_blank');
-      galleryDiv.appendChild(img);
-    });
-    plansContainer.appendChild(galleryDiv);
+    plansImages = item.floor_plans_images.split(',').map(u => u.trim()).filter(u => u);
   }
-  if (!item.floor_plans_text && !item.floor_plans_images) plansContainer.innerHTML = '<p>Информация уточняется</p>';
 
-  const gallery = document.getElementById('modalGallery');
-  gallery.innerHTML = '';
-  if (item.image_main) {
-    const mainImg = document.createElement('img');
-    mainImg.src = item.image_main;
-    mainImg.className = 'modal-main-image';
-    gallery.appendChild(mainImg);
-  }
-  if (item.images_gallery) {
-    item.images_gallery.split(',').map(u => u.trim()).filter(Boolean).forEach(url => {
+  if (plansImages.length > 0) {
+    const title = document.createElement('h3');
+    title.className = 'plans-section-title';
+    title.textContent = '📐 Планировки';
+    plansContainer.appendChild(title);
+
+    const plansTrack = document.createElement('div');
+    plansTrack.className = 'carousel-track';
+   
+    plansImages.forEach(url => {
+      const slide = document.createElement('div');
+      slide.className = 'slide';
+      slide.style.flex = '0 0 85%';
       const img = document.createElement('img');
       img.src = url;
-      img.className = 'modal-thumb';
+      img.style.height = '200px';
       img.onclick = () => window.open(url, '_blank');
-      gallery.appendChild(img);
+      slide.appendChild(img);
+      plansTrack.appendChild(slide);
     });
+    plansContainer.appendChild(plansTrack);
+  } else if (item.floor_plans_text) {
+    plansContainer.innerHTML = `<h3 class="plans-section-title">📐 Планировки</h3><p class="floor-plans-text">${item.floor_plans_text}</p>`;
   }
+
+  // ==========================================
+  // КНОПКА КОНСУЛЬТАЦИИ
+  // ==========================================
   const modalContent = document.querySelector('#detailsModal .modal-content');
   let btn = document.getElementById('modalConsultBtn');
   if (!btn) {
     btn = document.createElement('button');
-    btn.id = 'modalConsultBtn';
-    btn.className = 'tg-btn';
+    btn.id = 'modalConsultBtn';    btn.className = 'tg-btn';
     btn.style.marginTop = '20px';
+    btn.style.marginBottom = '40px';
     modalContent.appendChild(btn);
   }
-  btn.textContent = ' Получить консультацию';
+  btn.textContent = '📞 Получить консультацию';
   btn.onclick = () => openConsultForm(id);
+ 
   document.getElementById('detailsModal').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
   showBack();
@@ -586,10 +631,10 @@ function initPhoneMask() {
   if (!input) return;
   input.addEventListener('input', function(e) {
     let x = e.target.value.replace(/\D/g, '').match(/(\d{0,1})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
-    e.target.value = !x[2] ? '+7 (' : '+7 (' + x[2] + (x[3] ? ') ' + x[3] : '') + (x[4] ? '-' + x[4] : '') + (x[5] ? '-' + x[5] : '');  });
+    e.target.value = !x[2] ? '+7 (' : '+7 (' + x[2] + (x[3] ? ') ' + x[3] : '') + (x[4] ? '-' + x[4] : '') + (x[5] ? '-' + x[5] : '');
+  });
   input.addEventListener('focus', function(e) { if (e.target.value === '') e.target.value = '+7 ('; });
 }
-
 function initTelegramMask() {
   const input = document.getElementById('consultTelegram');
   if (!input) return;
@@ -622,7 +667,6 @@ function submitConsultForm(event) {
   submitBtn.textContent = 'Отправка...';
   submitBtn.disabled = true;
 
-  // ✅ Отправляем secret из конфига (совпадает с твоим скриптом)
   fetch(config.client.scriptUrl, {
     method: 'POST',
     body: JSON.stringify({
@@ -635,14 +679,14 @@ function submitConsultForm(event) {
     })
   })
   .then(res => res.json())
-  .then(data => {    if (data.success) {
+  .then(data => {
+    if (data.success) {
       closeConsultModal();
       tg?.showAlert('✅ Заявка отправлена!');
     } else {
-      throw new Error(data.error || 'Ошибка');
-    }
+      throw new Error(data.error || 'Ошибка');    }
   })
-  .catch(err => { console.error(err); tg?.showAlert('️ Ошибка отправки'); })
+  .catch(err => { console.error(err); tg?.showAlert('⚠️ Ошибка отправки'); })
   .finally(() => {
     submitBtn.textContent = originalText;
     submitBtn.disabled = false;
