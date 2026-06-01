@@ -32,7 +32,6 @@
 
   <!-- Основной контент -->
   <div id="mainContent" class="screen hidden">
-    <!-- ✅ ШАПКА: Всё в один ряд -->
     <header id="headerBrand" class="header">
       <button class="menu-btn" onclick="openMenu()">☰</button>
       <button id="headerBackBtn" class="header-back-btn hidden" onclick="appBack()">
@@ -47,10 +46,10 @@
    
     <div class="filters-toggle">
       <button class="filters-toggle-btn" onclick="toggleFilters()">🔽 Фильтры</button>
-    </div>   
-    <div id="filtersBlock" class="filters-block hidden">
+    </div>
+        <div id="filtersBlock" class="filters-block hidden">
       <div class="filter-group">
-        <label>💰 Цена до (млн ₽)</label>
+        <label> Цена до (млн ₽)</label>
         <div class="price-buttons">
           <button class="price-btn" data-price="5000000">До 5 млн</button>
           <button class="price-btn" data-price="10000000">До 10 млн</button>
@@ -75,7 +74,7 @@
    
     <div class="view-toggle">
       <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>
-      <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">️ Карта</button>
+      <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺️ Карта</button>
     </div>
    
     <div id="listingsContainer" class="listings"></div>
@@ -94,10 +93,10 @@
       <div id="modalDescription" class="modal-desc"></div>
       <h3>✨ Преимущества</h3>
       <div id="modalFeatures" class="modal-features"></div>
-      <h3> Планировки</h3>
+      <h3>📐 Планировки</h3>
       <div id="modalFloorPlans" class="floor-plans"></div>
-      <button id="modalConsultBtn" class="tg-btn">Заказать консультацию</button>    </div>
-  </div>
+      <button id="modalConsultBtn" class="tg-btn">Заказать консультацию</button>
+    </div>  </div>
 
   <!-- Модальное окно консультации -->
   <div id="consultModal" class="modal form-modal hidden">
@@ -134,7 +133,7 @@
     </div>
     <div class="page-content">
       <p>Привет! Я — брокер по недвижимости. Помогаю подбирать объекты с максимальной доходностью и юридической чистотой.</p>
-      <h3> Как я работаю:</h3>
+      <h3>🔍 Как я работаю:</h3>
       <ul>
         <li>Проверяю документы и историю застройщика.</li>
         <li>Торгуюсь за скидку (часто до 5-10%).</li>
@@ -145,20 +144,21 @@
 
   <!-- Страница "Контакты" -->
   <div id="page-contacts" class="page hidden">
-    <div class="page-header">      <button class="page-back-btn" onclick="appBack()">← Назад</button>
-      <h2>Контакты</h2>
+    <div class="page-header">
+      <button class="page-back-btn" onclick="appBack()">← Назад</button>      <h2>Контакты</h2>
     </div>
     <div class="page-content">
       <div class="contact-card">
+        <!-- ✅ Пустой контейнер: JS сам вставит сюда фото или логотип -->
         <div class="agent-avatar"></div>
         <div class="agent-info">
           <h3 id="agentName">Имя Агента</h3>
-          <p id="agentRole">Ваш персональный брокер</p>
+          <p id="agentRole">Эксперт по недвижимости</p>
         </div>
       </div>
      
       <div id="agencyBlock" class="agency-block">
-        <h4>🏢 Агентство</h4>
+        <h4> Агентство</h4>
         <p id="agencyName">Название АН</p>
         <p id="agencyAddress" class="address-text">📍 Адрес офиса</p>
       </div>
