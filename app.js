@@ -491,11 +491,13 @@ function openDetails(id) {
   }  const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
   document.getElementById('modalPrice').innerHTML = `от <b>${priceDisplay}</b> млн ₽ ${ppsqm ? `<span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}`;
 
+  // ✅ ОБНОВЛЁННАЯ МЕТА-ИНФОРМАЦИЯ
   document.getElementById('modalMeta').innerHTML = `
     <div class="meta-row"><span>📍 ${escapeHtml(item.address) || ''}</span></div>
-    <div class="meta-row"><span>🚇 ${escapeHtml(item.metro) || ''}</span></div>
-    <div class="meta-row"><span>🏗 ${escapeHtml(item.class) || ''} • ${escapeHtml(item.finishing) || ''}</span></div>
-    <div class="meta-row"><span> ${escapeHtml(item.completion_soonest || item.completion_all) || ''}</span></div>`;
+    <div class="meta-row"><span>🚇 м. ${escapeHtml(item.metro) || ''}</span></div>
+    <div class="meta-row"><span>🏗 Класс: ${escapeHtml(item.class) || ''}</span></div>
+    <div class="meta-row"><span>🔨 Отделка: ${escapeHtml(item.finishing) || ''}</span></div>
+    <div class="meta-row"><span>📅 Срок сдачи: ${escapeHtml(item.completion_soonest) || ''}${item.completion_soonest && item.completion_all ? ' - ' : ''}${escapeHtml(item.completion_all) || ''}</span></div>`;
 
   document.getElementById('modalDescription').textContent = item.description || 'Описание отсутствует';
   document.getElementById('modalFeatures').innerHTML = item.features ? `<ul>${item.features.split(',').map(f => `<li>${escapeHtml(f.trim())}</li>`).join('')}</ul>` : '<p style="color: var(--text-secondary)">Информация уточняется</p>';
@@ -535,9 +537,9 @@ function openDetails(id) {
 
     galleryContainer.appendChild(track);
     galleryContainer.appendChild(dotsContainer);
-
     track.addEventListener('scroll', () => {
-      const index = Math.round(track.scrollLeft / track.offsetWidth);      dotsContainer.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index));
+      const index = Math.round(track.scrollLeft / track.offsetWidth);
+      dotsContainer.querySelectorAll('.dot').forEach((d, i) => d.classList.toggle('active', i === index));
     });
   } else {
     galleryContainer.innerHTML = '<p style="color: var(--text-secondary); text-align:center; padding: 20px;">Фото нет</p>';
@@ -584,9 +586,9 @@ function openDetails(id) {
   // ==========================================
   const modalContent = document.querySelector('#detailsModal .modal-content');
   let btn = document.getElementById('modalConsultBtn');
-  if (!btn) {
-    btn = document.createElement('button');
-    btn.id = 'modalConsultBtn';    btn.className = 'tg-btn';
+  if (!btn) {    btn = document.createElement('button');
+    btn.id = 'modalConsultBtn';
+    btn.className = 'tg-btn';
     btn.style.marginTop = '20px';
     btn.style.marginBottom = '40px';
     modalContent.appendChild(btn);
@@ -633,8 +635,8 @@ function initPhoneMask() {
     let x = e.target.value.replace(/\D/g, '').match(/(\d{0,1})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
     e.target.value = !x[2] ? '+7 (' : '+7 (' + x[2] + (x[3] ? ') ' + x[3] : '') + (x[4] ? '-' + x[4] : '') + (x[5] ? '-' + x[5] : '');
   });
-  input.addEventListener('focus', function(e) { if (e.target.value === '') e.target.value = '+7 ('; });
-}
+  input.addEventListener('focus', function(e) { if (e.target.value === '') e.target.value = '+7 ('; });}
+
 function initTelegramMask() {
   const input = document.getElementById('consultTelegram');
   if (!input) return;
@@ -682,9 +684,9 @@ function submitConsultForm(event) {
   .then(data => {
     if (data.success) {
       closeConsultModal();
-      tg?.showAlert('✅ Заявка отправлена!');
-    } else {
-      throw new Error(data.error || 'Ошибка');    }
+      tg?.showAlert('✅ Заявка отправлена!');    } else {
+      throw new Error(data.error || 'Ошибка');
+    }
   })
   .catch(err => { console.error(err); tg?.showAlert('⚠️ Ошибка отправки'); })
   .finally(() => {
