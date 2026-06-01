@@ -56,7 +56,7 @@ async function loadAgentData() {  try {
       currentAgentData = parsed[0];
       console.log('✅ Agent data loaded');
     }
-  } catch (e) { console.warn('⚠️ Agent data error:', e); }
+  } catch (e) { console.warn('️ Agent data error:', e); }
 }
 
 async function loadPagesData() {
@@ -189,7 +189,7 @@ function renderContactsPage() {
   const hasAgency = data.agencyName || data.agencyAddress;
   document.getElementById('agencyBlock').style.display = hasAgency ? 'block' : 'none';
   document.getElementById('agencyName').textContent = data.agencyName || '';
-  document.getElementById('agencyAddress').textContent = data.agencyAddress ? '📍 ' + data.agencyAddress : '';
+  document.getElementById('agencyAddress').textContent = data.agencyAddress ? ' ' + data.agencyAddress : '';
 }
 
 function openMenu() {
@@ -271,9 +271,13 @@ function applyTheme() {
   document.documentElement.style.setProperty('--accent', config.branding.accentColor || '#3498DB');
 }
 
+// ==========================================
+//  ✅ БРЕНДИНГ (ИСПРАВЛЕНО: НЕ УДАЛЯЕТ ШАПКУ)
+// ==========================================
 function applyBranding() {
   if (!config.branding) return;
- 
+
+  // Обновляем приветствие
   const companyEl = document.getElementById('companyName');
   if (companyEl && config.branding.name) companyEl.textContent = config.branding.name;
 
@@ -286,26 +290,15 @@ function applyBranding() {
   const btnEl = document.getElementById('welcomeButton');
   if (btnEl && config.branding.buttonText) btnEl.textContent = config.branding.buttonText;
 
+  // Обновляем заголовок в шапке (не пересоздавая элементы!)
   const headerTitle = document.getElementById('headerTitle');
-  if (headerTitle && config.branding.name) {
-    headerTitle.textContent = config.branding.name.toUpperCase();
+  if (headerTitle && config.branding.name) {    headerTitle.textContent = config.branding.name.toUpperCase();
   }
 
-  const headerContainer = document.getElementById('headerBrand');
-  if (headerContainer) {    headerContainer.innerHTML = '';
-    if (config.branding.logo) {
-      const logo = document.createElement('img');
-      logo.src = config.branding.logo;
-      logo.className = 'brand-logo';
-      logo.alt = 'Logo';
-      headerContainer.appendChild(logo);
-    }
-    if (config.branding.name) {
-      const title = document.createElement('h1');
-      title.textContent = config.branding.name.toUpperCase();
-      title.className = 'brand-title';
-      headerContainer.appendChild(title);
-    }
+  // Обновляем логотип в шапке
+  const headerLogo = document.querySelector('#headerBrand .brand-logo');
+  if (headerLogo && config.branding.logo) {
+    headerLogo.src = config.branding.logo;
   }
 }
 
@@ -317,7 +310,7 @@ function renderWelcome() {
 }
 
 // ==========================================
-//  ✅ ФИЛЬТРЫ (ИСПРАВЛЕНЫ СТРЕЛКИ И ШАБЛОНЫ)
+//  ✅ ФИЛЬТРЫ
 // ==========================================
 function renderFilters() {
   const districts = [...new Set(listings.map(l => l.district).filter(Boolean))].sort();
@@ -341,14 +334,14 @@ function renderFilters() {
       label.className = 'checkbox-label';
       label.innerHTML = `<input type="checkbox" value="${escapeHtml(m)}" class="filter-checkbox" data-filter="metro"><span>${escapeHtml(m)}</span>`;
       metroContainer.appendChild(label);
-    });  }
+    });
+  }
 
   const roomsContainer = document.getElementById('roomsCheckboxes');
   if (roomsContainer) {
     const allRooms = [];
     listings.forEach(l => {
-      if (l.rooms) {
-        String(l.rooms).split(',').map(r => r.trim()).forEach(r => { if (r && !allRooms.includes(r)) allRooms.push(r); });
+      if (l.rooms) {        String(l.rooms).split(',').map(r => r.trim()).forEach(r => { if (r && !allRooms.includes(r)) allRooms.push(r); });
       }
     });
     allRooms.sort();
@@ -390,13 +383,13 @@ function filterListings() {
       const itemRooms = String(item.rooms).split(',').map(r => r.trim());
       if (!selectedRooms.some(r => itemRooms.includes(r))) return false;
     }
-    return true;  });
+    return true;
+  });
 
   renderListings(filtered);
   const mapContainer = document.getElementById('mapContainer');
   if (mapContainer && !mapContainer.classList.contains('hidden')) updateMapMarkers(filtered);
 }
-
 function resetFilters() {
   document.querySelectorAll('.price-btn').forEach(btn => btn.classList.remove('active'));
   document.querySelectorAll('.filter-checkbox').forEach(cb => cb.checked = false);
@@ -404,7 +397,7 @@ function resetFilters() {
 }
 
 // ==========================================
-//  ✅ КАРТОЧКИ (ИСПРАВЛЕНЫ ШАБЛОНЫ)
+//  ✅ КАРТОЧКИ
 // ==========================================
 function renderListings(data) {
   const container = document.getElementById('listingsContainer');
@@ -429,7 +422,7 @@ function renderListings(data) {
     const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
     const area = (typeof item.area_min === 'number' && typeof item.area_max === 'number') ? `${item.area_min}–${item.area_max} м²` : '';
     const statusKey = (item.status || 'other').toString().replace(/\s+/g, '-');
-    const statusText = item.status === 'Сдан' ? '✅ Сдан' : item.status === 'Строится' ? '🏗 Строится' : '🟡 Частично сдан';
+    const statusText = item.status === 'Сдан' ? '✅ Сдан' : item.status === 'Строится' ? '🏗 Строится' : ' Частично сдан';
 
     const card = document.createElement('div');
     card.className = 'listing-card';
@@ -439,14 +432,14 @@ function renderListings(data) {
       <div class="listing-info">
         <h3>${escapeHtml(item.name) || 'Без названия'}</h3>
         <div class="listing-meta">
-          <span>${escapeHtml(item.district) || ''}</span>          <span>🚇 ${escapeHtml(item.metro) || ''}</span>
+          <span>${escapeHtml(item.district) || ''}</span>
+          <span>🚇 ${escapeHtml(item.metro) || ''}</span>
           ${item.rooms ? `<span> ${escapeHtml(item.rooms)}</span>` : ''}
-          ${area ? `<span>📐 ${escapeHtml(area)}</span>` : ''}
+          ${area ? `<span> ${escapeHtml(area)}</span>` : ''}
         </div>
         <div class="listing-price">от ${priceDisplay}${priceTo ? ` до ${priceTo} млн ₽` : ''} ${ppsqm ? `<br><span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}</div>
         <div class="listing-status status-${statusKey}">${statusText}</div>
-        <button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button>
-      </div>`;
+        <button class="tg-btn consult-btn-inline" onclick="openConsultForm('${item.id}', event)">📞 Получить консультацию</button>      </div>`;
     container.appendChild(card);
   });
 }
@@ -488,14 +481,14 @@ function updateMapMarkers(filteredItems) {
   }
 }
 
-function openDetails(id) {  const item = listings.find(l => l.id === id);
+function openDetails(id) {
+  const item = listings.find(l => l.id === id);
   if (!item) return;
   currentModalId = id;
   document.getElementById('modalTitle').textContent = item.name || '';
   let priceDisplay = '?';
   if (typeof item.price_from === 'number') {
-    priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
-  }
+    priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);  }
   const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
   document.getElementById('modalPrice').innerHTML = `от <b>${priceDisplay}</b> млн ₽ ${ppsqm ? `<span class="price-per-sqm">~${ppsqm} ₽/м²</span>` : ''}`;
   document.getElementById('modalMeta').innerHTML = `
@@ -537,14 +530,14 @@ function openDetails(id) {  const item = listings.find(l => l.id === id);
     gallery.appendChild(mainImg);
   }
   if (item.images_gallery) {
-    item.images_gallery.split(',').map(u => u.trim()).filter(Boolean).forEach(url => {      const img = document.createElement('img');
+    item.images_gallery.split(',').map(u => u.trim()).filter(Boolean).forEach(url => {
+      const img = document.createElement('img');
       img.src = url;
       img.className = 'modal-thumb';
       img.onclick = () => window.open(url, '_blank');
       gallery.appendChild(img);
     });
   }
-
   const modalContent = document.querySelector('#detailsModal .modal-content');
   let btn = document.getElementById('modalConsultBtn');
   if (!btn) {
@@ -554,7 +547,7 @@ function openDetails(id) {  const item = listings.find(l => l.id === id);
     btn.style.marginTop = '20px';
     modalContent.appendChild(btn);
   }
-  btn.textContent = '📞 Получить консультацию';
+  btn.textContent = ' Получить консультацию';
   btn.onclick = () => openConsultForm(id);
   document.getElementById('detailsModal').classList.remove('hidden');
   document.body.style.overflow = 'hidden';
@@ -587,13 +580,13 @@ function closeConsultModal() {
   document.getElementById('consultForm').reset();
   if (document.getElementById('detailsModal').classList.contains('hidden') && document.getElementById('mapContainer').classList.contains('hidden')) hideBack();
 }
+
 function initPhoneMask() {
   const input = document.getElementById('consultPhone');
   if (!input) return;
   input.addEventListener('input', function(e) {
     let x = e.target.value.replace(/\D/g, '').match(/(\d{0,1})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
-    e.target.value = !x[2] ? '+7 (' : '+7 (' + x[2] + (x[3] ? ') ' + x[3] : '') + (x[4] ? '-' + x[4] : '') + (x[5] ? '-' + x[5] : '');
-  });
+    e.target.value = !x[2] ? '+7 (' : '+7 (' + x[2] + (x[3] ? ') ' + x[3] : '') + (x[4] ? '-' + x[4] : '') + (x[5] ? '-' + x[5] : '');  });
   input.addEventListener('focus', function(e) { if (e.target.value === '') e.target.value = '+7 ('; });
 }
 
@@ -609,7 +602,7 @@ function initTelegramMask() {
 }
 
 // ==========================================
-//  ✅ ОТПРАВКА ЗАЯВКИ (СЕКРЕТ НА МЕСТЕ)
+//  ✅ ОТПРАВКА ЗАЯВКИ
 // ==========================================
 function submitConsultForm(event) {
   event.preventDefault();
@@ -635,21 +628,21 @@ function submitConsultForm(event) {
     body: JSON.stringify({
       secret: config.client.secretKey,
       projectId: config.client.projectId,
-      title: item.name,      leadName: name,
+      title: item.name,
+      leadName: name,
       leadPhone: phone,
       leadTelegram: telegram || 'Не указан'
     })
   })
   .then(res => res.json())
-  .then(data => {
-    if (data.success) {
+  .then(data => {    if (data.success) {
       closeConsultModal();
       tg?.showAlert('✅ Заявка отправлена!');
     } else {
       throw new Error(data.error || 'Ошибка');
     }
   })
-  .catch(err => { console.error(err); tg?.showAlert('⚠️ Ошибка отправки'); })
+  .catch(err => { console.error(err); tg?.showAlert('️ Ошибка отправки'); })
   .finally(() => {
     submitBtn.textContent = originalText;
     submitBtn.disabled = false;
