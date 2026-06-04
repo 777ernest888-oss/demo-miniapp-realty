@@ -1,7 +1,7 @@
 {
   "client": {
     "projectId": "demo-miniapp-realty",
-    "scriptUrl": "https://script.google.com/macros/s/AKfycbzFGzj8iTpKzhDZHhSQj781HrqKqRnbA4u99Rk29bjlJ_bYhQyIKwll-5SP06WdE-E/exec",
+    "scriptUrl": "https://script.google.com/macros/s/AKfycbzyb8GUShBJelAD-BA6-O6whaLDKPfiDq_OzlG9pplCdn4zXSi7NWq_w0--SZGKzBO6/exec",
     "secretKey": "Secret_new_int_111"
   },
   "sheets": {
