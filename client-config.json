@@ -2,7 +2,6 @@
   "client": {
     "projectId": "demo-miniapp-realty",
     "scriptUrl": "https://script.google.com/macros/s/AKfycbzFGzj8iTpKzhDZHhSQj781HrqKqRnbA4u99Rk29bjlJ_bYhQyIKwll-5SP06WdE-E/exec",
-    "secretKey": "SecretParol999"
   },
   "sheets": {
     "agentData": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTAJn5ah-8UjagF2CloZWriSpKLyMkD5RxLzYOHC7PCtcCe33iTs5NvqM2dLs8QLCuMIrkIOytK0PWy/pub?gid=1784165651&single=true&output=csv",
