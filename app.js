@@ -754,20 +754,39 @@ function submitConsultForm(event) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${config.supabase.anonKey}`
+        'Authorization': `Bearer ${config.supabase.anonKey}`,
+        'apikey': config.supabase.anonKey
       },
       body: JSON.stringify(notifyPayload)
-    }).then(res => res.json()).catch(() => null)
+    }).then(res => res.json()).catch(() => ({ success: true })) // Игнорируем ошибки уведомления
   ])
   .then(([supabaseResult, notifyResult]) => {
-    if (supabaseResult?.success || notifyResult?.success) {
+    // ✅ Главное — заявка сохранена в Supabase
+    const saved = supabaseResult?.success;
+   
+    if (saved) {
+      // Закрываем модалку СНАЧАЛА
       closeConsultModal();
-      tg?.showAlert('✅ Заявка отправлена!');
+     
+      // Показываем сообщение ПОТОМ (с задержкой для мобильных)
+      setTimeout(() => {
+        if (tg?.showAlert) {
+          tg.showAlert('✅ Заявка отправлена!');
+        } else {
+          alert('✅ Заявка отправлена!');
+        }
+      }, 100);
     } else {
-      throw new Error('Both failed');
+      throw new Error('Failed to save');
     }
   })
-  .catch(err => { console.error(err); tg?.showAlert('⚠️ Ошибка отправки'); })
+  .catch(err => {
+    console.error('Error:', err);
+    if (tg?.showAlert) {      tg.showAlert('⚠️ Ошибка отправки. Попробуйте позже.');
+    } else {
+      alert('⚠️ Ошибка отправки');
+    }
+  })
   .finally(() => {
     submitBtn.textContent = originalText;
     submitBtn.disabled = false;
@@ -782,7 +801,8 @@ async function submitLeadToSupabase(payload) {
     return { success: true };
   } catch (e) {
     console.error('❌ Supabase lead error:', e);
-    return null;  }
+    return null;
+  }
 }
 
 function escapeHtml(text) {
