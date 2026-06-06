@@ -48,7 +48,7 @@ async function loadClientConfig() {
       );
       console.log('✅ Supabase initialized');
     }  } catch (error) {
-    console.error(' Failed to load config:', error);
+    console.error('❌ Failed to load config:', error);
     alert('Ошибка загрузки конфигурации!');
   }
 }
@@ -280,7 +280,7 @@ function toggleFilters() {
   const block = document.getElementById('filtersBlock');
   const btn = document.querySelector('.filters-toggle-btn');
   block.classList.toggle('hidden');
-  btn.textContent = block.classList.contains('hidden') ? ' Фильтры' : '🔼 Скрыть фильтры';
+  btn.textContent = block.classList.contains('hidden') ? '🔽 Фильтры' : '🔼 Скрыть фильтры';
 }
 
 function switchView(view) {
@@ -469,7 +469,7 @@ function renderListings(data) {
   }
 
   if (!data || data.length === 0) {
-    container.innerHTML = '<div class="empty-state"><div class="empty-icon"></div><h3>Ничего не найдено</h3><p>Попробуйте изменить параметры поиска.</p><button class="btn-reset-filters" onclick="resetFilters()">🔄 Сбросить фильтры</button></div>';
+    container.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><h3>Ничего не найдено</h3><p>Попробуйте изменить параметры поиска.</p><button class="btn-reset-filters" onclick="resetFilters()">🔄 Сбросить фильтры</button></div>';
     return;
   }
 
@@ -566,7 +566,7 @@ function openDetails(id) {
     <div class="meta-row"><span>🚇 м. ${escapeHtml(item.metro) || ''}</span></div>
     <div class="meta-row"><span>🏗 Класс: ${escapeHtml(item.class) || ''}</span></div>
     <div class="meta-row"><span>🔨 Отделка: ${escapeHtml(item.finishing) || ''}</span></div>
-    <div class="meta-row"><span> Срок сдачи: ${escapeHtml(item.completion_soonest) || ''}${item.completion_soonest && item.completion_all ? ' - ' : ''}${escapeHtml(item.completion_all) || ''}</span></div>`;
+    <div class="meta-row"><span>📅 Срок сдачи: ${escapeHtml(item.completion_soonest) || ''}${item.completion_soonest && item.completion_all ? ' - ' : ''}${escapeHtml(item.completion_all) || ''}</span></div>`;
 
   document.getElementById('modalDescription').textContent = item.description || 'Описание отсутствует';
   document.getElementById('modalFeatures').innerHTML = item.features ? `<ul>${item.features.split(',').map(f => `<li>${escapeHtml(f.trim())}</li>`).join('')}</ul>` : '<p style="color: var(--text-secondary);">Информация уточняется</p>';
@@ -622,7 +622,7 @@ function openDetails(id) {
   if (plansImages.length > 0) {
     const title = document.createElement('h3');
     title.className = 'plans-section-title';
-    title.textContent = ' Планировки';
+    title.textContent = '📐 Планировки';
     plansContainer.appendChild(title);
 
     const plansTrack = document.createElement('div');
@@ -710,7 +710,7 @@ function initTelegramMask() {
 }
 
 // ==========================================
-//  ОТПРАВКА ЗАЯВКИ (ТОЛЬКО SUPABASE)
+//  ОТПРАВКА ЗАЯВКИ (SUPABASE + EDGE FUNCTION)
 // ==========================================
 function submitConsultForm(event) {
   event.preventDefault();
@@ -730,8 +730,8 @@ function submitConsultForm(event) {
   submitBtn.textContent = 'Отправка...';
   submitBtn.disabled = true;
 
-  // ✅ Только Supabase — один payload
-  const payload = {
+  // Для Supabase (сохранение в базу)
+  const supabasePayload = {
     secret: config.client.secretKey,
     projectid: config.client.projectId,    title: item.name,
     leadname: name,
@@ -739,20 +739,39 @@ function submitConsultForm(event) {
     leadtelegram: telegram || 'Не указан'
   };
 
-  submitLeadToSupabase(payload)
-    .then(result => {
-      if (result?.success) {
-        closeConsultModal();
-        tg?.showAlert('✅ Заявка отправлена!');
-      } else {
-        throw new Error('Failed');
-      }
-    })
-    .catch(err => { console.error(err); tg?.showAlert('️ Ошибка отправки'); })
-    .finally(() => {
-      submitBtn.textContent = originalText;
-      submitBtn.disabled = false;
-    });
+  // Для Edge Function (уведомление в бота)
+  const notifyPayload = {
+    leadname: name,
+    leadphone: phone,
+    leadtelegram: telegram || 'Не указан',
+    title: item.name
+  };
+
+  // Отправляем в оба места параллельно
+  Promise.all([
+    submitLeadToSupabase(supabasePayload),
+    fetch(`${config.supabase.url}/functions/v1/notify-lead`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${config.supabase.anonKey}`
+      },
+      body: JSON.stringify(notifyPayload)
+    }).then(res => res.json()).catch(() => null)
+  ])
+  .then(([supabaseResult, notifyResult]) => {
+    if (supabaseResult?.success || notifyResult?.success) {
+      closeConsultModal();
+      tg?.showAlert('✅ Заявка отправлена!');
+    } else {
+      throw new Error('Both failed');
+    }
+  })
+  .catch(err => { console.error(err); tg?.showAlert('⚠️ Ошибка отправки'); })
+  .finally(() => {
+    submitBtn.textContent = originalText;
+    submitBtn.disabled = false;
+  });
 }
 
 async function submitLeadToSupabase(payload) {
@@ -763,8 +782,7 @@ async function submitLeadToSupabase(payload) {
     return { success: true };
   } catch (e) {
     console.error('❌ Supabase lead error:', e);
-    return null;
-  }
+    return null;  }
 }
 
 function escapeHtml(text) {
