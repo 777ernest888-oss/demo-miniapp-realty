@@ -85,6 +85,24 @@ async function loadPagesData() {
 }
 
 async function loadFromGoogleSheets(url) {
+  // ✅ ЗАГРУЗКА ИЗ SUPABASE
+async function loadPropertiesFromSupabase() {
+  if (!supabaseClient) return null;
+  try {
+    const { data, error } = await supabaseClient
+      .from('properties')
+      .select('*')
+      .eq('active', true)
+      .order('created_at', { ascending: false });
+   
+    if (error) throw error;
+    console.log(`✅ Loaded ${data?.length || 0} properties from Supabase`);
+    return data;
+  } catch (e) {
+    console.error('❌ Supabase load error:', e);
+    return null;
+  }
+}
   let csvUrl = url.replace('pubhtml', 'pub');
   if (!csvUrl.includes('output=csv')) {
     csvUrl += (csvUrl.includes('?') ? '&' : '?') + 'output=csv';
@@ -301,7 +319,13 @@ async function init() {
     applyBranding();
     await loadAgentData();
     await loadPagesData();
-    listings = await loadFromGoogleSheets(config.sheets.listings);
+    // ✅ Сначала пробуем Supabase, если не вышло — Google Sheets
+let propertiesData = await loadPropertiesFromSupabase();
+if (!propertiesData || propertiesData.length === 0) {
+  console.log('🔄 Falling back to Google Sheets for listings...');
+  propertiesData = await loadFromGoogleSheets(config.sheets.listings);
+}
+listings = propertiesData;
     renderWelcome();    renderFilters();
     renderListings(listings.filter(l => l.active));
     initPhoneMask();
