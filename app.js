@@ -39,6 +39,15 @@ async function loadClientConfig() {
     const response = await fetch('client-config.json');
     config = await response.json();
     console.log('✅ Client config loaded');
+   
+    // ✅ Инициализация Supabase
+    if (config.supabase && window.supabase) {
+      supabaseClient = window.supabase.createClient(
+        config.supabase.url,
+        config.supabase.anonKey
+      );
+      console.log('✅ Supabase initialized');
+    }
   } catch (error) {
     console.error('❌ Failed to load config:', error);
     alert('Ошибка загрузки конфигурации!');
