@@ -10,6 +10,7 @@ let map = null;
 let markers = [];
 let currentPage = 'home';
 let tg;
+let supabaseClient = null;
 
 // Инициализация Telegram WebApp
 try {
