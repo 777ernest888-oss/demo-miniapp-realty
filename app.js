@@ -740,11 +740,11 @@ function submitConsultForm(event) {
  
   const payload = {
     secret: config.client.secretKey,
-    projectId: config.client.projectId,
+    projectid: config.client.projectId,
     title: item.name,
-    leadName: name,
-    leadPhone: phone,
-    leadTelegram: telegram || 'Не указан'
+    leadname: name,
+    leadphone: phone,
+    leadtelegram: telegram || 'Не указан'
   };
  
   // Отправка в Supabase (если есть) + Google Script
