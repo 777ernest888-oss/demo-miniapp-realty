@@ -11,6 +11,7 @@ let uploadedUrls = {
     gallery: [],
     floorPlans: []
 };
+let currentEditData = null;
 
 // При загрузке страницы — инициализируем Supabase
 document.addEventListener('DOMContentLoaded', async function() {
@@ -46,8 +47,8 @@ function showAlert(message, type = 'success') {
     const container = document.getElementById('alertContainer');
     const alert = document.createElement('div');
     alert.className = `alert alert-${type}`;
-    alert.textContent = message;
-    container.appendChild(alert);    setTimeout(() => alert.remove(), 3000);
+    alert.textContent = message;    container.appendChild(alert);
+    setTimeout(() => alert.remove(), 3000);
 }
 
 // Форматирование цены
@@ -95,8 +96,8 @@ async function deleteFromYandex(paths) {
             'apikey': SUPABASE_ANON_KEY,
             'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ paths: paths })
-    });   
+        body: JSON.stringify({ paths: paths })    });
+   
     const result = await response.json();
    
     if (!result.success) {
@@ -109,6 +110,74 @@ function extractPathFromUrl(url) {
     if (!url) return null;
     const match = url.match(/property-images\/(.+)$/);
     return match ? match[1] : null;
+}
+
+// Удаление отдельного изображения
+async function deleteSingleImage(url, type, index) {
+    if (!confirm('Удалить это фото?')) return;
+   
+    try {
+        const path = extractPathFromUrl(url);
+        if (!path) throw new Error('Не удалось получить путь к файлу');
+       
+        await deleteFromYandex([path]);
+       
+        const { data: property } = await supabaseClient
+            .from('properties')
+            .select('*')
+            .eq('id', currentEditData.id)
+            .single();
+       
+        if (!property) throw new Error('Объект не найден');
+       
+        let updateData = {};
+       
+        if (type === 'main') {
+            updateData.image_main = null;
+        } else if (type === 'gallery') {
+            const gallery = property.images_gallery ? property.images_gallery.split(',') : [];
+            gallery.splice(index, 1);
+            updateData.images_gallery = gallery.join(',');
+        } else if (type === 'floorPlans') {
+            const plans = property.floor_plans_images ? property.floor_plans_images.split(',') : [];
+            plans.splice(index, 1);
+            updateData.floor_plans_images = plans.join(',');
+        }
+       
+        const { error } = await supabaseClient
+            .from('properties')            .update(updateData)
+            .eq('id', currentEditData.id);
+       
+        if (error) throw error;
+       
+        showAlert('✅ Фото удалено!');
+        await editProperty(currentEditData.id);
+       
+    } catch (error) {
+        showAlert(' Ошибка: ' + error.message, 'error');
+    }
+}
+
+// Переключение статуса объекта (скрыть/показать)
+async function togglePropertyStatus(id, currentStatus) {
+    const newStatus = !currentStatus;
+    const actionText = newStatus ? 'показать' : 'скрыть';
+   
+    if (!confirm(`Вы уверены, что хотите ${actionText} этот объект?`)) return;
+   
+    try {
+        const { error } = await supabaseClient
+            .from('properties')
+            .update({ active: newStatus })
+            .eq('id', id);
+       
+        if (error) throw error;
+       
+        showAlert(newStatus ? '✅ Объект снова виден в каталоге!' : '👁 Объект скрыт из каталога');
+        loadProperties();
+    } catch (error) {
+        showAlert('❌ Ошибка: ' + error.message, 'error');
+    }
 }
 
 // ========== ОБЪЕКТЫ ==========
@@ -125,8 +194,7 @@ async function loadProperties() {
     const { data, error } = await supabaseClient
         .from('properties')
         .select('id, name, district, metro, price_from, active')
-        .order('created_at', { ascending: false });
-   
+        .order('created_at', { ascending: false });   
     if (error) {
         container.innerHTML = `<div class="alert alert-error">Ошибка: ${error.message}</div>`;
         return;
@@ -141,14 +209,25 @@ async function loadProperties() {
     data.forEach(property => {
         const item = document.createElement('div');
         item.className = 'property-item';
+        // Если объект скрыт — делаем его полупрозрачным
+        if (!property.active) {
+            item.style.opacity = '0.6';
+            item.style.borderLeftColor = '#95a5a6';
+        }
+       
+        const toggleBtnText = property.active ? '👁 Скрыть' : '👁 Показать';
+        const toggleBtnClass = property.active ? 'btn-secondary' : 'btn-success';
+       
         item.innerHTML = `
             <div class="property-info">
-                <h3>${property.name || 'Без названия'}</h3>
+                <h3>${property.name || 'Без названия'} ${!property.active ? '<span style="color:#e74c3c;font-size:12px;">[СКРЫТ]</span>' : ''}</h3>
                 <p>📍 ${property.district || ''} ${property.metro ? '| м. ' + property.metro : ''}</p>
-                <p>💰 от ${formatPrice(property.price_from)} ₽ ${property.active ? '✅' : '❌'}</p>            </div>
+                <p>💰 от ${formatPrice(property.price_from)} ₽ ${property.active ? '✅' : '❌'}</p>
+            </div>
             <div class="property-actions">
+                <button class="btn ${toggleBtnClass} btn-small" onclick="togglePropertyStatus('${property.id}', ${property.active})">${toggleBtnText}</button>
                 <button class="btn btn-primary btn-small" onclick="editProperty('${property.id}')">✏️ Редактировать</button>
-                <button class="btn btn-danger btn-small" onclick="deleteProperty('${property.id}')">🗑 Удалить</button>
+                <button class="btn btn-danger btn-small" onclick="deleteProperty('${property.id}')"> Удалить</button>
             </div>
         `;
         container.appendChild(item);
@@ -164,8 +243,7 @@ document.getElementById('addPropertyForm')?.addEventListener('submit', async fun
     submitBtn.textContent = '💾 Сохранение...';
     submitBtn.disabled = true;
    
-    try {
-        const formData = new FormData(e.target);
+    try {        const formData = new FormData(e.target);
         const propertyData = {};
        
         for (let [key, value] of formData.entries()) {
@@ -184,9 +262,8 @@ document.getElementById('addPropertyForm')?.addEventListener('submit', async fun
         propertyData.created_at = new Date().toISOString();
         if (propertyData.active === undefined) propertyData.active = true;
        
-        // Загружаем картинки в Яндекс Облако
         if (uploadedFiles.main) {
-            showAlert('📤 Загружаем главное фото...');
+            showAlert(' Загружаем главное фото...');
             const mainPath = `${propertyData.id}/main_${Date.now()}.jpg`;
             propertyData.image_main = await uploadToYandex(uploadedFiles.main, mainPath);
         }
@@ -194,7 +271,8 @@ document.getElementById('addPropertyForm')?.addEventListener('submit', async fun
         if (uploadedFiles.gallery.length > 0) {
             showAlert('📤 Загружаем галерею...');
             const galleryUrls = [];
-            for (let i = 0; i < uploadedFiles.gallery.length; i++) {                const path = `${propertyData.id}/gallery_${i}_${Date.now()}.jpg`;
+            for (let i = 0; i < uploadedFiles.gallery.length; i++) {
+                const path = `${propertyData.id}/gallery_${i}_${Date.now()}.jpg`;
                 const url = await uploadToYandex(uploadedFiles.gallery[i], path);
                 galleryUrls.push(url);
             }
@@ -214,8 +292,7 @@ document.getElementById('addPropertyForm')?.addEventListener('submit', async fun
        
         const { error } = await supabaseClient.from('properties').insert([propertyData]);
        
-        if (error) throw error;
-       
+        if (error) throw error;       
         showAlert('✅ Объект успешно добавлен!');
         e.target.reset();
         uploadedFiles = { main: null, gallery: [], floorPlans: [] };
@@ -243,7 +320,8 @@ function handleFileSelect(input, previewId) {
     const reader = new FileReader();
     reader.onload = function(e) {
         preview.innerHTML = `<img src="${e.target.result}" alt="Preview" style="max-width:200px;border-radius:8px;">`;
-    };    reader.readAsDataURL(file);
+    };
+    reader.readAsDataURL(file);
 }
 
 function handleFilesSelect(input, previewId) {
@@ -263,8 +341,7 @@ function handleFilesSelect(input, previewId) {
         const reader = new FileReader();
         reader.onload = function(e) {
             const img = document.createElement('img');
-            img.src = e.target.result;
-            img.style.width = '100px';
+            img.src = e.target.result;            img.style.width = '100px';
             img.style.margin = '5px';
             img.style.borderRadius = '8px';
             preview.appendChild(img);
@@ -286,17 +363,59 @@ async function editProperty(id) {
         return;
     }
    
+    currentEditData = data;
     switchTab('addProperty');
    
     const form = document.getElementById('addPropertyForm');
     for (let key in data) {
         const input = form.querySelector(`[name="${key}"]`);
         if (input) {
-            if (input.type === 'checkbox') {                input.checked = data[key];
+            if (input.type === 'checkbox') {
+                input.checked = data[key];
             } else {
                 input.value = data[key] !== null && data[key] !== undefined ? data[key] : '';
             }
         }
+    }
+   
+    // Показываем существующие фото с кнопками удаления
+    if (data.image_main) {
+        document.getElementById('mainImagePreview').innerHTML = `
+            <div style="position:relative;display:inline-block;">
+                <img src="${data.image_main}" style="max-width:200px;border-radius:8px;">
+                <button onclick="deleteSingleImage('${data.image_main}', 'main', 0)"
+                        style="position:absolute;top:5px;right:5px;background:#e74c3c;color:white;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:18px;line-height:1;">×</button>
+            </div>
+        `;
+    }
+   
+    if (data.images_gallery) {
+        const gallery = data.images_gallery.split(',');        let galleryHTML = '';
+        gallery.forEach((url, index) => {
+            galleryHTML += `
+                <div style="position:relative;display:inline-block;margin:5px;">
+                    <img src="${url}" style="width:100px;border-radius:8px;">
+                    <button onclick="deleteSingleImage('${url}', 'gallery', ${index})"
+                            style="position:absolute;top:2px;right:2px;background:#e74c3c;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;font-size:16px;line-height:1;">×</button>
+                </div>
+            `;
+        });
+        document.getElementById('galleryImagesPreview').innerHTML = galleryHTML;
+    }
+   
+    if (data.floor_plans_images) {
+        const plans = data.floor_plans_images.split(',');
+        let plansHTML = '';
+        plans.forEach((url, index) => {
+            plansHTML += `
+                <div style="position:relative;display:inline-block;margin:5px;">
+                    <img src="${url}" style="width:100px;border-radius:8px;">
+                    <button onclick="deleteSingleImage('${url}', 'floorPlans', ${index})"
+                            style="position:absolute;top:2px;right:2px;background:#e74c3c;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;font-size:16px;line-height:1;">×</button>
+                </div>
+            `;
+        });
+        document.getElementById('floorPlansPreview').innerHTML = plansHTML;
     }
    
     const submitBtn = form.querySelector('button[type="submit"]');
@@ -320,8 +439,35 @@ async function updateProperty(id, form) {
         } else if (['lat', 'lng'].includes(key)) {
             propertyData[key] = value ? parseFloat(value) : null;
         } else {
-            propertyData[key] = value;
+            propertyData[key] = value;        }
+    }
+   
+    if (uploadedFiles.main) {
+        showAlert('📤 Загружаем новое главное фото...');
+        const mainPath = `${id}/main_${Date.now()}.jpg`;
+        propertyData.image_main = await uploadToYandex(uploadedFiles.main, mainPath);
+    }
+   
+    if (uploadedFiles.gallery.length > 0) {
+        showAlert('📤 Добавляем фото в галерею...');
+        const existingGallery = currentEditData.images_gallery ? currentEditData.images_gallery.split(',') : [];
+        for (let i = 0; i < uploadedFiles.gallery.length; i++) {
+            const path = `${id}/gallery_${Date.now()}_${i}.jpg`;
+            const url = await uploadToYandex(uploadedFiles.gallery[i], path);
+            existingGallery.push(url);
         }
+        propertyData.images_gallery = existingGallery.join(',');
+    }
+   
+    if (uploadedFiles.floorPlans.length > 0) {
+        showAlert('📤 Добавляем планировки...');
+        const existingPlans = currentEditData.floor_plans_images ? currentEditData.floor_plans_images.split(',') : [];
+        for (let i = 0; i < uploadedFiles.floorPlans.length; i++) {
+            const path = `${id}/plan_${Date.now()}_${i}.jpg`;
+            const url = await uploadToYandex(uploadedFiles.floorPlans[i], path);
+            existingPlans.push(url);
+        }
+        propertyData.floor_plans_images = existingPlans.join(',');
     }
    
     const { error } = await supabaseClient
@@ -341,9 +487,8 @@ async function updateProperty(id, form) {
 // Удаление объекта (с картинками!)
 async function deleteProperty(id) {
     if (!confirm('Вы уверены, что хотите удалить этот объект? Все фото будут удалены из облака!')) return;
-        try {
-        // Сначала получаем данные объекта, чтобы узнать пути к картинкам
-        const { data: property, error: fetchError } = await supabaseClient
+   
+    try {        const { data: property, error: fetchError } = await supabaseClient
             .from('properties')
             .select('image_main, images_gallery, floor_plans_images')
             .eq('id', id)
@@ -351,7 +496,6 @@ async function deleteProperty(id) {
        
         if (fetchError) throw fetchError;
        
-        // Собираем все пути к файлам
         const pathsToDelete = [];
        
         if (property.image_main) {
@@ -369,19 +513,15 @@ async function deleteProperty(id) {
             pathsToDelete.push(...plansPaths);
         }
        
-        // Удаляем файлы из Яндекс Облака (если есть)
         if (pathsToDelete.length > 0) {
             showAlert('🗑 Удаляем фото из облака...');
             try {
                 await deleteFromYandex(pathsToDelete);
-                console.log('✅ Удалено файлов:', pathsToDelete.length);
             } catch (uploadError) {
                 console.warn('⚠️ Не удалось удалить файлы из облака:', uploadError.message);
-                // Не прерываем удаление из базы, если не получилось удалить из облака
             }
         }
        
-        // Удаляем из базы данных
         const { error } = await supabaseClient
             .from('properties')
             .delete()
@@ -390,13 +530,13 @@ async function deleteProperty(id) {
         if (error) throw error;
        
         showAlert('✅ Объект и все его фото удалены!');
-        loadProperties();    } catch (error) {
+        loadProperties();
+    } catch (error) {
         showAlert('❌ Ошибка при удалении: ' + error.message, 'error');
     }
 }
 
 // ========== ДАННЫЕ АГЕНТА ==========
-
 async function loadAgentData() {
     const { data, error } = await supabaseClient
         .from('agent_data')
@@ -439,14 +579,14 @@ document.getElementById('agentForm')?.addEventListener('submit', async function(
         showAlert('❌ Ошибка: ' + error.message, 'error');
     }
 });
+
 // ========== НАСТРОЙКИ ==========
 
 async function loadSettings() {
     const { data, error } = await supabaseClient.from('settings').select('*');
     if (error) return;
    
-    const form = document.getElementById('settingsForm');
-    data.forEach(setting => {
+    const form = document.getElementById('settingsForm');    data.forEach(setting => {
         const input = form.querySelector(`[name="${setting.setting_key}"]`);
         if (input) input.value = setting.setting_value || '';
     });
@@ -488,14 +628,14 @@ async function loadLeads() {
     container.innerHTML = '<div style="text-align:center;padding:40px;color:#666;">⏳ Загрузка...</div>';
    
     const { data, error } = await supabaseClient
-        .from('leads')        .select('*')
+        .from('leads')
+        .select('*')
         .order('created_at', { ascending: false })
         .limit(50);
    
     if (error) {
         container.innerHTML = `<div class="alert alert-error">Ошибка: ${error.message}</div>`;
-        return;
-    }
+        return;    }
    
     document.getElementById('leadsCount').textContent = data ? data.length : 0;
    
