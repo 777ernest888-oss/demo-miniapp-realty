@@ -160,7 +160,6 @@ async function deleteSingleImage(url, type, index) {
 
 // Переключение статуса объекта (скрыть/показать)
 async function togglePropertyStatus(id, currentStatus) {
-    // Проверка, что id существует
     if (!id) {
         showAlert('❌ Ошибка: ID объекта не определён', 'error');
         return;
@@ -169,32 +168,41 @@ async function togglePropertyStatus(id, currentStatus) {
     const newStatus = !currentStatus;
     const actionText = newStatus ? 'показать' : 'скрыть';
    
-    // Используем обратные кавычки (backtick) для интерполяции!
     if (!confirm(`Вы уверены, что хотите ${actionText} этот объект?`)) return;
    
     try {
         console.log('🔄 Обновляем объект:', id, 'новый статус:', newStatus);
        
-        const { data, error } = await supabaseClient
+        // Сначала проверяем, что объект существует
+        const { data: existing, error: checkError } = await supabaseClient
+            .from('properties')
+            .select('id, active')
+            .eq('id', id)
+            .single();
+       
+        if (checkError) {
+            console.error('❌ Объект не найден:', checkError);
+            throw new Error('Объект не найден в базе');
+        }
+       
+        console.log('✅ Найден объект:', existing);
+       
+        // Обновляем статус
+        const { error } = await supabaseClient
             .from('properties')
             .update({ active: newStatus })
-            .eq('id', id)
-            .select();  // Возвращаем обновлённую запись для проверки
+            .eq('id', id);
        
         if (error) {
-            console.error('❌ Ошибка Supabase:', error);
-            throw error;
+            console.error('❌ Ошибка обновления:', error);            throw error;
         }
        
-        console.log('✅ Обновлено:', data);
-       
-        if (!data || data.length === 0) {
-            throw new Error('Объект не найден или не обновлён');
-        }
+        console.log('✅ Статус обновлён!');
        
         showAlert(newStatus ? '✅ Объект снова виден в каталоге!' : '👁 Объект скрыт из каталога');
         loadProperties();
-    } catch (error) {        console.error('Ошибка при переключении статуса:', error);
+    } catch (error) {
+        console.error('Ошибка при переключении статуса:', error);
         showAlert('❌ Ошибка: ' + error.message, 'error');
     }
 }
@@ -235,15 +243,15 @@ async function loadProperties() {
             item.style.borderLeftColor = '#95a5a6';
         }
        
-        const toggleBtnText = property.active ? '👁 Скрыть' : '👁 Показать';
-        const toggleBtnClass = property.active ? 'btn-secondary' : 'btn-success';
+        const toggleBtnText = property.active ? '👁 Скрыть' : '👁 Показать';        const toggleBtnClass = property.active ? 'btn-secondary' : 'btn-success';
        
         item.innerHTML = `
             <div class="property-info">
                 <h3>${property.name || 'Без названия'} ${!property.active ? '<span style="color:#e74c3c;font-size:12px;">[СКРЫТ]</span>' : ''}</h3>
                 <p>📍 ${property.district || ''} ${property.metro ? '| м. ' + property.metro : ''}</p>
                 <p>💰 от ${formatPrice(property.price_from)} ₽ ${property.active ? '✅' : '❌'}</p>
-            </div>            <div class="property-actions">
+            </div>
+            <div class="property-actions">
                 <button class="btn ${toggleBtnClass} btn-small" onclick="togglePropertyStatus('${property.id}', ${property.active})">${toggleBtnText}</button>
                 <button class="btn btn-primary btn-small" onclick="editProperty('${property.id}')">✏️ Редактировать</button>
                 <button class="btn btn-danger btn-small" onclick="deleteProperty('${property.id}')">🗑 Удалить</button>
@@ -284,15 +292,15 @@ document.getElementById('addPropertyForm')?.addEventListener('submit', async fun
        
         if (uploadedFiles.main) {
             showAlert('📤 Загружаем главное фото...');
-            const mainPath = `${propertyData.id}/main_${Date.now()}.jpg`;
-            propertyData.image_main = await uploadToYandex(uploadedFiles.main, mainPath);
+            const mainPath = `${propertyData.id}/main_${Date.now()}.jpg`;            propertyData.image_main = await uploadToYandex(uploadedFiles.main, mainPath);
         }
        
         if (uploadedFiles.gallery.length > 0) {
             showAlert('📤 Загружаем галерею...');
             const galleryUrls = [];
             for (let i = 0; i < uploadedFiles.gallery.length; i++) {
-                const path = `${propertyData.id}/gallery_${i}_${Date.now()}.jpg`;                const url = await uploadToYandex(uploadedFiles.gallery[i], path);
+                const path = `${propertyData.id}/gallery_${i}_${Date.now()}.jpg`;
+                const url = await uploadToYandex(uploadedFiles.gallery[i], path);
                 galleryUrls.push(url);
             }
             propertyData.images_gallery = galleryUrls.join(',');
@@ -333,15 +341,15 @@ document.getElementById('addPropertyForm')?.addEventListener('submit', async fun
 function handleFileSelect(input, previewId) {
     const file = input.files[0];
     if (!file) return;
-   
-    uploadedFiles.main = file;
+        uploadedFiles.main = file;
    
     const preview = document.getElementById(previewId);
     const reader = new FileReader();
     reader.onload = function(e) {
         preview.innerHTML = `<img src="${e.target.result}" alt="Preview" style="max-width:200px;border-radius:8px;">`;
     };
-    reader.readAsDataURL(file);}
+    reader.readAsDataURL(file);
+}
 
 function handleFilesSelect(input, previewId) {
     const files = Array.from(input.files);
@@ -382,15 +390,15 @@ async function editProperty(id) {
         showAlert('❌ Ошибка: ' + error.message, 'error');
         return;
     }
-   
-    currentEditData = data;
+        currentEditData = data;
     switchTab('addProperty');
    
     const form = document.getElementById('addPropertyForm');
     for (let key in data) {
         const input = form.querySelector(`[name="${key}"]`);
         if (input) {
-            if (input.type === 'checkbox') {                input.checked = data[key];
+            if (input.type === 'checkbox') {
+                input.checked = data[key];
             } else {
                 input.value = data[key] !== null && data[key] !== undefined ? data[key] : '';
             }
@@ -431,15 +439,15 @@ async function editProperty(id) {
                 <div style="position:relative;display:inline-block;margin:5px;">
                     <img src="${url}" style="width:100px;border-radius:8px;">
                     <button onclick="deleteSingleImage('${url}', 'floorPlans', ${index})"
-                            style="position:absolute;top:2px;right:2px;background:#e74c3c;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;font-size:16px;line-height:1;">×</button>
-                </div>
+                            style="position:absolute;top:2px;right:2px;background:#e74c3c;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;font-size:16px;line-height:1;">×</button>                </div>
             `;
         });
         document.getElementById('floorPlansPreview').innerHTML = plansHTML;
     }
    
     const submitBtn = form.querySelector('button[type="submit"]');
-    submitBtn.textContent = '💾 Обновить объект';    submitBtn.onclick = function(ev) {
+    submitBtn.textContent = '💾 Обновить объект';
+    submitBtn.onclick = function(ev) {
         ev.preventDefault();
         updateProperty(id, form);
     };
@@ -480,15 +488,15 @@ async function updateProperty(id, form) {
     }
    
     if (uploadedFiles.floorPlans.length > 0) {
-        showAlert('📤 Добавляем планировки...');
-        const existingPlans = currentEditData.floor_plans_images ? currentEditData.floor_plans_images.split(',') : [];
+        showAlert('📤 Добавляем планировки...');        const existingPlans = currentEditData.floor_plans_images ? currentEditData.floor_plans_images.split(',') : [];
         for (let i = 0; i < uploadedFiles.floorPlans.length; i++) {
             const path = `${id}/plan_${Date.now()}_${i}.jpg`;
             const url = await uploadToYandex(uploadedFiles.floorPlans[i], path);
             existingPlans.push(url);
         }
         propertyData.floor_plans_images = existingPlans.join(',');
-    }   
+    }
+   
     const { error } = await supabaseClient
         .from('properties')
         .update(propertyData)
@@ -529,15 +537,15 @@ async function deleteProperty(id) {
         }
        
         if (property.floor_plans_images) {
-            const plansPaths = property.floor_plans_images.split(',').map(extractPathFromUrl).filter(Boolean);
-            pathsToDelete.push(...plansPaths);
+            const plansPaths = property.floor_plans_images.split(',').map(extractPathFromUrl).filter(Boolean);            pathsToDelete.push(...plansPaths);
         }
        
         if (pathsToDelete.length > 0) {
             showAlert('🗑 Удаляем фото из облака...');
             try {
                 await deleteFromYandex(pathsToDelete);
-            } catch (uploadError) {                console.warn('⚠️ Не удалось удалить файлы из облака:', uploadError.message);
+            } catch (uploadError) {
+                console.warn('⚠️ Не удалось удалить файлы из облака:', uploadError.message);
             }
         }
        
@@ -578,15 +586,15 @@ async function loadAgentData() {
 document.getElementById('agentForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
    
-    const formData = new FormData(e.target);
-    const agentData = {};
+    const formData = new FormData(e.target);    const agentData = {};
     for (let [key, value] of formData.entries()) {
         agentData[key] = value;
     }
    
     try {
         if (currentAgentId) {
-            await supabaseClient                .from('agent_data')
+            await supabaseClient
+                .from('agent_data')
                 .update(agentData)
                 .eq('id', currentAgentId);
         } else {
@@ -627,15 +635,15 @@ document.getElementById('settingsForm')?.addEventListener('submit', async functi
            
             if (existing) {
                 await supabaseClient.from('settings').update({ setting_value: value }).eq('setting_key', key);
-            } else {
-                await supabaseClient.from('settings').insert([{
+            } else {                await supabaseClient.from('settings').insert([{
                     id: crypto.randomUUID(),
                     setting_key: key,
                     setting_value: value
                 }]);
             }
         }
-        showAlert('✅ Настройки сохранены!');    } catch (error) {
+        showAlert('✅ Настройки сохранены!');
+    } catch (error) {
         showAlert('❌ Ошибка сохранения настроек', 'error');
     }
 });
@@ -676,15 +684,15 @@ async function loadLeads() {
                 <th>Telegram</th>
             </tr>
         </thead>
-        <tbody>
-            ${data.map(lead => `
+        <tbody>            ${data.map(lead => `
                 <tr>
                     <td>${lead.created_at ? new Date(lead.created_at).toLocaleDateString('ru-RU') : '-'}</td>
                     <td>${lead.title || '-'}</td>
                     <td>${lead.leadname || '-'}</td>
                     <td>${lead.leadphone || '-'}</td>
                     <td>${lead.leadtelegram || '-'}</td>
-                </tr>            `).join('')}
+                </tr>
+            `).join('')}
         </tbody>
     `;
    
