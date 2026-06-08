@@ -1,5 +1,5 @@
 // Глобальные переменные
-let supabase = null;
+let supabaseClient = null;
 let currentAgentId = null;
 let uploadedFiles = {
     main: null,
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const SUPABASE_ANON_KEY = 'sb_publishable_K1aNLiU_605Z7WccyWWPbQ_or-QVNbX';
    
     if (window.supabase) {
-        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         console.log('Supabase подключён');
     } else {
         console.error('Supabase библиотека не загружена!');
@@ -62,12 +62,12 @@ async function loadProperties() {
     const container = document.getElementById('propertiesList');
     container.innerHTML = '<div class="loading">Загрузка...</div>';
    
-    if (!supabase) {
+    if (!supabaseClient) {
         container.innerHTML = '<div class="alert alert-error">Supabase не подключён</div>';
         return;
     }
    
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
         .from('properties')
         .select('*')
         .order('created_at', { ascending: false });
@@ -93,7 +93,7 @@ async function loadProperties() {
             <div class="property-info">
                 <h3>${property.name || 'Без названия'}</h3>
                 <p>📍 ${property.district || ''} ${property.metro ? '| м. ' + property.metro : ''}</p>
-                <p>💰 от ${formatPrice(property.price_from)} ₽ ${property.active ? '✅' : '❌'}</p>
+                <p> от ${formatPrice(property.price_from)} ₽ ${property.active ? '✅' : '❌'}</p>
             </div>
             <div class="property-actions">
                 <button class="btn btn-primary btn-small" onclick="editProperty('${property.id}')">✏️ Редактировать</button>                <button class="btn btn-danger btn-small" onclick="deleteProperty('${property.id}')">🗑 Удалить</button>
@@ -130,7 +130,7 @@ document.getElementById('addPropertyForm')?.addEventListener('submit', async fun
     console.log('Данные объекта:', propertyData);
    
     try {
-        const { error } = await supabase.from('properties').insert([propertyData]);
+        const { error } = await supabaseClient.from('properties').insert([propertyData]);
        
         if (error) {
             console.error('Ошибка сохранения:', error);
@@ -196,7 +196,7 @@ function handleFilesSelect(input, previewId) {
 // Редактирование объекта
 async function editProperty(id) {    console.log('Редактируем объект:', id);
    
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
         .from('properties')
         .select('*')
         .eq('id', id)
@@ -246,7 +246,7 @@ async function updateProperty(id, form) {
             propertyData[key] = value;        }
     }
    
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('properties')
         .update(propertyData)
         .eq('id', id);
@@ -265,7 +265,7 @@ async function updateProperty(id, form) {
 async function deleteProperty(id) {
     if (!confirm('Вы уверены, что хотите удалить этот объект?')) return;
    
-    const { error } = await supabase
+    const { error } = await supabaseClient
         .from('properties')
         .delete()
         .eq('id', id);
@@ -285,7 +285,7 @@ async function deleteProperty(id) {
 async function loadAgentData() {
     console.log('Загружаем данные агента...');
    
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
         .from('agent_data')
         .select('*')
         .limit(1);
@@ -318,14 +318,14 @@ document.getElementById('agentForm')?.addEventListener('submit', async function(
    
     try {
         if (currentAgentId) {
-            const { error } = await supabase
+            const { error } = await supabaseClient
                 .from('agent_data')
                 .update(agentData)
                 .eq('id', currentAgentId);
             if (error) throw error;
         } else {
             agentData.id = crypto.randomUUID();
-            const { error } = await supabase.from('agent_data').insert([agentData]);
+            const { error } = await supabaseClient.from('agent_data').insert([agentData]);
             if (error) throw error;
         }
         showAlert('✅ Данные агента сохранены!');
@@ -340,7 +340,7 @@ document.getElementById('agentForm')?.addEventListener('submit', async function(
 async function loadSettings() {
     console.log('Загружаем настройки...');
    
-    const { data, error } = await supabase.from('settings').select('*');
+    const { data, error } = await supabaseClient.from('settings').select('*');
     if (error) {        console.error('Ошибка загрузки настроек:', error);
         return;
     }
@@ -362,16 +362,16 @@ document.getElementById('settingsForm')?.addEventListener('submit', async functi
    
     try {
         for (let [key, value] of formData.entries()) {
-            const { data: existing } = await supabase
+            const { data: existing } = await supabaseClient
                 .from('settings')
                 .select('id')
                 .eq('setting_key', key)
                 .single();
            
             if (existing) {
-                await supabase.from('settings').update({ setting_value: value }).eq('setting_key', key);
+                await supabaseClient.from('settings').update({ setting_value: value }).eq('setting_key', key);
             } else {
-                await supabase.from('settings').insert([{
+                await supabaseClient.from('settings').insert([{
                     id: crypto.randomUUID(),
                     setting_key: key,
                     setting_value: value
@@ -391,7 +391,7 @@ async function loadLeads() {
     console.log('Загружаем заявки...');
     const container = document.getElementById('leadsList');
     container.innerHTML = '<div class="loading">Загрузка...</div>';   
-    const { data, error } = await supabase
+    const { data, error } = await supabaseClient
         .from('leads')
         .select('*')
         .order('created_at', { ascending: false });
