@@ -8,24 +8,21 @@ let uploadedFiles = {
 };
 
 // При загрузке страницы — инициализируем Supabase
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('Админка загружена, начинаем инициализацию...');
-   
-    // Инициализация Supabase
+document.addEventListener('DOMContentLoaded', async function() {
     const SUPABASE_URL = 'https://rqiutnpawsmqvmzewamc.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_K1aNLiU_605Z7WccyWWPbQ_or-QVNbX';
    
     if (window.supabase) {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        console.log('Supabase подключён');
-    } else {
-        console.error('Supabase библиотека не загружена!');
     }
    
-    loadProperties();
-    loadAgentData();
-    loadSettings();
-    loadLeads();
+    // Загружаем всё параллельно (быстрее)
+    await Promise.all([
+        loadProperties(),
+        loadAgentData(),
+        loadSettings(),
+        loadLeads()
+    ]);
 });
 
 // Переключение вкладок
@@ -47,10 +44,10 @@ function showAlert(message, type = 'success') {
     alert.className = `alert alert-${type}`;
     alert.textContent = message;
     container.appendChild(alert);
-    setTimeout(() => alert.remove(), 5000);}
+    setTimeout(() => alert.remove(), 3000);
+}
 
-// Форматирование цены
-function formatPrice(price) {
+// Форматирование ценыfunction formatPrice(price) {
     if (!price) return '0';
     return parseInt(price).toLocaleString('ru-RU');
 }
@@ -58,9 +55,8 @@ function formatPrice(price) {
 // ========== ОБЪЕКТЫ ==========
 
 async function loadProperties() {
-    console.log('Загружаем объекты...');
     const container = document.getElementById('propertiesList');
-    container.innerHTML = '<div class="loading">Загрузка...</div>';
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:#666;">⏳ Загрузка...</div>';
    
     if (!supabaseClient) {
         container.innerHTML = '<div class="alert alert-error">Supabase не подключён</div>';
@@ -69,16 +65,13 @@ async function loadProperties() {
    
     const { data, error } = await supabaseClient
         .from('properties')
-        .select('*')
+        .select('id, name, district, metro, price_from, active')
         .order('created_at', { ascending: false });
    
     if (error) {
-        console.error('Ошибка загрузки объектов:', error);
-        container.innerHTML = `<div class="alert alert-error">Ошибка: ${error.message}<br>Проверь RLS политики в Supabase!</div>`;
+        container.innerHTML = `<div class="alert alert-error">Ошибка: ${error.message}</div>`;
         return;
     }
-   
-    console.log('Объекты загружены:', data);
    
     if (!data || data.length === 0) {
         container.innerHTML = '<div class="alert alert-success">Объектов пока нет. Добавьте первый!</div>';
@@ -93,20 +86,19 @@ async function loadProperties() {
             <div class="property-info">
                 <h3>${property.name || 'Без названия'}</h3>
                 <p>📍 ${property.district || ''} ${property.metro ? '| м. ' + property.metro : ''}</p>
-                <p> от ${formatPrice(property.price_from)} ₽ ${property.active ? '✅' : '❌'}</p>
+                <p>💰 от ${formatPrice(property.price_from)} ₽ ${property.active ? '✅' : '❌'}</p>
             </div>
             <div class="property-actions">
-                <button class="btn btn-primary btn-small" onclick="editProperty('${property.id}')">✏️ Редактировать</button>                <button class="btn btn-danger btn-small" onclick="deleteProperty('${property.id}')">🗑 Удалить</button>
+                <button class="btn btn-primary btn-small" onclick="editProperty('${property.id}')">✏️ Редактировать</button>
+                <button class="btn btn-danger btn-small" onclick="deleteProperty('${property.id}')">🗑 Удалить</button>
             </div>
         `;
         container.appendChild(item);
     });
 }
-
 // Добавление объекта
 document.getElementById('addPropertyForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
-    console.log('Отправляем форму добавления объекта...');
    
     const formData = new FormData(e.target);
     const propertyData = {};
@@ -125,18 +117,12 @@ document.getElementById('addPropertyForm')?.addEventListener('submit', async fun
    
     propertyData.id = 'spb-' + Date.now();
     propertyData.created_at = new Date().toISOString();
-    propertyData.active = propertyData.active !== undefined ? propertyData.active : true;
-   
-    console.log('Данные объекта:', propertyData);
+    if (propertyData.active === undefined) propertyData.active = true;
    
     try {
         const { error } = await supabaseClient.from('properties').insert([propertyData]);
        
-        if (error) {
-            console.error('Ошибка сохранения:', error);
-            showAlert('❌ Ошибка: ' + error.message, 'error');
-            return;
-        }
+        if (error) throw error;
        
         showAlert('✅ Объект успешно добавлен!');
         e.target.reset();
@@ -145,9 +131,9 @@ document.getElementById('addPropertyForm')?.addEventListener('submit', async fun
         document.getElementById('galleryImagesPreview').innerHTML = '';
         document.getElementById('floorPlansPreview').innerHTML = '';
        
-        setTimeout(() => switchTab('properties'), 1000);    } catch (error) {
-        console.error('Ошибка:', error);
-        showAlert('❌ Ошибка сохранения: ' + error.message, 'error');
+        setTimeout(() => switchTab('properties'), 1000);
+    } catch (error) {
+        showAlert('❌ Ошибка: ' + error.message, 'error');
     }
 });
 
@@ -159,8 +145,7 @@ function handleFileSelect(input, previewId) {
     uploadedFiles.main = file;
    
     const preview = document.getElementById(previewId);
-    const reader = new FileReader();
-    reader.onload = function(e) {
+    const reader = new FileReader();    reader.onload = function(e) {
         preview.innerHTML = `<img src="${e.target.result}" alt="Preview" style="max-width:200px;border-radius:8px;">`;
     };
     reader.readAsDataURL(file);
@@ -194,8 +179,7 @@ function handleFilesSelect(input, previewId) {
 }
 
 // Редактирование объекта
-async function editProperty(id) {    console.log('Редактируем объект:', id);
-   
+async function editProperty(id) {
     const { data, error } = await supabaseClient
         .from('properties')
         .select('*')
@@ -203,7 +187,6 @@ async function editProperty(id) {    console.log('Редактируем объ�
         .single();
    
     if (error) {
-        console.error('Ошибка загрузки объекта:', error);
         showAlert('❌ Ошибка: ' + error.message, 'error');
         return;
     }
@@ -211,8 +194,7 @@ async function editProperty(id) {    console.log('Редактируем объ�
     switchTab('addProperty');
    
     const form = document.getElementById('addPropertyForm');
-    for (let key in data) {
-        const input = form.querySelector(`[name="${key}"]`);
+    for (let key in data) {        const input = form.querySelector(`[name="${key}"]`);
         if (input) {
             if (input.type === 'checkbox') {
                 input.checked = data[key];
@@ -243,7 +225,8 @@ async function updateProperty(id, form) {
         } else if (['lat', 'lng'].includes(key)) {
             propertyData[key] = value ? parseFloat(value) : null;
         } else {
-            propertyData[key] = value;        }
+            propertyData[key] = value;
+        }
     }
    
     const { error } = await supabaseClient
@@ -252,7 +235,6 @@ async function updateProperty(id, form) {
         .eq('id', id);
    
     if (error) {
-        console.error('Ошибка обновления:', error);
         showAlert('❌ Ошибка: ' + error.message, 'error');
         return;
     }
@@ -261,8 +243,7 @@ async function updateProperty(id, form) {
     setTimeout(() => switchTab('properties'), 1000);
 }
 
-// Удаление объекта
-async function deleteProperty(id) {
+// Удаление объектаasync function deleteProperty(id) {
     if (!confirm('Вы уверены, что хотите удалить этот объект?')) return;
    
     const { error } = await supabaseClient
@@ -271,7 +252,6 @@ async function deleteProperty(id) {
         .eq('id', id);
    
     if (error) {
-        console.error('Ошибка удаления:', error);
         showAlert('❌ Ошибка: ' + error.message, 'error');
         return;
     }
@@ -283,18 +263,12 @@ async function deleteProperty(id) {
 // ========== ДАННЫЕ АГЕНТА ==========
 
 async function loadAgentData() {
-    console.log('Загружаем данные агента...');
-   
     const { data, error } = await supabaseClient
         .from('agent_data')
         .select('*')
         .limit(1);
    
-    if (error) {
-        console.error('Ошибка загрузки данных агента:', error);
-        return;    }
-   
-    console.log('Данные агента:', data);
+    if (error) return;
    
     if (data && data.length > 0) {
         currentAgentId = data[0].id;
@@ -308,7 +282,6 @@ async function loadAgentData() {
 
 document.getElementById('agentForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
-    console.log('Сохраняем данные агента...');
    
     const formData = new FormData(e.target);
     const agentData = {};
@@ -318,19 +291,15 @@ document.getElementById('agentForm')?.addEventListener('submit', async function(
    
     try {
         if (currentAgentId) {
-            const { error } = await supabaseClient
-                .from('agent_data')
-                .update(agentData)
+            await supabaseClient
+                .from('agent_data')                .update(agentData)
                 .eq('id', currentAgentId);
-            if (error) throw error;
         } else {
             agentData.id = crypto.randomUUID();
-            const { error } = await supabaseClient.from('agent_data').insert([agentData]);
-            if (error) throw error;
+            await supabaseClient.from('agent_data').insert([agentData]);
         }
         showAlert('✅ Данные агента сохранены!');
     } catch (error) {
-        console.error('Ошибка:', error);
         showAlert('❌ Ошибка: ' + error.message, 'error');
     }
 });
@@ -338,14 +307,8 @@ document.getElementById('agentForm')?.addEventListener('submit', async function(
 // ========== НАСТРОЙКИ ==========
 
 async function loadSettings() {
-    console.log('Загружаем настройки...');
-   
     const { data, error } = await supabaseClient.from('settings').select('*');
-    if (error) {        console.error('Ошибка загрузки настроек:', error);
-        return;
-    }
-   
-    console.log('Настройки:', data);
+    if (error) return;
    
     const form = document.getElementById('settingsForm');
     data.forEach(setting => {
@@ -356,7 +319,6 @@ async function loadSettings() {
 
 document.getElementById('settingsForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
-    console.log('Сохраняем настройки...');
    
     const formData = new FormData(e.target);
    
@@ -379,30 +341,26 @@ document.getElementById('settingsForm')?.addEventListener('submit', async functi
             }
         }
         showAlert('✅ Настройки сохранены!');
-    } catch (error) {
-        console.error('Ошибка:', error);
-        showAlert('❌ Ошибка сохранения настроек', 'error');
+    } catch (error) {        showAlert('❌ Ошибка сохранения настроек', 'error');
     }
 });
 
 // ========== ЗАЯВКИ ==========
 
 async function loadLeads() {
-    console.log('Загружаем заявки...');
     const container = document.getElementById('leadsList');
-    container.innerHTML = '<div class="loading">Загрузка...</div>';   
+    container.innerHTML = '<div style="text-align:center;padding:40px;color:#666;">⏳ Загрузка...</div>';
+   
     const { data, error } = await supabaseClient
         .from('leads')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50);
    
     if (error) {
-        console.error('Ошибка загрузки заявок:', error);
         container.innerHTML = `<div class="alert alert-error">Ошибка: ${error.message}</div>`;
         return;
     }
-   
-    console.log('Заявки:', data);
    
     document.getElementById('leadsCount').textContent = data ? data.length : 0;
    
@@ -432,8 +390,7 @@ async function loadLeads() {
                     <td>${lead.leadphone || '-'}</td>
                     <td>${lead.leadtelegram || '-'}</td>
                 </tr>
-            `).join('')}
-        </tbody>
+            `).join('')}        </tbody>
     `;
    
     container.innerHTML = '';
