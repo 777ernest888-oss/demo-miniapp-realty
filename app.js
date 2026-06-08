@@ -10,19 +10,44 @@ let tg;
 let supabaseClient = null;
 
 const YANDEX_STORAGE_BASE = 'https://storage.yandexcloud.net/property-images/';
-const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/777ernest888-oss/demo-miniapp-realty/main/property-images/';
 
+// Умная функция получения URL. Гарантированно возвращает ссылку на Яндекс Облако,
+// даже если в базе хранится старый путь с GitHub или просто имя файла.
 function getImageUrl(sourceUrl) {
     if (!sourceUrl) return '';
+    // Если это уже корректный URL Яндекс Облака
     if (sourceUrl.includes('storage.yandexcloud.net')) return sourceUrl;
+   
+    // Если это старый URL с GitHub, извлекаем только путь после property-images/
     if (sourceUrl.includes('raw.githubusercontent.com')) {
-        return sourceUrl.replace(GITHUB_RAW_BASE, YANDEX_STORAGE_BASE);
+        const match = sourceUrl.match(/property-images\/(.*)/);
+        if (match && match[1]) {
+            return YANDEX_STORAGE_BASE + match[1];
+        }
     }
+   
+    // Если это относительный путь property-images/xxx.jpg
     if (sourceUrl.startsWith('property-images/')) {
         return YANDEX_STORAGE_BASE + sourceUrl.replace('property-images/', '');
     }
+   
+    // Если это просто имя файла (например, logo.png или 1.jpg)
+    if (!sourceUrl.startsWith('http') && !sourceUrl.startsWith('data:')) {
+        return YANDEX_STORAGE_BASE + sourceUrl;
+    }
+   
     return sourceUrl;
 }
+
+// Единый обработчик ошибок загрузки картинок.
+// Исключает любые попытки загрузить старые ссылки (в т.ч. с GitHub).
+function onImgError(e) {
+    const img = e.target || e;
+    if (img && img.tagName === 'IMG') {
+        img.onerror = null;
+        // Встроенный SVG-плейсхолдер, чтобы не было битой иконки
+        img.src = 'data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200"><rect width="300" height="200" fill="%23f0f0f0"/><text x="50%" y="50%" font-family="sans-serif" font-size="14" fill="%23999" text-anchor="middle" dy=".3em">Фото отсутствует</text></svg>';
+    }}
 
 try {
     if (window.Telegram && window.Telegram.WebApp) {
@@ -47,7 +72,8 @@ async function loadClientConfig() {
         const response = await fetch('client-config.json');
         config = await response.json();
         console.log('Client config loaded');
-        if (config.supabase && window.supabase) {            supabaseClient = window.supabase.createClient(
+        if (config.supabase && window.supabase) {
+            supabaseClient = window.supabase.createClient(
                 config.supabase.url,
                 config.supabase.anonKey
             );
@@ -71,7 +97,6 @@ async function loadAgentData() {
         }
     } catch (e) { console.warn('Agent data error:', e); }
 }
-
 async function loadPagesData() {
     try {
         const res = await fetch(config.sheets.pages);
@@ -96,7 +121,8 @@ async function loadPropertiesFromSupabase() {
             .eq('active', true)
             .order('created_at', { ascending: false });
         if (result.error) throw result.error;
-        console.log('Loaded ' + (result.data ? result.data.length : 0) + ' properties from Supabase');        return result.data;
+        console.log('Loaded ' + (result.data ? result.data.length : 0) + ' properties from Supabase');
+        return result.data;
     } catch (e) {
         console.error('Supabase load error:', e);
         return null;
@@ -119,8 +145,7 @@ function parseCSV(csv) {
             else if (!isNaN(value) && value !== '') value = Number(value);
             obj[header] = value;
         });
-        result.push(obj);
-    }
+        result.push(obj);    }
     return result;
 }
 
@@ -145,7 +170,8 @@ function showBack() {
 
 function hideBack() {
     const btn = document.getElementById('headerBackBtn');
-    if (btn) btn.classList.add('hidden');}
+    if (btn) btn.classList.add('hidden');
+}
 
 function appBack() {
     if (!document.getElementById('consultModal').classList.contains('hidden')) { closeConsultModal(); return; }
@@ -168,8 +194,7 @@ function showPage(pageId) {
     document.getElementById('mainContent').classList.add('hidden');
     document.getElementById('page-about').classList.add('hidden');
     document.getElementById('page-contacts').classList.add('hidden');
-    if (pageId === 'home') {
-        document.getElementById('mainContent').classList.remove('hidden');
+    if (pageId === 'home') {        document.getElementById('mainContent').classList.remove('hidden');
         hideBack();
     } else if (pageId === 'contacts') {
         renderContactsPage();
@@ -193,8 +218,9 @@ function showPage(pageId) {
                     img.src = yandexSrc;
                     img.className = 'about-agent-photo';
                     img.alt = 'Фото';
-                    img.onerror = function() { this.onerror = null; this.src = imageSrc; };
-                    contentDiv.insertBefore(img, contentDiv.firstChild);                }
+                    img.onerror = onImgError;
+                    contentDiv.insertBefore(img, contentDiv.firstChild);
+                }
             }
             targetPage.classList.remove('hidden');
             showBack();
@@ -217,22 +243,21 @@ function renderContactsPage() {
     const data = currentAgentData;
     document.getElementById('agentName').textContent = data.name || 'Имя Агента';
     document.getElementById('agentRole').textContent = data.role || 'Эксперт по недвижимости';
-    const avatarEl = document.querySelector('.agent-avatar');
-    avatarEl.innerHTML = '';
+    const avatarEl = document.querySelector('.agent-avatar');    avatarEl.innerHTML = '';
     const agentPhoto = config.branding ? config.branding.agentPhoto : null;
     if (agentPhoto && agentPhoto.trim() && agentPhoto !== 'logo.png') {
         const img = document.createElement('img');
         const yandexPhoto = getImageUrl(agentPhoto);
         img.src = yandexPhoto;
         img.alt = data.name || 'Агент';
-        img.onerror = function() { this.onerror = null; this.src = agentPhoto; avatarEl.innerHTML = ''; };
+        img.onerror = onImgError;
         avatarEl.appendChild(img);
     } else if (config.branding && config.branding.logo && config.branding.logo !== 'logo.png') {
         const img = document.createElement('img');
         const yandexLogo = getImageUrl(config.branding.logo);
         img.src = yandexLogo;
         img.alt = 'Логотип';
-        img.onerror = function() { this.onerror = null; this.src = config.branding.logo; };
+        img.onerror = onImgError;
         avatarEl.appendChild(img);
     } else {
         avatarEl.innerHTML = '👤';
@@ -243,7 +268,8 @@ function renderContactsPage() {
     document.getElementById('agencyAddress').textContent = data.agencyAddress ? '📍 ' + data.agencyAddress : '';
 }
 
-function openMenu() {    document.getElementById('menuOverlay').classList.remove('hidden');
+function openMenu() {
+    document.getElementById('menuOverlay').classList.remove('hidden');
     document.getElementById('sideMenu').classList.remove('hidden');
 }
 
@@ -266,8 +292,7 @@ function callAgent() {
     if (!phone) { tg.showAlert('❌ Телефон не указан'); return; }
     let cleanPhone = phone.toString().replace(/[^\d+]/g, '');
     if (cleanPhone.length === 11 && (cleanPhone.startsWith('7') || cleanPhone.startsWith('8'))) cleanPhone = '+' + cleanPhone;
-    if (!cleanPhone.startsWith('+') && cleanPhone.length >= 11) cleanPhone = '+' + cleanPhone;
-    window.location.href = 'tel:' + cleanPhone;
+    if (!cleanPhone.startsWith('+') && cleanPhone.length >= 11) cleanPhone = '+' + cleanPhone;    window.location.href = 'tel:' + cleanPhone;
 }
 
 function toggleFilters() {
@@ -293,6 +318,7 @@ function switchView(view) {
         setTimeout(function() { initMap(); }, 100);
     }
 }
+
 async function init() {
     try {
         await loadClientConfig();
@@ -315,8 +341,7 @@ async function init() {
         const loadingScreen = document.getElementById('loadingScreen');
         if (loadingScreen) loadingScreen.classList.add('hidden');
     } catch (error) {
-        console.error('Init Error:', error);
-        const loadingScreen = document.getElementById('loadingScreen');
+        console.error('Init Error:', error);        const loadingScreen = document.getElementById('loadingScreen');
         if (loadingScreen) loadingScreen.classList.add('hidden');
     }
 }
@@ -341,10 +366,11 @@ function applyBranding() {
     if (headerTitle && config.branding.name) {
         headerTitle.textContent = config.branding.name.toUpperCase();
     }
-    const headerLogo = document.querySelector('#headerBrand .brand-logo');    if (headerLogo && config.branding.logo) {
+    const headerLogo = document.querySelector('#headerBrand .brand-logo');
+    if (headerLogo && config.branding.logo) {
         const yandexLogo = getImageUrl(config.branding.logo);
         headerLogo.src = yandexLogo;
-        headerLogo.onerror = function() { this.onerror = null; this.src = config.branding.logo; };
+        headerLogo.onerror = onImgError;
     }
 }
 
@@ -364,8 +390,7 @@ function renderFilters() {
             const label = document.createElement('label');
             label.className = 'checkbox-label';
             label.innerHTML = '<input type="checkbox" value="' + escapeHtml(d) + '" class="filter-checkbox" data-filter="district"><span>' + escapeHtml(d) + '</span>';
-            districtContainer.appendChild(label);
-        });
+            districtContainer.appendChild(label);        });
     }
     const metros = [...new Set(listings.map(function(l) { return l.metro; }).filter(Boolean))].sort();
     const metroContainer = document.getElementById('metroCheckboxes');
@@ -390,7 +415,8 @@ function renderFilters() {
         roomsContainer.innerHTML = '';
         allRooms.forEach(function(r) {
             const label = document.createElement('label');
-            label.className = 'checkbox-label';            label.innerHTML = '<input type="checkbox" value="' + escapeHtml(r) + '" class="filter-checkbox" data-filter="rooms"><span>' + escapeHtml(r) + '</span>';
+            label.className = 'checkbox-label';
+            label.innerHTML = '<input type="checkbox" value="' + escapeHtml(r) + '" class="filter-checkbox" data-filter="rooms"><span>' + escapeHtml(r) + '</span>';
             roomsContainer.appendChild(label);
         });
     }
@@ -413,8 +439,7 @@ function filterListings() {
     const selectedDistricts = Array.from(document.querySelectorAll('input[data-filter="district"]:checked')).map(function(cb) { return cb.value; });
     const selectedMetros = Array.from(document.querySelectorAll('input[data-filter="metro"]:checked')).map(function(cb) { return cb.value; });
     const selectedRooms = Array.from(document.querySelectorAll('input[data-filter="rooms"]:checked')).map(function(cb) { return cb.value; });
-    const filtered = listings.filter(function(item) {
-        if (!item.active) return false;
+    const filtered = listings.filter(function(item) {        if (!item.active) return false;
         if (typeof item.price_from !== 'number' || item.price_from > maxPrice) return false;
         if (selectedDistricts.length > 0 && selectedDistricts.indexOf(item.district) === -1) return false;
         if (selectedMetros.length > 0 && selectedMetros.indexOf(item.metro) === -1) return false;
@@ -439,7 +464,8 @@ function renderListings(data) {
     const container = document.getElementById('listingsContainer');
     if (!container) return;
     container.innerHTML = '';
-    if (listings.length === 0) {        container.innerHTML = '<div class="empty-state"><div class="empty-icon">🏗</div><h3>База пуста</h3><p>Объекты ещё не добавлены.</p></div>';
+    if (listings.length === 0) {
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">🏗</div><h3>База пуста</h3><p>Объекты ещё не добавлены.</p></div>';
         return;
     }
     if (!data || data.length === 0) {
@@ -456,13 +482,13 @@ function renderListings(data) {
         const area = (typeof item.area_min === 'number' && typeof item.area_max === 'number') ? item.area_min + '–' + item.area_max + ' м²' : '';
         const statusKey = (item.status || 'other').toString().replace(/\s+/g, '-');
         const statusText = item.status === 'Сдан' ? '✅ Сдан' : item.status === 'Строится' ? '🏗 Строится' : '🟡 Частично сдан';
+       
         const yandexMain = getImageUrl(item.image_main);
-        const fallbackMain = item.image_main || '';
+       
         const card = document.createElement('div');
         card.className = 'listing-card';
         card.onclick = function(e) { if (!e.target.closest('.consult-btn-inline')) openDetails(item.id); };
-        card.innerHTML = '<img src="' + escapeHtml(yandexMain) + '" alt="' + escapeHtml(item.name) + '" class="listing-image" onerror="this.onerror=null;this.src=\'' + escapeHtml(fallbackMain) + '\';">' +
-            '<div class="listing-info">' +
+        card.innerHTML = '<img src="' + escapeHtml(yandexMain) + '" alt="' + escapeHtml(item.name) + '" class="listing-image" onerror="onImgError(event)">' +            '<div class="listing-info">' +
             '<h3>' + (escapeHtml(item.name) || 'Без названия') + '</h3>' +
             '<div class="listing-meta">' +
             '<span>' + (escapeHtml(item.district) || '') + '</span>' +
@@ -489,6 +515,7 @@ function initMap() {
     filterListings();
     setTimeout(function() { map.invalidateSize(); }, 150);
 }
+
 function updateMapMarkers(filteredItems) {
     if (!map) return;
     markers.forEach(function(m) { map.removeLayer(m); });
@@ -510,8 +537,7 @@ function updateMapMarkers(filteredItems) {
     });
     if (markers.length > 0) {
         const group = new L.featureGroup(markers);
-        map.fitBounds(group.getBounds().pad(0.1));
-    }
+        map.fitBounds(group.getBounds().pad(0.1));    }
 }
 
 function openDetails(id) {
@@ -528,6 +554,7 @@ function openDetails(id) {
     document.getElementById('modalMeta').innerHTML = '<div class="meta-row"><span> ' + (escapeHtml(item.address) || '') + '</span></div><div class="meta-row"><span>🚇 м. ' + (escapeHtml(item.metro) || '') + '</span></div><div class="meta-row"><span>🏗 Класс: ' + (escapeHtml(item.class) || '') + '</span></div><div class="meta-row"><span>🔨 Отделка: ' + (escapeHtml(item.finishing) || '') + '</span></div><div class="meta-row"><span> Срок сдачи: ' + (escapeHtml(item.completion_soonest) || '') + (item.completion_soonest && item.completion_all ? ' - ' : '') + (escapeHtml(item.completion_all) || '') + '</span></div>';
     document.getElementById('modalDescription').textContent = item.description || 'Описание отсутствует';
     document.getElementById('modalFeatures').innerHTML = item.features ? '<ul>' + item.features.split(',').map(function(f) { return '<li>' + escapeHtml(f.trim()) + '</li>'; }).join('') + '</ul>' : '<p style="color: var(--text-secondary);">Информация уточняется</p>';
+   
     const galleryContainer = document.getElementById('modalGallery');
     galleryContainer.innerHTML = '';
     let allImages = [];
@@ -537,7 +564,8 @@ function openDetails(id) {
     }
     if (allImages.length > 0) {
         const track = document.createElement('div');
-        track.className = 'carousel-track';        const dotsContainer = document.createElement('div');
+        track.className = 'carousel-track';
+        const dotsContainer = document.createElement('div');
         dotsContainer.className = 'carousel-dots';
         allImages.forEach(function(url, index) {
             const slide = document.createElement('div');
@@ -546,7 +574,7 @@ function openDetails(id) {
             const yandexUrl = getImageUrl(url);
             img.src = yandexUrl;
             img.onclick = function() { window.open(yandexUrl, '_blank'); };
-            img.onerror = function() { this.onerror = null; this.src = url; };
+            img.onerror = onImgError;
             slide.appendChild(img);
             track.appendChild(slide);
             const dot = document.createElement('div');
@@ -558,11 +586,11 @@ function openDetails(id) {
         galleryContainer.appendChild(dotsContainer);
         track.addEventListener('scroll', function() {
             const index = Math.round(track.scrollLeft / track.offsetWidth);
-            dotsContainer.querySelectorAll('.dot').forEach(function(d, i) { d.classList.toggle('active', i === index); });
-        });
+            dotsContainer.querySelectorAll('.dot').forEach(function(d, i) { d.classList.toggle('active', i === index); });        });
     } else {
         galleryContainer.innerHTML = '<p style="color: var(--text-secondary); text-align:center; padding: 20px;">Фото нет</p>';
     }
+   
     const plansContainer = document.getElementById('modalFloorPlans');
     plansContainer.innerHTML = '';
     let plansImages = [];
@@ -585,13 +613,15 @@ function openDetails(id) {
             img.src = yandexUrl;
             img.style.height = '200px';
             img.onclick = function() { window.open(yandexUrl, '_blank'); };
-            img.onerror = function() { this.onerror = null; this.src = url; };
-            slide.appendChild(img);            plansTrack.appendChild(slide);
+            img.onerror = onImgError;
+            slide.appendChild(img);
+            plansTrack.appendChild(slide);
         });
         plansContainer.appendChild(plansTrack);
     } else if (item.floor_plans_text) {
         plansContainer.innerHTML = '<h3 class="plans-section-title">Планировки</h3><p class="floor-plans-text">' + item.floor_plans_text + '</p>';
     }
+   
     const modalContent = document.querySelector('#detailsModal .modal-content');
     let btn = document.getElementById('modalConsultBtn');
     if (!btn) {
@@ -605,8 +635,7 @@ function openDetails(id) {
     btn.textContent = '📞 Получить консультацию';
     btn.onclick = function() { openConsultForm(id); };
     document.getElementById('detailsModal').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-    showBack();
+    document.body.style.overflow = 'hidden';    showBack();
 }
 
 function closeModal() {
@@ -635,6 +664,7 @@ function closeConsultModal() {
     document.getElementById('consultForm').reset();
     if (document.getElementById('detailsModal').classList.contains('hidden') && document.getElementById('mapContainer').classList.contains('hidden')) hideBack();
 }
+
 function initPhoneMask() {
     const input = document.getElementById('consultPhone');
     if (!input) return;
@@ -655,7 +685,6 @@ function initTelegramMask() {
         e.target.value = val;
     });
 }
-
 function submitConsultForm(event) {
     event.preventDefault();
     const item = listings.find(function(l) { return l.id === currentModalId; });
@@ -684,7 +713,8 @@ function submitConsultForm(event) {
         leadtelegram: telegram || 'Не указан',
         title: item.name
     };
-    Promise.all([        submitLeadToSupabase(supabasePayload),
+    Promise.all([
+        submitLeadToSupabase(supabasePayload),
         fetch(config.supabase.url + '/functions/v1/notify-lead', {
             method: 'POST',
             headers: {
@@ -703,8 +733,7 @@ function submitConsultForm(event) {
             setTimeout(function() {
                 if (tg.showAlert) {
                     tg.showAlert('✅ Заявка отправлена!');
-                } else {
-                    alert('✅ Заявка отправлена!');
+                } else {                    alert('✅ Заявка отправлена!');
                 }
             }, 100);
         } else {
@@ -733,7 +762,8 @@ async function submitLeadToSupabase(payload) {
         return { success: true };
     } catch (e) {
         console.error('Supabase lead error:', e);
-        return null;    }
+        return null;
+    }
 }
 
 function escapeHtml(text) {
