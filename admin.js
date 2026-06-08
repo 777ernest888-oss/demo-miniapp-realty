@@ -433,9 +433,9 @@ async function editProperty(id) {
    
     const submitBtn = form.querySelector('button[type="submit"]');
     submitBtn.textContent = '💾 Обновить объект';
-    submitBtn.onclick = function(ev) {
+    submitBtn.onclick = async function(ev) {
         ev.preventDefault();
-        updateProperty(id, form);
+        await updateProperty(id, form);
     };
 }
 
