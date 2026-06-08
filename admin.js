@@ -154,28 +154,47 @@ async function deleteSingleImage(url, type, index) {
         await editProperty(currentEditData.id);
        
     } catch (error) {
-        showAlert(' Ошибка: ' + error.message, 'error');
+        showAlert('❌ Ошибка: ' + error.message, 'error');
     }
 }
 
 // Переключение статуса объекта (скрыть/показать)
 async function togglePropertyStatus(id, currentStatus) {
+    // Проверка, что id существует
+    if (!id) {
+        showAlert('❌ Ошибка: ID объекта не определён', 'error');
+        return;
+    }
+   
     const newStatus = !currentStatus;
     const actionText = newStatus ? 'показать' : 'скрыть';
    
+    // Используем обратные кавычки (backtick) для интерполяции!
     if (!confirm(`Вы уверены, что хотите ${actionText} этот объект?`)) return;
    
     try {
-        const { error } = await supabaseClient
+        console.log('🔄 Обновляем объект:', id, 'новый статус:', newStatus);
+       
+        const { data, error } = await supabaseClient
             .from('properties')
             .update({ active: newStatus })
-            .eq('id', id);
+            .eq('id', id)
+            .select();  // Возвращаем обновлённую запись для проверки
        
-        if (error) throw error;
+        if (error) {
+            console.error('❌ Ошибка Supabase:', error);
+            throw error;
+        }
+       
+        console.log('✅ Обновлено:', data);
+       
+        if (!data || data.length === 0) {
+            throw new Error('Объект не найден или не обновлён');
+        }
        
         showAlert(newStatus ? '✅ Объект снова виден в каталоге!' : '👁 Объект скрыт из каталога');
         loadProperties();
-    } catch (error) {
+    } catch (error) {        console.error('Ошибка при переключении статуса:', error);
         showAlert('❌ Ошибка: ' + error.message, 'error');
     }
 }
@@ -194,7 +213,8 @@ async function loadProperties() {
     const { data, error } = await supabaseClient
         .from('properties')
         .select('id, name, district, metro, price_from, active')
-        .order('created_at', { ascending: false });   
+        .order('created_at', { ascending: false });
+   
     if (error) {
         container.innerHTML = `<div class="alert alert-error">Ошибка: ${error.message}</div>`;
         return;
@@ -223,11 +243,10 @@ async function loadProperties() {
                 <h3>${property.name || 'Без названия'} ${!property.active ? '<span style="color:#e74c3c;font-size:12px;">[СКРЫТ]</span>' : ''}</h3>
                 <p>📍 ${property.district || ''} ${property.metro ? '| м. ' + property.metro : ''}</p>
                 <p>💰 от ${formatPrice(property.price_from)} ₽ ${property.active ? '✅' : '❌'}</p>
-            </div>
-            <div class="property-actions">
+            </div>            <div class="property-actions">
                 <button class="btn ${toggleBtnClass} btn-small" onclick="togglePropertyStatus('${property.id}', ${property.active})">${toggleBtnText}</button>
                 <button class="btn btn-primary btn-small" onclick="editProperty('${property.id}')">✏️ Редактировать</button>
-                <button class="btn btn-danger btn-small" onclick="deleteProperty('${property.id}')"> Удалить</button>
+                <button class="btn btn-danger btn-small" onclick="deleteProperty('${property.id}')">🗑 Удалить</button>
             </div>
         `;
         container.appendChild(item);
@@ -243,7 +262,8 @@ document.getElementById('addPropertyForm')?.addEventListener('submit', async fun
     submitBtn.textContent = '💾 Сохранение...';
     submitBtn.disabled = true;
    
-    try {        const formData = new FormData(e.target);
+    try {
+        const formData = new FormData(e.target);
         const propertyData = {};
        
         for (let [key, value] of formData.entries()) {
@@ -263,7 +283,7 @@ document.getElementById('addPropertyForm')?.addEventListener('submit', async fun
         if (propertyData.active === undefined) propertyData.active = true;
        
         if (uploadedFiles.main) {
-            showAlert(' Загружаем главное фото...');
+            showAlert('📤 Загружаем главное фото...');
             const mainPath = `${propertyData.id}/main_${Date.now()}.jpg`;
             propertyData.image_main = await uploadToYandex(uploadedFiles.main, mainPath);
         }
@@ -272,8 +292,7 @@ document.getElementById('addPropertyForm')?.addEventListener('submit', async fun
             showAlert('📤 Загружаем галерею...');
             const galleryUrls = [];
             for (let i = 0; i < uploadedFiles.gallery.length; i++) {
-                const path = `${propertyData.id}/gallery_${i}_${Date.now()}.jpg`;
-                const url = await uploadToYandex(uploadedFiles.gallery[i], path);
+                const path = `${propertyData.id}/gallery_${i}_${Date.now()}.jpg`;                const url = await uploadToYandex(uploadedFiles.gallery[i], path);
                 galleryUrls.push(url);
             }
             propertyData.images_gallery = galleryUrls.join(',');
@@ -292,7 +311,8 @@ document.getElementById('addPropertyForm')?.addEventListener('submit', async fun
        
         const { error } = await supabaseClient.from('properties').insert([propertyData]);
        
-        if (error) throw error;       
+        if (error) throw error;
+       
         showAlert('✅ Объект успешно добавлен!');
         e.target.reset();
         uploadedFiles = { main: null, gallery: [], floorPlans: [] };
@@ -321,8 +341,7 @@ function handleFileSelect(input, previewId) {
     reader.onload = function(e) {
         preview.innerHTML = `<img src="${e.target.result}" alt="Preview" style="max-width:200px;border-radius:8px;">`;
     };
-    reader.readAsDataURL(file);
-}
+    reader.readAsDataURL(file);}
 
 function handleFilesSelect(input, previewId) {
     const files = Array.from(input.files);
@@ -341,7 +360,8 @@ function handleFilesSelect(input, previewId) {
         const reader = new FileReader();
         reader.onload = function(e) {
             const img = document.createElement('img');
-            img.src = e.target.result;            img.style.width = '100px';
+            img.src = e.target.result;
+            img.style.width = '100px';
             img.style.margin = '5px';
             img.style.borderRadius = '8px';
             preview.appendChild(img);
@@ -370,8 +390,7 @@ async function editProperty(id) {
     for (let key in data) {
         const input = form.querySelector(`[name="${key}"]`);
         if (input) {
-            if (input.type === 'checkbox') {
-                input.checked = data[key];
+            if (input.type === 'checkbox') {                input.checked = data[key];
             } else {
                 input.value = data[key] !== null && data[key] !== undefined ? data[key] : '';
             }
@@ -390,7 +409,8 @@ async function editProperty(id) {
     }
    
     if (data.images_gallery) {
-        const gallery = data.images_gallery.split(',');        let galleryHTML = '';
+        const gallery = data.images_gallery.split(',');
+        let galleryHTML = '';
         gallery.forEach((url, index) => {
             galleryHTML += `
                 <div style="position:relative;display:inline-block;margin:5px;">
@@ -419,8 +439,7 @@ async function editProperty(id) {
     }
    
     const submitBtn = form.querySelector('button[type="submit"]');
-    submitBtn.textContent = '💾 Обновить объект';
-    submitBtn.onclick = function(ev) {
+    submitBtn.textContent = '💾 Обновить объект';    submitBtn.onclick = function(ev) {
         ev.preventDefault();
         updateProperty(id, form);
     };
@@ -439,7 +458,8 @@ async function updateProperty(id, form) {
         } else if (['lat', 'lng'].includes(key)) {
             propertyData[key] = value ? parseFloat(value) : null;
         } else {
-            propertyData[key] = value;        }
+            propertyData[key] = value;
+        }
     }
    
     if (uploadedFiles.main) {
@@ -468,8 +488,7 @@ async function updateProperty(id, form) {
             existingPlans.push(url);
         }
         propertyData.floor_plans_images = existingPlans.join(',');
-    }
-   
+    }   
     const { error } = await supabaseClient
         .from('properties')
         .update(propertyData)
@@ -488,7 +507,8 @@ async function updateProperty(id, form) {
 async function deleteProperty(id) {
     if (!confirm('Вы уверены, что хотите удалить этот объект? Все фото будут удалены из облака!')) return;
    
-    try {        const { data: property, error: fetchError } = await supabaseClient
+    try {
+        const { data: property, error: fetchError } = await supabaseClient
             .from('properties')
             .select('image_main, images_gallery, floor_plans_images')
             .eq('id', id)
@@ -517,8 +537,7 @@ async function deleteProperty(id) {
             showAlert('🗑 Удаляем фото из облака...');
             try {
                 await deleteFromYandex(pathsToDelete);
-            } catch (uploadError) {
-                console.warn('⚠️ Не удалось удалить файлы из облака:', uploadError.message);
+            } catch (uploadError) {                console.warn('⚠️ Не удалось удалить файлы из облака:', uploadError.message);
             }
         }
        
@@ -537,6 +556,7 @@ async function deleteProperty(id) {
 }
 
 // ========== ДАННЫЕ АГЕНТА ==========
+
 async function loadAgentData() {
     const { data, error } = await supabaseClient
         .from('agent_data')
@@ -566,8 +586,7 @@ document.getElementById('agentForm')?.addEventListener('submit', async function(
    
     try {
         if (currentAgentId) {
-            await supabaseClient
-                .from('agent_data')
+            await supabaseClient                .from('agent_data')
                 .update(agentData)
                 .eq('id', currentAgentId);
         } else {
@@ -586,7 +605,8 @@ async function loadSettings() {
     const { data, error } = await supabaseClient.from('settings').select('*');
     if (error) return;
    
-    const form = document.getElementById('settingsForm');    data.forEach(setting => {
+    const form = document.getElementById('settingsForm');
+    data.forEach(setting => {
         const input = form.querySelector(`[name="${setting.setting_key}"]`);
         if (input) input.value = setting.setting_value || '';
     });
@@ -615,8 +635,7 @@ document.getElementById('settingsForm')?.addEventListener('submit', async functi
                 }]);
             }
         }
-        showAlert('✅ Настройки сохранены!');
-    } catch (error) {
+        showAlert('✅ Настройки сохранены!');    } catch (error) {
         showAlert('❌ Ошибка сохранения настроек', 'error');
     }
 });
@@ -635,7 +654,8 @@ async function loadLeads() {
    
     if (error) {
         container.innerHTML = `<div class="alert alert-error">Ошибка: ${error.message}</div>`;
-        return;    }
+        return;
+    }
    
     document.getElementById('leadsCount').textContent = data ? data.length : 0;
    
@@ -664,8 +684,7 @@ async function loadLeads() {
                     <td>${lead.leadname || '-'}</td>
                     <td>${lead.leadphone || '-'}</td>
                     <td>${lead.leadtelegram || '-'}</td>
-                </tr>
-            `).join('')}
+                </tr>            `).join('')}
         </tbody>
     `;
    
