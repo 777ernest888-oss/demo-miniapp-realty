@@ -11,320 +11,321 @@
             padding: 0;
             box-sizing: border-box;
         }
-       
+
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background: #f5f7fa;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background-color: #f5f5f5;
             color: #333;
             line-height: 1.6;
         }
-       
+
         .admin-header {
-            background: linear-gradient(135deg, #3D5266 0%, #5A6F80 100%);
+            background: linear-gradient(135deg, #3D5266 0%, #2c3e50 100%);
             color: white;
-            padding: 20px;
+            padding: 20px 30px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-       
+
         .admin-header h1 {
             font-size: 24px;
             margin-bottom: 5px;
         }
-       
+
         .admin-header p {
-            opacity: 0.9;
             font-size: 14px;
+            opacity: 0.9;
         }
-       
-        .admin-container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-       
+
         .tabs {
             display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
+            background: white;
             border-bottom: 2px solid #e0e0e0;
-            overflow-x: auto;        }
-       
+            padding: 0 20px;
+            overflow-x: auto;
+        }
+
         .tab-btn {
-            padding: 12px 24px;
-            background: none;
+            padding: 15px 20px;
             border: none;
-            cursor: pointer;
-            font-size: 15px;
+            background: none;            cursor: pointer;
+            font-size: 14px;
             font-weight: 500;
             color: #666;
             border-bottom: 3px solid transparent;
-            transition: all 0.3s;
             white-space: nowrap;
+            transition: all 0.2s;
         }
-       
+
         .tab-btn:hover {
             color: #3D5266;
         }
-       
+
         .tab-btn.active {
             color: #3D5266;
             border-bottom-color: #3D5266;
         }
-       
+
         .tab-content {
             display: none;
+            padding: 30px;
+            max-width: 1200px;
+            margin: 0 auto;
         }
-       
+
         .tab-content.active {
             display: block;
         }
-       
+
         .card {
             background: white;
             border-radius: 12px;
-            padding: 24px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             margin-bottom: 20px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
-       
+
         .card h2 {
-            margin-bottom: 20px;
             color: #3D5266;
+            margin-bottom: 20px;
             font-size: 20px;
         }
-       
+
+        .property-item {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border-left: 4px solid #3D5266;            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .property-info h3 {
+            color: #3D5266;
+            margin-bottom: 8px;
+            font-size: 18px;
+        }
+
+        .property-info p {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .property-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        /* Скрытые объекты */
+        .property-hidden {
+            opacity: 0.6 !important;
+            border-left-color: #95a5a6 !important;
+            background-color: #f5f5f5;
+        }
+
+        .hidden-badge {
+            color: #e74c3c;
+            font-size: 12px;
+            margin-left: 10px;
+            background-color: #ffebee;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s;            color: white;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+            transform: translateY(-1px);
+        }
+
+        .btn-primary {
+            background-color: #3D5266;
+        }
+
+        .btn-danger {
+            background-color: #e74c3c;
+        }
+
+        .btn-success {
+            background-color: #27ae60;
+        }
+
+        .btn-secondary {
+            background-color: #95a5a6;
+        }
+
+        .btn-small {
+            padding: 8px 15px;
+            font-size: 13px;
+        }
+
         .form-group {
             margin-bottom: 20px;
         }
-                .form-group label {
+
+        .form-group label {
             display: block;
             margin-bottom: 8px;
             font-weight: 500;
-            color: #555;
+            color: #3D5266;
         }
-       
+
         .form-group input,
         .form-group textarea,
         .form-group select {
             width: 100%;
             padding: 12px;
-            border: 2px solid #e0e0e0;
+            border: 1px solid #ddd;
             border-radius: 8px;
-            font-size: 15px;
-            transition: border-color 0.3s;
+            font-size: 14px;
+            transition: border-color 0.2s;
         }
-       
         .form-group input:focus,
         .form-group textarea:focus,
         .form-group select:focus {
             outline: none;
             border-color: #3D5266;
         }
-       
+
         .form-group textarea {
             min-height: 100px;
             resize: vertical;
         }
-       
+
         .form-row {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 20px;
         }
-       
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s;
-        }
-       
-        .btn-primary {
-            background: #3D5266;
-            color: white;
-        }       
-        .btn-primary:hover {
-            background: #2E3F4F;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(61, 82, 102, 0.3);
-        }
-       
-        .btn-success {
-            background: #27ae60;
-            color: white;
-        }
-       
-        .btn-success:hover {
-            background: #229954;
-        }
-       
-        .btn-danger {
-            background: #e74c3c;
-            color: white;
-        }
-       
-        .btn-danger:hover {
-            background: #c0392b;
-        }
-       
-        .btn-secondary {
-            background: #95a5a6;
-            color: white;
-        }
-       
-        .btn-secondary:hover {
-            background: #7f8c8d;
-        }
-       
-        .properties-list {
-            display: grid;
-            gap: 16px;
-        }
-       
-        .property-item {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 16px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-left: 4px solid #3D5266;
-        }
-       
-        .property-info h3 {            margin-bottom: 5px;
-            color: #333;
-        }
-       
-        .property-info p {
-            color: #666;
-            font-size: 14px;
-        }
-       
-        .property-actions {
-            display: flex;
-            gap: 10px;
-        }
-       
-        .btn-small {
-            padding: 8px 16px;
-            font-size: 13px;
-        }
-       
-        .leads-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-       
-        .leads-table th,
-        .leads-table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e0e0e0;
-        }
-       
-        .leads-table th {
-            background: #f8f9fa;
-            font-weight: 600;
-            color: #555;
-        }
-       
-        .leads-table tr:hover {
-            background: #f8f9fa;
-        }
-       
-        .file-input-wrapper {
-            position: relative;
-            overflow: hidden;
-            display: inline-block;
-        }
-       
-        .file-input-wrapper input[type=file] {
-            position: absolute;
-            left: -9999px;        }
-       
-        .file-input-label {
-            display: inline-block;
-            padding: 12px 24px;
-            background: #f0f0f0;
-            border: 2px dashed #ccc;
-            border-radius: 8px;
-            cursor: pointer;
-            text-align: center;
-            transition: all 0.3s;
-        }
-       
-        .file-input-label:hover {
-            border-color: #3D5266;
-            background: #e8f4f8;
-        }
-       
-        .image-preview {
-            margin-top: 10px;
-            max-width: 200px;
-            border-radius: 8px;
-        }
-       
-        .image-preview img {
-            width: 100%;
-            border-radius: 8px;
-        }
-       
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #666;
-        }
-       
-        .alert {
-            padding: 12px 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-        }
-       
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-       
-        .alert-error {
-            background: #f8d7da;
-            color: #721c24;            border: 1px solid #f5c6cb;
-        }
-       
+
         .checkbox-group {
             display: flex;
             align-items: center;
             gap: 10px;
         }
-       
+
         .checkbox-group input[type="checkbox"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
+            width: auto;
+            transform: scale(1.2);
         }
-       
-        @media (max-width: 768px) {
-            .form-row {
-                grid-template-columns: 1fr;
+
+        .image-preview {
+            margin-top: 10px;
+            min-height: 50px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 8px;
+            border: 2px dashed #ddd;
+        }
+
+        .alert {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
             }
-           
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .leads-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        }
+
+        .leads-table th,
+        .leads-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+        }
+
+        .leads-table th {
+            background-color: #3D5266;
+            color: white;
+            font-weight: 500;
+        }
+
+        .leads-table tr:hover {
+            background-color: #f9f9f9;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            text-align: center;
+        }
+
+        .stat-card .number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #3D5266;
+        }
+
+        .stat-card .label {
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
             .property-item {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 12px;
             }
-           
-            .leads-table {
-                font-size: 13px;
+
+            .property-actions {
+                width: 100%;
             }
-           
-            .leads-table th,
-            .leads-table td {
-                padding: 8px;
+
+            .property-actions .btn {
+                flex: 1;
             }
         }
     </style>
@@ -334,277 +335,229 @@
         <h1>🏢 Админ-панель</h1>
         <p>Управление каталогом новостроек</p>
     </div>
-   
-    <div class="admin-container">
-        <div id="alertContainer"></div>
-       
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('properties')">🏠 Объекты</button>
-            <button class="tab-btn" onclick="switchTab('addProperty')">➕ Добавить объект</button>
-            <button class="tab-btn" onclick="switchTab('leads')">📩 Заявки (<span id="leadsCount">0</span>)</button>            <button class="tab-btn" onclick="switchTab('agent')">👤 Данные агента</button>
-            <button class="tab-btn" onclick="switchTab('settings')">⚙️ Настройки</button>
-        </div>
-       
-        <!-- Вкладка: Список объектов -->
-        <div id="tab-properties" class="tab-content active">
-            <div class="card">
-                <h2>📋 Все объекты</h2>
-                <div id="propertiesList" class="properties-list">
-                    <div class="loading">Загрузка...</div>
-                </div>
-            </div>
-        </div>
-       
-        <!-- Вкладка: Добавить объект -->
-        <div id="tab-addProperty" class="tab-content">
-            <div class="card">
-                <h2>➕ Добавить новый объект</h2>
-                <form id="addPropertyForm">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Название ЖК *</label>
-                            <input type="text" name="name" required placeholder="Например: ЖК Аристократ">
-                        </div>
-                        <div class="form-group">
-                            <label>Район *</label>
-                            <input type="text" name="district" required placeholder="Например: Василеостровский">
-                        </div>
-                    </div>
-                   
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Метро</label>
-                            <input type="text" name="metro" placeholder="Например: Приморская">
-                        </div>
-                        <div class="form-group">
-                            <label>Комнат</label>
-                            <input type="text" name="rooms" placeholder="Например: 1, 2, 3">
-                        </div>
-                    </div>
-                   
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Цена от (₽)</label>
-                            <input type="number" name="price_from" placeholder="Например: 5000000">
-                        </div>
-                        <div class="form-group">
-                            <label>Цена до (₽)</label>
-                            <input type="number" name="price_to" placeholder="Например: 15000000">
-                        </div>                    </div>
-                   
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Площадь от (м²)</label>
-                            <input type="number" name="area_min" placeholder="Например: 30">
-                        </div>
-                        <div class="form-group">
-                            <label>Площадь до (м²)</label>
-                            <input type="number" name="area_max" placeholder="Например: 80">
-                        </div>
-                    </div>
-                   
-                    <div class="form-group">
-                        <label>Адрес</label>
-                        <input type="text" name="address" placeholder="Полный адрес объекта">
-                    </div>
-                   
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Класс жилья</label>
-                            <select name="class">
-                                <option value="Эконом">Эконом</option>
-                                <option value="Комфорт">Комфорт</option>
-                                <option value="Бизнес">Бизнес</option>
-                                <option value="Премиум">Премиум</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Статус</label>
-                            <select name="status">
-                                <option value="Строится">Строится</option>
-                                <option value="Частично сдан">Частично сдан</option>
-                                <option value="Сдан">Сдан</option>
-                            </select>
-                        </div>
-                    </div>
-                   
-                    <div class="form-group">
-                        <label>Отделка</label>
-                        <input type="text" name="finishing" placeholder="Например: без отделки, предчистовая">
-                    </div>
-                   
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Срок сдачи (ранний)</label>
-                            <input type="text" name="completion_soonest" placeholder="Например: Q2 2025">
-                        </div>
-                        <div class="form-group">
-                            <label>Срок сдачи (поздний)</label>                            <input type="text" name="completion_all" placeholder="Например: Q4 2025">
-                        </div>
-                    </div>
-                   
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Широта (lat)</label>
-                            <input type="number" step="0.000001" name="lat" placeholder="Например: 59.9343">
-                        </div>
-                        <div class="form-group">
-                            <label>Долгота (lng)</label>
-                            <input type="number" step="0.000001" name="lng" placeholder="Например: 30.3351">
-                        </div>
-                    </div>
-                   
-                    <div class="form-group">
-                        <label>Описание</label>
-                        <textarea name="description" placeholder="Подробное описание объекта..."></textarea>
-                    </div>
-                   
-                    <div class="form-group">
-                        <label>Особенности (через запятую)</label>
-                        <textarea name="features" placeholder="Например: Паркинг, Детская площадка, Охрана"></textarea>
-                    </div>
-                   
-                    <div class="form-group">
-                        <label>Главное фото</label>
-                        <div class="file-input-wrapper">
-                            <input type="file" id="mainImageInput" accept="image/*" onchange="handleFileSelect(this, 'mainImagePreview')">
-                            <label for="mainImageInput" class="file-input-label">📁 Выбрать фото</label>
-                        </div>
-                        <div id="mainImagePreview" class="image-preview"></div>
-                    </div>
-                   
-                    <div class="form-group">
-                        <label>Фото галереи (несколько файлов)</label>
-                        <div class="file-input-wrapper">
-                            <input type="file" id="galleryImagesInput" accept="image/*" multiple onchange="handleFilesSelect(this, 'galleryImagesPreview')">
-                            <label for="galleryImagesInput" class="file-input-label">📁 Выбрать фото</label>
-                        </div>
-                        <div id="galleryImagesPreview" class="image-preview"></div>
-                    </div>
-                   
-                    <div class="form-group">
-                        <label>Планировки (изображения)</label>
-                        <div class="file-input-wrapper">
-                            <input type="file" id="floorPlansInput" accept="image/*" multiple onchange="handleFilesSelect(this, 'floorPlansPreview')">
-                            <label for="floorPlansInput" class="file-input-label">📁 Выбрать фото</label>
-                        </div>
-                        <div id="floorPlansPreview" class="image-preview"></div>                    </div>
-                   
-                    <div class="form-group">
-                        <label>Планировки (текст)</label>
-                        <textarea name="floor_plans_text" placeholder="Описание планировок..."></textarea>
-                    </div>
-                   
-                    <div class="form-group checkbox-group">
-                        <input type="checkbox" name="active" id="activeCheckbox" checked>
-                        <label for="activeCheckbox">Активен (показывать в каталоге)</label>
-                    </div>
-                   
-                    <button type="submit" class="btn btn-success">💾 Сохранить объект</button>
-                </form>
-            </div>
-        </div>
-       
-        <!-- Вкладка: Заявки -->
-        <div id="tab-leads" class="tab-content">
-            <div class="card">
-                <h2>📩 Заявки клиентов</h2>
-                <div id="leadsList">
-                    <div class="loading">Загрузка...</div>
-                </div>
-            </div>
-        </div>
-       
-        <!-- Вкладка: Данные агента -->
-        <div id="tab-agent" class="tab-content">
-            <div class="card">
-                <h2>👤 Мои данные</h2>
-                <form id="agentForm">
-                    <div class="form-group">
-                        <label>Имя *</label>
-                        <input type="text" name="name" required placeholder="Ваше имя">
-                    </div>
-                   
-                    <div class="form-group">
-                        <label>Должность</label>
-                        <input type="text" name="role" placeholder="Например: Эксперт по недвижимости">
-                    </div>
-                   
-                    <div class="form-group">
-                        <label>Телефон</label>
-                        <input type="text" name="phone" placeholder="+7 (999) 999-99-99">
-                    </div>
-                   
-                    <div class="form-group">
-                        <label>Telegram username</label>
-                        <input type="text" name="telegramUsername" placeholder="@username">                    </div>
-                   
-                    <div class="form-group">
-                        <label>Название агентства</label>
-                        <input type="text" name="agencyName" placeholder="Название агентства">
-                    </div>
-                   
-                    <div class="form-group">
-                        <label>Адрес агентства</label>
-                        <input type="text" name="agencyAddress" placeholder="Адрес офиса">
-                    </div>
-                   
-                    <button type="submit" class="btn btn-primary">💾 Сохранить</button>
-                </form>
-            </div>
-        </div>
-       
-        <!-- Вкладка: Настройки -->
-        <div id="tab-settings" class="tab-content">
-            <div class="card">
-                <h2>⚙️ Настройки бренда</h2>
-                <form id="settingsForm">
-                    <div class="form-group">
-                        <label>Название компании</label>
-                        <input type="text" name="BRAND_NAME" placeholder="Например: Недвижимость СПб">
-                    </div>
-                   
-                    <div class="form-group">
-                        <label>Заголовок на главной</label>
-                        <input type="text" name="BRAND_TITLE" placeholder="Например: Каталог новостроек">
-                    </div>
-                   
-                    <div class="form-group">
-                        <label>Подзаголовок</label>
-                        <input type="text" name="BRAND_TAGLINE" placeholder="Например: Подберём идеальную квартиру">
-                    </div>
-                   
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label>Основной цвет</label>
-                            <input type="color" name="BRAND_PRIMARY_COLOR" value="#3D5266">
-                        </div>
-                        <div class="form-group">
-                            <label>Акцентный цвет</label>
-                            <input type="color" name="BRAND_ACCENT_COLOR" value="#3498DB">
-                        </div>
-                    </div>
-                   
-                    <div class="form-group">
-                        <label>Текст на кнопке</label>                        <input type="text" name="BRAND_BUTTON_TEXT" placeholder="Например: Смотреть каталог">
-                    </div>
-                   
-                    <div class="form-group">
-                        <label>Telegram Bot Token</label>
-                        <input type="text" name="TELEGRAM_BOT_TOKEN" placeholder="Для уведомлений о заявках">
-                    </div>
-                   
-                    <div class="form-group">
-                        <label>Telegram Chat ID</label>
-                        <input type="text" name="TELEGRAM_CHAT_ID" placeholder="Куда отправлять уведомления">
-                    </div>
-                   
-                    <button type="submit" class="btn btn-primary">💾 Сохранить настройки</button>
-                </form>
+
+    <div class="tabs">
+        <button class="tab-btn active" onclick="switchTab('properties')">🏠 Объекты</button>
+        <button class="tab-btn" onclick="switchTab('addProperty')">➕ Добавить объект</button>
+        <button class="tab-btn" onclick="switchTab('leads')">📧 Заявки (<span id="leadsCount">0</span>)</button>
+        <button class="tab-btn" onclick="switchTab('agent')">👤 Данные агента</button>
+        <button class="tab-btn" onclick="switchTab('settings')">⚙️ Настройки</button>    </div>
+
+    <div id="alertContainer"></div>
+
+    <!-- Вкладка: Объекты -->
+    <div id="tab-properties" class="tab-content active">
+        <div class="card">
+            <h2>📦 Все объекты</h2>
+            <div id="propertiesList">
+                <div style="text-align:center;padding:40px;color:#666;">⏳ Загрузка...</div>
             </div>
         </div>
     </div>
 
-    <script src="admin.js?v=3"></script>
+    <!-- Вкладка: Добавить объект -->
+    <div id="tab-addProperty" class="tab-content">
+        <div class="card">
+            <h2>➕ Добавить новый объект</h2>
+            <form id="addPropertyForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Название объекта *</label>
+                        <input type="text" name="name" required placeholder="ЖК «Название»">
+                    </div>
+                    <div class="form-group">
+                        <label>Район *</label>
+                        <input type="text" name="district" required placeholder="Центральный">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Ближайшее метро</label>
+                        <input type="text" name="metro" placeholder="м. Невский проспект">
+                    </div>
+                    <div class="form-group">
+                        <label>Адрес</label>
+                        <input type="text" name="address" placeholder="ул. Примерная, д. 1">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Цена от (млн ₽)</label>
+                        <input type="number" name="price_from" step="0.1" placeholder="10">
+                    </div>
+                    <div class="form-group">
+                        <label>Цена до (млн ₽)</label>
+                        <input type="number" name="price_to" step="0.1" placeholder="50">
+                    </div>                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Площадь мин (м²)</label>
+                        <input type="number" name="area_min" step="0.1" placeholder="30">
+                    </div>
+                    <div class="form-group">
+                        <label>Площадь макс (м²)</label>
+                        <input type="number" name="area_max" step="0.1" placeholder="200">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Цена за м² (тыс. ₽)</label>
+                        <input type="number" name="price_per_sqm" step="0.1" placeholder="300">
+                    </div>
+                    <div class="form-group">
+                        <label>Срок сдачи</label>
+                        <input type="text" name="completion_date" placeholder="IV кв. 2026">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Широта (lat)</label>
+                        <input type="number" name="lat" step="0.000001" placeholder="59.934280">
+                    </div>
+                    <div class="form-group">
+                        <label>Долгота (lng)</label>
+                        <input type="number" name="lng" step="0.000001" placeholder="30.335099">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Описание</label>
+                    <textarea name="description" placeholder="Подробное описание объекта..."></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>Преимущества (через запятую)</label>
+                    <textarea name="features" placeholder="Рядом метро, Паркинг, Детская площадка"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label>📷 Главное фото</label>
+                    <input type="file" accept="image/*" onchange="handleFileSelect(this, 'mainImagePreview')">
+                    <div id="mainImagePreview" class="image-preview"></div>
+                </div>
+                <div class="form-group">
+                    <label>️ Фото галереи (можно несколько)</label>
+                    <input type="file" accept="image/*" multiple onchange="handleFilesSelect(this, 'galleryImagesPreview')">
+                    <div id="galleryImagesPreview" class="image-preview"></div>
+                </div>
+
+                <div class="form-group">
+                    <label>📐 Планировки (можно несколько)</label>
+                    <input type="file" accept="image/*" multiple onchange="handleFilesSelect(this, 'floorPlansPreview')">
+                    <div id="floorPlansPreview" class="image-preview"></div>
+                </div>
+
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" id="activeCheckbox" name="active" checked>
+                    <label for="activeCheckbox" style="margin:0;">Активный (показывать в каталоге)</label>
+                </div>
+
+                <button type="submit" class="btn btn-primary">💾 Сохранить объект</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Вкладка: Заявки -->
+    <div id="tab-leads" class="tab-content">
+        <div class="card">
+            <h2>📧 Заявки от клиентов</h2>
+            <div id="leadsList">
+                <div style="text-align:center;padding:40px;color:#666;"> Загрузка...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Вкладка: Данные агента -->
+    <div id="tab-agent" class="tab-content">
+        <div class="card">
+            <h2> Данные агента</h2>
+            <form id="agentForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Имя</label>
+                        <input type="text" name="name" placeholder="Иван Иванов">
+                    </div>
+                    <div class="form-group">
+                        <label>Должность</label>
+                        <input type="text" name="position" placeholder="Риелтор">
+                    </div>
+                </div>
+
+                <div class="form-row">                    <div class="form-group">
+                        <label>Телефон</label>
+                        <input type="tel" name="phone" placeholder="+7 (999) 123-45-67">
+                    </div>
+                    <div class="form-group">
+                        <label>Email</label>
+                        <input type="email" name="email" placeholder="agent@example.com">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Telegram</label>
+                        <input type="text" name="telegram" placeholder="@username">
+                    </div>
+                    <div class="form-group">
+                        <label>WhatsApp</label>
+                        <input type="text" name="whatsapp" placeholder="+79991234567">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>О себе</label>
+                    <textarea name="about" placeholder="Расскажите о себе..."></textarea>
+                </div>
+
+                <button type="submit" class="btn btn-primary">💾 Сохранить данные</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Вкладка: Настройки -->
+    <div id="tab-settings" class="tab-content">
+        <div class="card">
+            <h2>️ Настройки приложения</h2>
+            <form id="settingsForm">
+                <div class="form-group">
+                    <label>Название компании</label>
+                    <input type="text" name="company_name" placeholder="Название компании">
+                </div>
+
+                <div class="form-group">
+                    <label>Основной цвет (hex)</label>
+                    <input type="text" name="primary_color" placeholder="#3D5266">
+                </div>
+
+                <div class="form-group">
+                    <label>Акцентный цвет (hex)</label>
+                    <input type="text" name="accent_color" placeholder="#3498DB">
+                </div>
+                <div class="form-group">
+                    <label>URL логотипа</label>
+                    <input type="text" name="logo_url" placeholder="https://...">
+                </div>
+
+                <div class="form-group">
+                    <label>Telegram бот токен (для уведомлений)</label>
+                    <input type="text" name="telegram_bot_token" placeholder="123456:ABC...">
+                </div>
+
+                <div class="form-group">
+                    <label>Telegram chat ID (куда отправлять заявки)</label>
+                    <input type="text" name="telegram_chat_id" placeholder="-1001234567890">
+                </div>
+
+                <button type="submit" class="btn btn-primary">💾 Сохранить настройки</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="admin.js?v=4"></script>
 </body>
 </html>
