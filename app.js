@@ -247,7 +247,7 @@ function renderContactsPage() {
         img.onerror = onImgError;
         avatarEl.appendChild(img);
     } else {
-        avatarEl.innerHTML = '👤';
+        avatarEl.innerHTML = '';
     }
     const hasAgency = data.agencyName || data.agencyAddress;
     document.getElementById('agencyBlock').style.display = hasAgency ? 'block' : 'none';
@@ -276,7 +276,7 @@ function openDirectChat() {
 
 function callAgent() {
     let phone = currentAgentData.phone;
-    if (!phone) { tg.showAlert('❌ Телефон не указан'); return; }
+    if (!phone) { tg.showAlert(' Телефон не указан'); return; }
     let cleanPhone = phone.toString().replace(/[^\d+]/g, '');
     if (cleanPhone.length === 11 && (cleanPhone.startsWith('7') || cleanPhone.startsWith('8'))) cleanPhone = '+' + cleanPhone;
     if (!cleanPhone.startsWith('+') && cleanPhone.length >= 11) cleanPhone = '+' + cleanPhone;
@@ -468,7 +468,7 @@ function renderListings(data) {
         const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
         const area = (typeof item.area_min === 'number' && typeof item.area_max === 'number') ? item.area_min + '–' + item.area_max + ' м²' : '';
         const statusKey = (item.status || 'other').toString().replace(/\s+/g, '-');
-        const statusText = item.status === 'Сдан' ? '✅ Сдан' : item.status === 'Строится' ? '🏗 Строится' : '🟡 Частично сдан';
+        const statusText = item.status === 'Сдан' ? '✅ Сдан' : item.status === 'Строится' ? ' Строится' : '🟡 Частично сдан';
         const yandexMain = getImageUrl(item.image_main);
         const card = document.createElement('div');
         card.className = 'listing-card';
@@ -480,7 +480,7 @@ function renderListings(data) {
             '<span>' + (escapeHtml(item.district) || '') + '</span>' +
             '<span> ' + (escapeHtml(item.metro) || '') + '</span>' +
             (item.rooms ? '<span>🚪 ' + escapeHtml(item.rooms) + '</span>' : '') +
-            (area ? '<span>📐 ' + escapeHtml(area) + '</span>' : '') +
+            (area ? '<span> ' + escapeHtml(area) + '</span>' : '') +
             '</div>' +
             '<div class="listing-price">от ' + priceDisplay + (priceTo ? ' до ' + priceTo + ' млн ₽' : '') + (ppsqm ? '<br><span class="price-per-sqm">~' + ppsqm + ' ₽/м²</span>' : '') + '</div>' +
             '<div class="listing-status status-' + statusKey + '">' + statusText + '</div>' +
@@ -537,7 +537,7 @@ function openDetails(id) {
     }
     const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
     document.getElementById('modalPrice').innerHTML = 'от <b>' + priceDisplay + '</b> млн ₽' + (ppsqm ? '<span class="price-per-sqm">~' + ppsqm + ' ₽/м²</span>' : '');
-    document.getElementById('modalMeta').innerHTML = '<div class="meta-row"><span> ' + (escapeHtml(item.address) || '') + '</span></div><div class="meta-row"><span>🚇 м. ' + (escapeHtml(item.metro) || '') + '</span></div><div class="meta-row"><span>🏗 Класс: ' + (escapeHtml(item.class) || '') + '</span></div><div class="meta-row"><span>🔨 Отделка: ' + (escapeHtml(item.finishing) || '') + '</span></div><div class="meta-row"><span> Срок сдачи: ' + (escapeHtml(item.completion_soonest) || '') + (item.completion_soonest && item.completion_all ? ' - ' : '') + (escapeHtml(item.completion_all) || '') + '</span></div>';    document.getElementById('modalDescription').textContent = item.description || 'Описание отсутствует';
+    document.getElementById('modalMeta').innerHTML = '<div class="meta-row"><span> ' + (escapeHtml(item.address) || '') + '</span></div><div class="meta-row"><span> м. ' + (escapeHtml(item.metro) || '') + '</span></div><div class="meta-row"><span>🏗 Класс: ' + (escapeHtml(item.class) || '') + '</span></div><div class="meta-row"><span>🔨 Отделка: ' + (escapeHtml(item.finishing) || '') + '</span></div><div class="meta-row"><span> Срок сдачи: ' + (escapeHtml(item.completion_soonest) || '') + (item.completion_soonest && item.completion_all ? ' - ' : '') + (escapeHtml(item.completion_all) || '') + '</span></div>';    document.getElementById('modalDescription').textContent = item.description || 'Описание отсутствует';
     document.getElementById('modalFeatures').innerHTML = item.features ? '<ul>' + item.features.split(',').map(function(f) { return '<li>' + escapeHtml(f.trim()) + '</li>'; }).join('') + '</ul>' : '<p style="color: var(--text-secondary);">Информация уточняется</p>';
     const galleryContainer = document.getElementById('modalGallery');
     galleryContainer.innerHTML = '';
@@ -584,7 +584,7 @@ function openDetails(id) {
     if (plansImages.length > 0) {
         const title = document.createElement('h3');
         title.className = 'plans-section-title';
-        title.textContent = '📐 Планировки';
+        title.textContent = ' Планировки';
         plansContainer.appendChild(title);
         const plansTrack = document.createElement('div');        plansTrack.className = 'carousel-track';
         plansImages.forEach(function(url) {
@@ -670,106 +670,103 @@ function initTelegramMask() {
 
 function submitConsultForm(event) {
     event.preventDefault();
-    console.log('📱 Отправка заявки (мобильная версия)');
    
-    const item = listings.find(function(l) { return l.id === currentModalId; });
-    if (!item) {
-        console.error('❌ Объект не найден:', currentModalId);
-        return;
-    }
-   
-    const name = document.getElementById('consultName').value.trim();
-    const phone = document.getElementById('consultPhone').value.trim();
-    let telegram = document.getElementById('consultTelegram').value.trim() || '';
-   
-    if (!name || name.length < 2) {
-        console.error('❌ Имя слишком короткое');
-        tg.showAlert('❌ Введите имя');         return;
-    }
-    if (phone.replace(/\D/g, '').length < 10) {
-        console.error('❌ Телефон некорректный');
-        tg.showAlert('❌ Введите корректный телефон');
-        return;
-    }
-    if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) {
-        console.error('❌ Telegram только латиницей');
-        tg.showAlert('❌ Telegram только латиницей');
-        return;
-    }
-   
-    const submitBtn = event.target.querySelector('button[type="submit"]');
-    const originalText = submitBtn.textContent;
-    submitBtn.textContent = 'Отправка...';
-    submitBtn.disabled = true;
-   
-    console.log('📤 Данные:', { name, phone, telegram, item: item.name });
-   
-    const supabasePayload = {
-        secret: config.client.secretKey,
-        projectid: config.client.projectId,
-        title: item.name,
-        leadname: name,
-        leadphone: phone,
-        leadtelegram: telegram || 'Не указан'
-    };
-   
-    const notifyPayload = {
-        leadname: name,
-        leadphone: phone,
-        leadtelegram: telegram || 'Не указан',
-        title: item.name
-    };
-   
-    console.log('🔧 Supabase URL:', config.supabase?.url);
-    console.log('🔧 Есть ли supabaseClient:', !!supabaseClient);
-   
-    Promise.all([
-        submitLeadToSupabase(supabasePayload),
-        fetch(config.supabase.url + '/functions/v1/notify-lead', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': 'Bearer ' + config.supabase.anonKey,
-                'apikey': config.supabase.anonKey
-            },
-            body: JSON.stringify(notifyPayload)
-        }).then(function(res) {             console.log('📡 Ответ от notify-lead:', res.status);
-            return res.json();
-        }).catch(function(err) {
-            console.warn('⚠️ Ошибка notify-lead:', err);
-            return { success: true };
-        })
-    ])
-    .then(function(results) {
-        const supabaseResult = results[0];
-        console.log('✅ Результат Supabase:', supabaseResult);
+    try {
+        console.log('📱 Отправка заявки (мобильная версия)');
        
-        const saved = supabaseResult && supabaseResult.success;
-        if (saved) {
-            closeConsultModal();
-            setTimeout(function() {
-                if (tg.showAlert) {
-                    tg.showAlert('✅ Заявка отправлена!');
-                } else {
-                    alert('✅ Заявка отправлена!');
+        const item = listings.find(function(l) { return l.id === currentModalId; });
+        if (!item) {
+            console.error(' Объект не найден:', currentModalId);
+            tg.showAlert('❌ Ошибка: объект не найден');
+            return;
+        }
+       
+        const name = document.getElementById('consultName').value.trim();
+        const phone = document.getElementById('consultPhone').value.trim();
+        let telegram = document.getElementById('consultTelegram').value.trim() || '';
+                if (!name || name.length < 2) {
+            tg.showAlert('❌ Введите имя');
+            return;
+        }
+        if (phone.replace(/\D/g, '').length < 10) {
+            tg.showAlert('❌ Введите корректный телефон');
+            return;
+        }
+        if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) {
+            tg.showAlert('❌ Telegram только латиницей');
+            return;
+        }
+       
+        const submitBtn = event.target.querySelector('button[type="submit"]');
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Отправка...';
+        submitBtn.disabled = true;
+       
+        if (!supabaseClient) {
+            console.error('❌ Supabase client не инициализирован!');
+            tg.showAlert('⚠️ Ошибка подключения. Попробуйте позже.');
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+            return;
+        }
+       
+        const supabasePayload = {
+            secret: config.client.secretKey,
+            projectid: config.client.projectId,
+            title: item.name,
+            leadname: name,
+            leadphone: phone,
+            leadtelegram: telegram || 'Не указан'
+        };
+       
+        console.log('📤 Отправка:', supabasePayload);
+       
+        supabaseClient
+            .from('leads')
+            .insert([supabasePayload])
+            .then(function(result) {
+                console.log('✅ Результат:', result);
+               
+                if (result.error) {
+                    console.error('❌ Ошибка Supabase:', result.error);
+                    tg.showAlert('⚠️ Ошибка: ' + result.error.message);
+                    submitBtn.textContent = originalText;
+                    submitBtn.disabled = false;
+                    return;
+                }               
+                if (config.supabase && config.supabase.url) {
+                    fetch(config.supabase.url + '/functions/v1/notify-lead', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': 'Bearer ' + config.supabase.anonKey,
+                            'apikey': config.supabase.anonKey
+                        },
+                        body: JSON.stringify({
+                            leadname: name,
+                            leadphone: phone,
+                            leadtelegram: telegram || 'Не указан',
+                            title: item.name
+                        })
+                    }).catch(function() { /* игнорируем ошибки уведомления */ });
                 }
-            }, 100);
-        } else {
-            throw new Error('Failed to save');
-        }
-    })
-    .catch(function(err) {
-        console.error('❌ КРИТИЧЕСКАЯ ОШИБКА:', err);
-        if (tg.showAlert) {
-            tg.showAlert('⚠️ Ошибка отправки. Попробуйте позже.');
-        } else {
-            alert('⚠️ Ошибка отправки');
-        }
-    })
-    .finally(function() {
-        submitBtn.textContent = originalText;
-        submitBtn.disabled = false;
-    });
+               
+                closeConsultModal();
+                setTimeout(function() {
+                    tg.showAlert('✅ Заявка отправлена! Мы свяжемся с вами soon.');
+                }, 100);
+            })
+            .catch(function(err) {
+                console.error('❌ Ошибка:', err);
+                tg.showAlert('️ Ошибка отправки. Проверьте интернет-соединение.');
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            });
+           
+    } catch (e) {
+        console.error('❌ Критическая ошибка:', e);
+        tg.showAlert('⚠️ Произошла ошибка. Попробуйте позже.');
+    }
 }
 
 async function submitLeadToSupabase(payload) {
@@ -782,12 +779,12 @@ async function submitLeadToSupabase(payload) {
         const result = await supabaseClient.from('leads').insert([payload]);
         console.log('📥 Результат:', result);
         if (result.error) {
-            console.error('❌ Ошибка Supabase:', result.error);            throw result.error;
+            console.error('❌ Ошибка Supabase:', result.error);
+            throw result.error;
         }
-        console.log('✅ Успешно сохранено!');
-        return { success: true };
+        console.log('✅ Успешно сохранено!');        return { success: true };
     } catch (e) {
-        console.error('❌ Supabase lead error:', e);
+        console.error(' Supabase lead error:', e);
         return null;
     }
 }
