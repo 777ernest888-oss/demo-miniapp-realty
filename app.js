@@ -15,11 +15,13 @@ const YANDEX_STORAGE_BASE = 'https://storage.yandexcloud.net/property-images/';
 // даже если в базе хранится старый путь с GitHub или просто имя файла.
 function getImageUrl(sourceUrl) {
     if (!sourceUrl) return '';
+   
     // Если это уже корректный URL Яндекс Облака
     if (sourceUrl.includes('storage.yandexcloud.net')) return sourceUrl;
    
-    // Если это старый URL с GitHub, извлекаем только путь после property-images/
-    if (sourceUrl.includes('raw.githubusercontent.com')) {
+    // Если это URL с GitHub (оба варианта: github.com и raw.githubusercontent.com)
+    if (sourceUrl.includes('github.com') || sourceUrl.includes('raw.githubusercontent.com')) {
+        // Извлекаем всё, что идет ПОСЛЕ "property-images/"
         const match = sourceUrl.match(/property-images\/(.*)/);
         if (match && match[1]) {
             return YANDEX_STORAGE_BASE + match[1];
