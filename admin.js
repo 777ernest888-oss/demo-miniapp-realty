@@ -439,7 +439,8 @@ async function editProperty(id) {
     };
 }
 
-// Обновление объектаasync function updateProperty(id, form) {
+// Обновление объекта
+async function updateProperty(id, form) {
     const formData = new FormData(form);
     const propertyData = {};
    
