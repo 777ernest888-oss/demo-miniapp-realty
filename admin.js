@@ -1,12 +1,5 @@
-﻿// Конфигурация Supabase
-const SUPABASE_URL = 'https://rqiutnpawsmqvmzewamc.supabase.co'; // Замени на свой URL
-const SUPABASE_ANON_KEY = 'sb_publishable_K1aNLiU_605Z7WccyWWPbQ_or-QVNbX'; // Замени на свой ключ
-const YANDEX_STORAGE_BASE = 'https://storage.yandexcloud.net/property-images/';
-
-// Инициализация Supabase
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
 // Глобальные переменные
+let supabase = null;
 let currentAgentId = null;
 let uploadedFiles = {
     main: null,
@@ -14,8 +7,21 @@ let uploadedFiles = {
     floorPlans: []
 };
 
-// При загрузке страницы
+// При загрузке страницы — инициализируем Supabase
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Админка загружена, начинаем инициализацию...');
+   
+    // Инициализация Supabase
+    const SUPABASE_URL = 'https://rqiutnpawsmqvmzewamc.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_K1aNLiU_605Z7WccyWWPbQ_or-QVNbX';
+   
+    if (window.supabase) {
+        supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        console.log('Supabase подключён');
+    } else {
+        console.error('Supabase библиотека не загружена!');
+    }
+   
     loadProperties();
     loadAgentData();
     loadSettings();
@@ -24,15 +30,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Переключение вкладок
 function switchTab(tabName) {
-    // Убираем активный класс со всех кнопок и контента
     document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
     document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
    
-    // Активируем нужную вкладку
     document.querySelector(`[onclick="switchTab('${tabName}')"]`).classList.add('active');
     document.getElementById(`tab-${tabName}`).classList.add('active');
    
-    // Если перешли на вкладку с объектами или заявками - перезагружаем данные
     if (tabName === 'properties') loadProperties();
     if (tabName === 'leads') loadLeads();
 }
@@ -44,13 +47,25 @@ function showAlert(message, type = 'success') {
     alert.className = `alert alert-${type}`;
     alert.textContent = message;
     container.appendChild(alert);
-   
-    setTimeout(() => alert.remove(), 5000);
+    setTimeout(() => alert.remove(), 5000);}
+
+// Форматирование цены
+function formatPrice(price) {
+    if (!price) return '0';
+    return parseInt(price).toLocaleString('ru-RU');
 }
-// Загрузка списка объектов
+
+// ========== ОБЪЕКТЫ ==========
+
 async function loadProperties() {
+    console.log('Загружаем объекты...');
     const container = document.getElementById('propertiesList');
     container.innerHTML = '<div class="loading">Загрузка...</div>';
+   
+    if (!supabase) {
+        container.innerHTML = '<div class="alert alert-error">Supabase не подключён</div>';
+        return;
+    }
    
     const { data, error } = await supabase
         .from('properties')
@@ -58,9 +73,12 @@ async function loadProperties() {
         .order('created_at', { ascending: false });
    
     if (error) {
-        container.innerHTML = '<div class="alert alert-error">Ошибка загрузки: ' + error.message + '</div>';
+        console.error('Ошибка загрузки объектов:', error);
+        container.innerHTML = `<div class="alert alert-error">Ошибка: ${error.message}<br>Проверь RLS политики в Supabase!</div>`;
         return;
     }
+   
+    console.log('Объекты загружены:', data);
    
     if (!data || data.length === 0) {
         container.innerHTML = '<div class="alert alert-success">Объектов пока нет. Добавьте первый!</div>';
@@ -78,103 +96,60 @@ async function loadProperties() {
                 <p>💰 от ${formatPrice(property.price_from)} ₽ ${property.active ? '✅' : '❌'}</p>
             </div>
             <div class="property-actions">
-                <button class="btn btn-primary btn-small" onclick="editProperty('${property.id}')">✏️ Редактировать</button>
-                <button class="btn btn-danger btn-small" onclick="deleteProperty('${property.id}')">🗑 Удалить</button>
+                <button class="btn btn-primary btn-small" onclick="editProperty('${property.id}')">✏️ Редактировать</button>                <button class="btn btn-danger btn-small" onclick="deleteProperty('${property.id}')">🗑 Удалить</button>
             </div>
         `;
         container.appendChild(item);
     });
 }
 
-// Форматирование цены
-function formatPrice(price) {
-    if (!price) return '0';
-    return parseInt(price).toLocaleString('ru-RU');
-}
-
 // Добавление объекта
 document.getElementById('addPropertyForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
+    console.log('Отправляем форму добавления объекта...');
    
-    const formData = new FormData(e.target);    const propertyData = {};
+    const formData = new FormData(e.target);
+    const propertyData = {};
    
-    // Собираем данные из формы
     for (let [key, value] of formData.entries()) {
         if (key === 'active') {
             propertyData[key] = document.getElementById('activeCheckbox').checked;
-        } else if (key === 'price_from' || key === 'price_to' || key === 'area_min' || key === 'area_max') {
+        } else if (['price_from', 'price_to', 'area_min', 'area_max', 'price_per_sqm'].includes(key)) {
             propertyData[key] = value ? parseFloat(value) : null;
-        } else if (key === 'lat' || key === 'lng') {
+        } else if (['lat', 'lng'].includes(key)) {
             propertyData[key] = value ? parseFloat(value) : null;
         } else {
             propertyData[key] = value;
         }
     }
    
-    // Генерируем ID
     propertyData.id = 'spb-' + Date.now();
     propertyData.created_at = new Date().toISOString();
     propertyData.active = propertyData.active !== undefined ? propertyData.active : true;
    
-    // Загружаем фото в Яндекс Облако
+    console.log('Данные объекта:', propertyData);
+   
     try {
-        if (uploadedFiles.main) {
-            const mainImageUrl = await uploadToYandex(uploadedFiles.main, propertyData.id + '/main.jpg');
-            propertyData.image_main = mainImageUrl;
-        }
-       
-        if (uploadedFiles.gallery.length > 0) {
-            const galleryUrls = [];
-            for (let i = 0; i < uploadedFiles.gallery.length; i++) {
-                const url = await uploadToYandex(uploadedFiles.gallery[i], propertyData.id + '/gallery_' + i + '.jpg');
-                galleryUrls.push(url);
-            }
-            propertyData.images_gallery = galleryUrls.join(',');
-        }
-       
-        if (uploadedFiles.floorPlans.length > 0) {
-            const plansUrls = [];
-            for (let i = 0; i < uploadedFiles.floorPlans.length; i++) {
-                const url = await uploadToYandex(uploadedFiles.floorPlans[i], propertyData.id + '/plan_' + i + '.jpg');
-                plansUrls.push(url);
-            }
-            propertyData.floor_plans_images = plansUrls.join(',');
-        }
-       
-        // Сохраняем в базу
         const { error } = await supabase.from('properties').insert([propertyData]);
        
-        if (error) throw error;
-                showAlert('✅ Объект успешно добавлен!');
+        if (error) {
+            console.error('Ошибка сохранения:', error);
+            showAlert('❌ Ошибка: ' + error.message, 'error');
+            return;
+        }
+       
+        showAlert('✅ Объект успешно добавлен!');
         e.target.reset();
         uploadedFiles = { main: null, gallery: [], floorPlans: [] };
         document.getElementById('mainImagePreview').innerHTML = '';
         document.getElementById('galleryImagesPreview').innerHTML = '';
         document.getElementById('floorPlansPreview').innerHTML = '';
        
-        // Переключаемся на вкладку со списком
-        setTimeout(() => switchTab('properties'), 1000);
-       
-    } catch (error) {
+        setTimeout(() => switchTab('properties'), 1000);    } catch (error) {
+        console.error('Ошибка:', error);
         showAlert('❌ Ошибка сохранения: ' + error.message, 'error');
-        console.error(error);
     }
 });
-
-// Загрузка файла в Яндекс Облако
-async function uploadToYandex(file, path) {
-    // Здесь нужна реализация загрузки через серверную функцию
-    // Так как прямая загрузка в Yandex Cloud требует подписи запросов
-    // Для простоты возвращаем временный URL
-   
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('path', path);
-   
-    // TODO: Здесь должен быть вызов Edge Function для загрузки в Yandex Cloud
-    // Пока возвращаем заглушку
-    return YANDEX_STORAGE_BASE + path;
-}
 
 // Обработка выбора файла
 function handleFileSelect(input, previewId) {
@@ -186,23 +161,20 @@ function handleFileSelect(input, previewId) {
     const preview = document.getElementById(previewId);
     const reader = new FileReader();
     reader.onload = function(e) {
-        preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+        preview.innerHTML = `<img src="${e.target.result}" alt="Preview" style="max-width:200px;border-radius:8px;">`;
     };
     reader.readAsDataURL(file);
 }
 
-// Обработка выбора нескольких файлов
 function handleFilesSelect(input, previewId) {
     const files = Array.from(input.files);
-    if (files.length === 0) return;   
+    if (files.length === 0) return;
+   
     const isGallery = previewId === 'galleryImagesPreview';
     const isFloorPlans = previewId === 'floorPlansPreview';
    
-    if (isGallery) {
-        uploadedFiles.gallery = files;
-    } else if (isFloorPlans) {
-        uploadedFiles.floorPlans = files;
-    }
+    if (isGallery) uploadedFiles.gallery = files;
+    else if (isFloorPlans) uploadedFiles.floorPlans = files;
    
     const preview = document.getElementById(previewId);
     preview.innerHTML = '';
@@ -222,7 +194,8 @@ function handleFilesSelect(input, previewId) {
 }
 
 // Редактирование объекта
-async function editProperty(id) {
+async function editProperty(id) {    console.log('Редактируем объект:', id);
+   
     const { data, error } = await supabase
         .from('properties')
         .select('*')
@@ -230,30 +203,29 @@ async function editProperty(id) {
         .single();
    
     if (error) {
-        showAlert('❌ Ошибка загрузки объекта', 'error');
+        console.error('Ошибка загрузки объекта:', error);
+        showAlert('❌ Ошибка: ' + error.message, 'error');
         return;
     }
    
-    // Переключаемся на вкладку добавления
     switchTab('addProperty');
    
-    // Заполняем форму данными
     const form = document.getElementById('addPropertyForm');
     for (let key in data) {
         const input = form.querySelector(`[name="${key}"]`);
         if (input) {
             if (input.type === 'checkbox') {
-                input.checked = data[key];            } else {
-                input.value = data[key] || '';
+                input.checked = data[key];
+            } else {
+                input.value = data[key] !== null && data[key] !== undefined ? data[key] : '';
             }
         }
     }
    
-    // Меняем текст кнопки
     const submitBtn = form.querySelector('button[type="submit"]');
     submitBtn.textContent = '💾 Обновить объект';
-    submitBtn.onclick = function(e) {
-        e.preventDefault();
+    submitBtn.onclick = function(ev) {
+        ev.preventDefault();
         updateProperty(id, form);
     };
 }
@@ -266,13 +238,12 @@ async function updateProperty(id, form) {
     for (let [key, value] of formData.entries()) {
         if (key === 'active') {
             propertyData[key] = document.getElementById('activeCheckbox').checked;
-        } else if (key === 'price_from' || key === 'price_to' || key === 'area_min' || key === 'area_max') {
+        } else if (['price_from', 'price_to', 'area_min', 'area_max', 'price_per_sqm'].includes(key)) {
             propertyData[key] = value ? parseFloat(value) : null;
-        } else if (key === 'lat' || key === 'lng') {
+        } else if (['lat', 'lng'].includes(key)) {
             propertyData[key] = value ? parseFloat(value) : null;
         } else {
-            propertyData[key] = value;
-        }
+            propertyData[key] = value;        }
     }
    
     const { error } = await supabase
@@ -281,24 +252,27 @@ async function updateProperty(id, form) {
         .eq('id', id);
    
     if (error) {
-        showAlert('❌ Ошибка обновления: ' + error.message, 'error');
+        console.error('Ошибка обновления:', error);
+        showAlert('❌ Ошибка: ' + error.message, 'error');
         return;
     }
    
-    showAlert('✅ Объект успешно обновлён!');
+    showAlert('✅ Объект обновлён!');
     setTimeout(() => switchTab('properties'), 1000);
 }
 
 // Удаление объекта
 async function deleteProperty(id) {
     if (!confirm('Вы уверены, что хотите удалить этот объект?')) return;
-        const { error } = await supabase
+   
+    const { error } = await supabase
         .from('properties')
         .delete()
         .eq('id', id);
    
     if (error) {
-        showAlert('❌ Ошибка удаления: ' + error.message, 'error');
+        console.error('Ошибка удаления:', error);
+        showAlert('❌ Ошибка: ' + error.message, 'error');
         return;
     }
    
@@ -306,8 +280,11 @@ async function deleteProperty(id) {
     loadProperties();
 }
 
-// Загрузка данных агента
+// ========== ДАННЫЕ АГЕНТА ==========
+
 async function loadAgentData() {
+    console.log('Загружаем данные агента...');
+   
     const { data, error } = await supabase
         .from('agent_data')
         .select('*')
@@ -315,83 +292,76 @@ async function loadAgentData() {
    
     if (error) {
         console.error('Ошибка загрузки данных агента:', error);
-        return;
-    }
+        return;    }
+   
+    console.log('Данные агента:', data);
    
     if (data && data.length > 0) {
         currentAgentId = data[0].id;
         const form = document.getElementById('agentForm');
-       
         for (let key in data[0]) {
             const input = form.querySelector(`[name="${key}"]`);
-            if (input) {
-                input.value = data[0][key] || '';
-            }
+            if (input) input.value = data[0][key] || '';
         }
     }
 }
 
-// Сохранение данных агента
 document.getElementById('agentForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
+    console.log('Сохраняем данные агента...');
    
     const formData = new FormData(e.target);
     const agentData = {};
-   
     for (let [key, value] of formData.entries()) {
         agentData[key] = value;
     }
-        try {
+   
+    try {
         if (currentAgentId) {
-            // Обновляем существующую запись
             const { error } = await supabase
                 .from('agent_data')
                 .update(agentData)
                 .eq('id', currentAgentId);
-           
             if (error) throw error;
         } else {
-            // Создаём новую запись
             agentData.id = crypto.randomUUID();
             const { error } = await supabase.from('agent_data').insert([agentData]);
-           
             if (error) throw error;
         }
-       
         showAlert('✅ Данные агента сохранены!');
     } catch (error) {
-        showAlert('❌ Ошибка сохранения: ' + error.message, 'error');
+        console.error('Ошибка:', error);
+        showAlert('❌ Ошибка: ' + error.message, 'error');
     }
 });
 
-// Загрузка настроек
+// ========== НАСТРОЙКИ ==========
+
 async function loadSettings() {
-    const { data, error } = await supabase
-        .from('settings')
-        .select('*');
+    console.log('Загружаем настройки...');
    
-    if (error) {
-        console.error('Ошибка загрузки настроек:', error);
+    const { data, error } = await supabase.from('settings').select('*');
+    if (error) {        console.error('Ошибка загрузки настроек:', error);
         return;
     }
+   
+    console.log('Настройки:', data);
    
     const form = document.getElementById('settingsForm');
     data.forEach(setting => {
         const input = form.querySelector(`[name="${setting.setting_key}"]`);
-        if (input) {
-            input.value = setting.setting_value || '';
-        }
+        if (input) input.value = setting.setting_value || '';
     });
 }
 
-// Сохранение настроек
 document.getElementById('settingsForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
+    console.log('Сохраняем настройки...');
    
     const formData = new FormData(e.target);
    
-    try {        for (let [key, value] of formData.entries()) {
-            // Проверяем, существует ли настройка
+    try {
+        for (let [key, value] of formData.entries()) {
             const { data: existing } = await supabase
                 .from('settings')
                 .select('id')
@@ -399,13 +369,8 @@ document.getElementById('settingsForm')?.addEventListener('submit', async functi
                 .single();
            
             if (existing) {
-                // Обновляем
-                await supabase
-                    .from('settings')
-                    .update({ setting_value: value })
-                    .eq('setting_key', key);
+                await supabase.from('settings').update({ setting_value: value }).eq('setting_key', key);
             } else {
-                // Создаём
                 await supabase.from('settings').insert([{
                     id: crypto.randomUUID(),
                     setting_key: key,
@@ -413,33 +378,38 @@ document.getElementById('settingsForm')?.addEventListener('submit', async functi
                 }]);
             }
         }
-       
         showAlert('✅ Настройки сохранены!');
     } catch (error) {
+        console.error('Ошибка:', error);
         showAlert('❌ Ошибка сохранения настроек', 'error');
     }
 });
 
-// Загрузка заявок
+// ========== ЗАЯВКИ ==========
+
 async function loadLeads() {
+    console.log('Загружаем заявки...');
     const container = document.getElementById('leadsList');
-    container.innerHTML = '<div class="loading">Загрузка...</div>';
-   
+    container.innerHTML = '<div class="loading">Загрузка...</div>';   
     const { data, error } = await supabase
         .from('leads')
         .select('*')
         .order('created_at', { ascending: false });
    
     if (error) {
-        container.innerHTML = '<div class="alert alert-error">Ошибка загрузки: ' + error.message + '</div>';
+        console.error('Ошибка загрузки заявок:', error);
+        container.innerHTML = `<div class="alert alert-error">Ошибка: ${error.message}</div>`;
         return;
     }
+   
+    console.log('Заявки:', data);
    
     document.getElementById('leadsCount').textContent = data ? data.length : 0;
    
     if (!data || data.length === 0) {
         container.innerHTML = '<div class="alert alert-success">Заявок пока нет</div>';
-        return;    }
+        return;
+    }
    
     const table = document.createElement('table');
     table.className = 'leads-table';
@@ -456,7 +426,7 @@ async function loadLeads() {
         <tbody>
             ${data.map(lead => `
                 <tr>
-                    <td>${new Date(lead.created_at).toLocaleDateString('ru-RU')}</td>
+                    <td>${lead.created_at ? new Date(lead.created_at).toLocaleDateString('ru-RU') : '-'}</td>
                     <td>${lead.title || '-'}</td>
                     <td>${lead.leadname || '-'}</td>
                     <td>${lead.leadphone || '-'}</td>
