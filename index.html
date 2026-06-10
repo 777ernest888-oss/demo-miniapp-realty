@@ -7,6 +7,47 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="styles.css">
+ 
+  <!-- ПРОВЕРКА АДМИНА -->
+  <script>
+    // Проверка: является ли пользователь админом
+    (function checkAdminAccess() {
+      const ADMIN_USER_ID = 2038206387;
+     
+      // Ждём загрузки Telegram WebApp
+      if (window.Telegram && window.Telegram.WebApp) {
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+       
+        // Получаем ID пользователя из Telegram
+        const user = tg.initDataUnsafe?.user;
+       
+        if (user && user.id === ADMIN_USER_ID) {
+          // Сохраняем флаг админа
+          window.isAdmin = true;
+          console.log('✅ Админ обнаружен:', user.id);
+        } else {
+          window.isAdmin = false;
+          console.log('❌ Обычный пользователь');
+        }
+      }
+    })();
+   
+    // Функция открытия админки
+    function openAdminPanel() {
+      if (!window.isAdmin) {
+        alert('⛔ Доступ запрещён!');
+        return;
+      }
+     
+      // Закрываем меню
+      closeMenu();
+     
+      // Открываем админку в новом окне (или том же)
+      const adminUrl = 'https://rqiutnpawsmqvmzewamc.supabase.co/functions/v1/admin-panel';
+      window.location.href = adminUrl;
+    }  </script>
 </head>
 <body>
 
@@ -55,8 +96,7 @@
           <button class="price-btn" data-price="10000000">До 10 млн</button>
           <button class="price-btn" data-price="20000000">До 20 млн</button>
           <button class="price-btn" data-price="50000000">До 50 млн</button>
-          <button class="price-btn" data-price="100000000">До 100 млн</button>
-        </div>
+          <button class="price-btn" data-price="100000000">До 100 млн</button>        </div>
       </div>
       <div class="filter-group">
         <label>📍 Районы</label>
@@ -105,8 +145,7 @@
       <h3>Заказать консультацию</h3>
       <p id="consultObjectName" class="form-object"></p>
       <p class="form-hint">Оставьте контакты — мы перезвоним и ответим на все вопросы по объекту</p>
-      <form id="consultForm" onsubmit="submitConsultForm(event)">
-        <input id="consultName" type="text" placeholder="Ваше имя" required>
+      <form id="consultForm" onsubmit="submitConsultForm(event)">        <input id="consultName" type="text" placeholder="Ваше имя" required>
         <input id="consultPhone" type="tel" placeholder="+7 (___) ___-__-__" required>
         <input id="consultTelegram" type="text" placeholder="Telegram (необязательно)">
         <button type="submit" class="tg-btn">Отправить заявку</button>
@@ -122,6 +161,11 @@
       <button onclick="showPage('home')">🏠 Каталог</button>
       <button onclick="showPage('about')">👤 Обо мне</button>
       <button onclick="showPage('contacts')">📞 Контакты</button>
+     
+      <!-- ПУНКТ МЕНЮ ДЛЯ АДМИНА (скрыт по умолчанию) -->
+      <button id="adminMenuItem" onclick="openAdminPanel()" style="display: none; border-top: 2px solid #ddd; margin-top: 15px; padding-top: 15px; color: #667eea; font-weight: 600;">
+        ⚙️ Админ-панель
+      </button>
     </nav>
   </div>
 
@@ -150,19 +194,18 @@
     <div class="page-content">
       <div class="contact-card">
         <!-- ✅ Пустой контейнер: JS сам вставит сюда фото или логотип -->
-        <div class="agent-avatar"></div>
-        <div class="agent-info">
+        <div class="agent-avatar"></div>        <div class="agent-info">
           <h3 id="agentName">Имя Агента</h3>
           <p id="agentRole">Эксперт по недвижимости</p>
         </div>
       </div>
-     
+    
       <div id="agencyBlock" class="agency-block">
         <h4> Агентство</h4>
         <p id="agencyName">Название АН</p>
         <p id="agencyAddress" class="address-text">📍 Адрес офиса</p>
       </div>
-     
+    
       <div class="contact-actions">
         <button class="btn-tg" onclick="openDirectChat()">✈️ Написать в Telegram</button>
         <button class="btn-phone" onclick="callAgent()">📞 Позвонить</button>
@@ -174,5 +217,19 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <!-- Твой основной скрипт -->
 <script src="app.js?v=1.0.0"></script>
+
+<!-- СКРИПТ ПОКАЗА ПУНКТА АДМИНКИ -->
+<script>
+  // После загрузки DOM показываем пункт меню для админа
+  document.addEventListener('DOMContentLoaded', function() {
+    if (window.isAdmin) {
+      const adminMenuItem = document.getElementById('adminMenuItem');
+      if (adminMenuItem) {
+        adminMenuItem.style.display = 'block';
+        console.log('✅ Пункт "Админ-панель" показан в меню');
+      }
+    }
+  });
+</script>
 </body>
 </html>
