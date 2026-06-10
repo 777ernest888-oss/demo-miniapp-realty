@@ -18,7 +18,6 @@
             background-color: #f5f5f5;
             color: #333;
             line-height: 1.6;
-            padding-top: 0;
         }
 
         .admin-header {
@@ -29,7 +28,6 @@
             display: flex;
             align-items: center;
             gap: 15px;
-            position: relative;
         }
 
         .admin-back-btn {
@@ -47,8 +45,8 @@
         }
 
         .admin-back-btn:hover {
-            background: rgba(255,255,255,0.3);        }
-
+            background: rgba(255,255,255,0.3);
+        }
         .admin-header h1 {
             font-size: 24px;
             margin-bottom: 5px;
@@ -96,9 +94,9 @@
         .tab-content {
             display: none;
             padding: 30px;
-            max-width: 1200px;            margin: 0 auto;
+            max-width: 1200px;
+            margin: 0 auto;
         }
-
         .tab-content.active {
             display: block;
         }
@@ -145,9 +143,9 @@
 
         .property-actions {
             display: flex;
-            gap: 10px;            flex-wrap: wrap;
+            gap: 10px;
+            flex-wrap: wrap;
         }
-
         .property-hidden {
             opacity: 0.6 !important;
             border-left-color: #95a5a6 !important;
@@ -195,8 +193,8 @@
         .btn-secondary {
             background-color: #95a5a6;
         }
-        .btn-small {
-            padding: 8px 15px;
+
+        .btn-small {            padding: 8px 15px;
             font-size: 13px;
         }
 
@@ -243,8 +241,8 @@
         .checkbox-group {
             display: flex;
             align-items: center;
-            gap: 10px;        }
-
+            gap: 10px;
+        }
         .checkbox-group input[type="checkbox"] {
             width: auto;
             transform: scale(1.2);
@@ -293,14 +291,20 @@
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
         }
-        .leads-table {
-            width: 100%;
+
+        .leads-table {            width: 100%;
             border-collapse: collapse;
             background: white;
             border-radius: 12px;
             overflow: hidden;
             box-shadow: 0 2px 10px rgba(0,0,0,0.05);
             min-width: 900px;
+        }
+
+        .leads-table thead {
+            position: sticky;
+            top: 0;
+            z-index: 10;
         }
 
         .leads-table th,
@@ -337,11 +341,11 @@
             min-width: 180px;
         }
         .leads-table th:nth-child(4),
-        .leads-table td:nth-child(4) {
-            min-width: 180px;
+        .leads-table td:nth-child(4) {            min-width: 180px;
         }
         .leads-table th:nth-child(5),
-        .leads-table td:nth-child(5) {            min-width: 180px;
+        .leads-table td:nth-child(5) {
+            min-width: 180px;
         }
 
         .stats-grid {
@@ -386,11 +390,11 @@
             }
 
             .tab-content {
-                padding: 15px;
-            }
+                padding: 15px;            }
 
             .admin-header {
-                padding: 15px 20px;            }
+                padding: 15px 20px;
+            }
 
             .admin-header h1 {
                 font-size: 20px;
@@ -413,7 +417,7 @@
                 document.body.innerHTML = `
                     <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                         <div style="background:white;border-radius:20px;padding:40px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.2);max-width:400px;">
-                            <div style="font-size:80px;margin-bottom:20px;">❌</div>
+                            <div style="font-size:80px;margin-bottom:20px;"></div>
                             <h1 style="color:#e74c3c;margin:0 0 15px 0;font-size:24px;">ДОСТУП ЗАПРЕЩЁН</h1>
                             <p style="color:#666;margin:0 0 25px 0;line-height:1.6;">У вас нет прав администратора для доступа к этой панели.</p>
                             <button onclick="Telegram.WebApp.close()" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:white;padding:15px 30px;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;">Закрыть</button>
@@ -426,20 +430,19 @@
             console.log('✅ Admin authenticated:', user.id);
         })();
        
-        // Функция возврата назад
+        // Функция возврата назад в каталог
         function adminBack() {
-            const tg = window.Telegram.WebApp;
-            tg.close();
+            window.location.href = 'https://777ernest888-oss.github.io/demo-miniapp-realty/';
         }
     </script>
 
     <div class="admin-header">
         <button class="admin-back-btn" onclick="adminBack()">
             <span>←</span>
-            <span>Назад</span>
-        </button>
+            <span>Назад</span>        </button>
         <div>
-            <h1>🏢 Админ-панель</h1>            <p>Управление каталогом новостроек</p>
+            <h1>🏢 Админ-панель</h1>
+            <p>Управление каталогом новостроек</p>
         </div>
     </div>
 
@@ -447,7 +450,7 @@
         <button class="tab-btn active" onclick="switchTab('properties')">🏠 Объекты</button>
         <button class="tab-btn" onclick="switchTab('addProperty')">➕ Добавить объект</button>
         <button class="tab-btn" onclick="switchTab('leads')">📧 Заявки (<span id="leadsCount">0</span>)</button>
-        <button class="tab-btn" onclick="switchTab('agent')">👤 Данные агента</button>
+        <button class="tab-btn" onclick="switchTab('agent')"> Данные агента</button>
         <button class="tab-btn" onclick="switchTab('settings')">⚙️ Настройки</button>
     </div>
 
@@ -485,10 +488,10 @@
                         <input type="text" name="metro" placeholder="м. Невский проспект">
                     </div>
                     <div class="form-group">
-                        <label>Адрес</label>
-                        <input type="text" name="address" placeholder="ул. Примерная, д. 1">
+                        <label>Адрес</label>                        <input type="text" name="address" placeholder="ул. Примерная, д. 1">
                     </div>
                 </div>
+
                 <div class="form-row">
                     <div class="form-group">
                         <label>Цена от (млн ₽)</label>
@@ -534,16 +537,16 @@
                 </div>
 
                 <div class="form-group">
-                    <label>Описание</label>
-                    <textarea name="description" placeholder="Подробное описание объекта..."></textarea>
+                    <label>Описание</label>                    <textarea name="description" placeholder="Подробное описание объекта..."></textarea>
                 </div>
+
                 <div class="form-group">
                     <label>Преимущества (через запятую)</label>
                     <textarea name="features" placeholder="Рядом метро, Паркинг, Детская площадка"></textarea>
                 </div>
 
                 <div class="form-group">
-                    <label>📷 Главное фото</label>
+                    <label> Главное фото</label>
                     <input type="file" accept="image/*" onchange="handleFileSelect(this, 'mainImagePreview')">
                     <div id="mainImagePreview" class="image-preview"></div>
                 </div>
@@ -575,7 +578,7 @@
             <h2>📧 Заявки от клиентов</h2>
             <div class="leads-table-wrapper">
                 <div id="leadsList">
-                    <div style="text-align:center;padding:40px;color:#666;">⏳ Загрузка...</div>
+                    <div style="text-align:center;padding:40px;color:#666;"> Загрузка...</div>
                 </div>
             </div>
         </div>
@@ -583,10 +586,10 @@
 
     <!-- Вкладка: Данные агента -->
     <div id="tab-agent" class="tab-content">
-        <div class="card">
-            <h2>👤 Данные агента</h2>
+        <div class="card">            <h2>👤 Данные агента</h2>
             <form id="agentForm">
-                <div class="form-row">                    <div class="form-group">
+                <div class="form-row">
+                    <div class="form-group">
                         <label>Имя</label>
                         <input type="text" name="name" placeholder="Иван Иванов">
                     </div>
@@ -631,11 +634,11 @@
     <!-- Вкладка: Настройки -->
     <div id="tab-settings" class="tab-content">
         <div class="card">
-            <h2>⚙️ Настройки приложения</h2>
-            <form id="settingsForm">
-                <div class="form-group">
+            <h2>️ Настройки приложения</h2>
+            <form id="settingsForm">                <div class="form-group">
                     <label>Название компании</label>
-                    <input type="text" name="company_name" placeholder="Название компании">                </div>
+                    <input type="text" name="company_name" placeholder="Название компании">
+                </div>
 
                 <div class="form-group">
                     <label>Основной цвет (hex)</label>
@@ -666,6 +669,6 @@
         </div>
     </div>
 
-    <script src="admin.js?v=1.0.1"></script>
+    <script src="admin.js?v=1.0.2"></script>
 </body>
 </html>
