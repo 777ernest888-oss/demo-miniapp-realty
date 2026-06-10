@@ -12,6 +12,7 @@
   <script>
     const ADMIN_USER_ID = 2038206387;
    
+    // Проверка прав администратора
     function checkAdminAccess() {
       if (window.Telegram && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
@@ -27,26 +28,62 @@
         }
       }
       window.isAdmin = false;
+      console.log('❌ Обычный пользователь');
       return false;
     }
    
+    // Открытие админ-панели с передачей данных пользователя
     function openAdminPanel() {
+      console.log('🔔 Попытка открыть админку...');
+      console.log('window.isAdmin:', window.isAdmin);
+     
       if (!window.isAdmin) {
         alert('⛔ Доступ запрещён!');
         return;
       }
      
+      // Получаем данные пользователя из Telegram
+      const tg = window.Telegram.WebApp;
+      const user = tg.initDataUnsafe?.user;
+     
+      console.log('User data:', user);
+            if (!user) {
+        alert('⛔ Не удалось получить данные пользователя');
+        return;
+      }
+     
+      // Закрываем меню
       closeMenu();
      
-      const adminUrl = 'https://rqiutnpawsmqvmzewamc.supabase.co/functions/v1/admin-panel';
+      // Кодируем данные для передачи в URL
+      const userData = {
+        id: user.id,
+        name: user.first_name || 'User',
+        username: user.username || ''
+      };
+     
+      const jsonString = JSON.stringify(userData);
+      const encodedData = btoa(unescape(encodeURIComponent(jsonString)));
+     
+      console.log('Encoded user data:', encodedData);
+     
+      // Открываем админку с параметрами
+      const adminUrl = `https://rqiutnpawsmqvmzewamc.supabase.co/functions/v1/admin-panel?user=${encodedData}`;
+     
+      console.log('Redirect to:', adminUrl);
       window.location.href = adminUrl;
     }
    
-    // Запускаем проверку сразу
-    checkAdminAccess();
+    // Запускаем проверку при загрузке
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', checkAdminAccess);
+    } else {
+      checkAdminAccess();
+    }
   </script>
 </head>
 <body>
+
   <!-- Экран приветствия -->
   <div id="welcomeScreen" class="screen welcome">
     <div id="welcomeBrand" class="welcome-brand">
@@ -60,7 +97,6 @@
       <button class="btn-primary" id="welcomeButton" onclick="startApp()">НАЧАТЬ ПОДБОР</button>
     </div>
   </div>
-
   <!-- Индикатор загрузки -->
   <div id="loadingScreen" class="screen loading hidden">
     <div class="loading-spinner"></div>
@@ -96,7 +132,8 @@
         </div>
       </div>
       <div class="filter-group">
-        <label>📍 Районы</label>        <div id="districtCheckboxes" class="checkbox-group"></div>
+        <label>📍 Районы</label>
+        <div id="districtCheckboxes" class="checkbox-group"></div>
       </div>
       <div class="filter-group">
         <label>🚇 Метро</label>
@@ -108,8 +145,7 @@
       </div>
     </div>
    
-    <div class="view-toggle">
-      <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>
+    <div class="view-toggle">      <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>
       <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺️ Карта</button>
     </div>
    
@@ -145,7 +181,8 @@
       <form id="consultForm" onsubmit="submitConsultForm(event)">
         <input id="consultName" type="text" placeholder="Ваше имя" required>
         <input id="consultPhone" type="tel" placeholder="+7 (___) ___-__-__" required>
-        <input id="consultTelegram" type="text" placeholder="Telegram (необязательно)">        <button type="submit" class="tg-btn">Отправить заявку</button>
+        <input id="consultTelegram" type="text" placeholder="Telegram (необязательно)">
+        <button type="submit" class="tg-btn">Отправить заявку</button>
       </form>
     </div>
   </div>
@@ -157,8 +194,7 @@
     <nav class="menu-nav">
       <button onclick="showPage('home')">🏠 Каталог</button>
       <button onclick="showPage('about')">👤 Обо мне</button>
-      <button onclick="showPage('contacts')">📞 Контакты</button>
-     
+      <button onclick="showPage('contacts')">📞 Контакты</button>     
       <!-- ПУНКТ МЕНЮ ДЛЯ АДМИНА (скрыт по умолчанию) -->
       <button id="adminMenuItem" onclick="openAdminPanel()" style="display: none; border-top: 2px solid #ddd; margin-top: 15px; padding-top: 15px; color: #667eea; font-weight: 600;">
         ⚙️ Админ-панель
@@ -174,7 +210,7 @@
     </div>
     <div class="page-content">
       <p>Привет! Я — брокер по недвижимости. Помогаю подбирать объекты с максимальной доходностью и юридической чистотой.</p>
-      <h3> Как я работаю:</h3>
+      <h3>🔍 Как я работаю:</h3>
       <ul>
         <li>Проверяю документы и историю застройщика.</li>
         <li>Торгуюсь за скидку (часто до 5-10%).</li>
@@ -194,7 +230,8 @@
         <div class="agent-avatar"></div>
         <div class="agent-info">
           <h3 id="agentName">Имя Агента</h3>
-          <p id="agentRole">Эксперт по недвижимости</p>        </div>
+          <p id="agentRole">Эксперт по недвижимости</p>
+        </div>
       </div>
     
       <div id="agencyBlock" class="agency-block">
@@ -204,10 +241,9 @@
       </div>
     
       <div class="contact-actions">
-        <button class="btn-tg" onclick="openDirectChat()">️ Написать в Telegram</button>
-        <button class="btn-phone" onclick="callAgent()"> Позвонить</button>
-      </div>
-    </div>
+        <button class="btn-tg" onclick="openDirectChat()">✈️ Написать в Telegram</button>
+        <button class="btn-phone" onclick="callAgent()">📞 Позвонить</button>
+      </div>    </div>
   </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -217,6 +253,11 @@
 <!-- ПОКАЗ ПУНКТА АДМИНКИ ПОСЛЕ ЗАГРУЗКИ -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    // Проверяем ещё раз на всякий случай
+    if (typeof window.isAdmin === 'undefined') {
+      checkAdminAccess();
+    }
+   
     if (window.isAdmin) {
       const adminMenuItem = document.getElementById('adminMenuItem');
       if (adminMenuItem) {
