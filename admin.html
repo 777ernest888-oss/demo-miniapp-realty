@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Админ-панель | Демо Каталог Новостроек</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * {
             margin: 0;
@@ -37,7 +38,6 @@
             opacity: 0.9;
         }
 
-        /* ЗАКРЕПЛЁННАЯ СТРОКА ВКЛАДОК */
         .tabs {
             display: flex;
             background: white;
@@ -267,7 +267,6 @@
             }
         }
 
-        /* РАСШИРЕННАЯ ТАБЛИЦА ЗАЯВОК */
         .leads-table-wrapper {
             overflow-x: auto;
             -webkit-overflow-scrolling: touch;
@@ -292,8 +291,8 @@
             word-wrap: break-word;
             word-break: break-word;
         }
-        .leads-table th {
-            background-color: #3D5266;
+
+        .leads-table th {            background-color: #3D5266;
             color: white;
             font-weight: 500;
             white-space: nowrap;
@@ -303,26 +302,25 @@
             background-color: #f9f9f9;
         }
 
-        /* Специфичные ширины для колонок заявок */
         .leads-table th:nth-child(1),
         .leads-table td:nth-child(1) {
-            min-width: 120px; /* Дата */
+            min-width: 120px;
         }
         .leads-table th:nth-child(2),
         .leads-table td:nth-child(2) {
-            min-width: 200px; /* Объект */
+            min-width: 200px;
         }
         .leads-table th:nth-child(3),
         .leads-table td:nth-child(3) {
-            min-width: 180px; /* Имя */
+            min-width: 180px;
         }
         .leads-table th:nth-child(4),
         .leads-table td:nth-child(4) {
-            min-width: 180px; /* Телефон */
+            min-width: 180px;
         }
         .leads-table th:nth-child(5),
         .leads-table td:nth-child(5) {
-            min-width: 180px; /* Telegram */
+            min-width: 180px;
         }
 
         .stats-grid {
@@ -341,9 +339,9 @@
         }
 
         .stat-card .number {
-            font-size: 32px;            font-weight: bold;
-            color: #3D5266;
-        }
+            font-size: 32px;
+            font-weight: bold;
+            color: #3D5266;        }
 
         .stat-card .label {
             color: #666;
@@ -380,6 +378,33 @@
     </style>
 </head>
 <body>
+    <!-- ПРОВЕРКА АВТОРИЗАЦИИ -->
+    <script>
+        (function checkAuth() {
+            const tg = window.Telegram.WebApp;
+            tg.ready();
+            tg.expand();
+           
+            const user = tg.initDataUnsafe?.user;
+            const ADMIN_USER_ID = 2038206387;
+           
+            if (!user || user.id !== ADMIN_USER_ID) {
+                document.body.innerHTML = `
+                    <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);">                        <div style="background:white;border-radius:20px;padding:40px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.2);max-width:400px;">
+                            <div style="font-size:80px;margin-bottom:20px;">❌</div>
+                            <h1 style="color:#e74c3c;margin:0 0 15px 0;font-size:24px;">ДОСТУП ЗАПРЕЩЁН</h1>
+                            <p style="color:#666;margin:0 0 25px 0;line-height:1.6;">У вас нет прав администратора для доступа к этой панели.</p>
+                            <button onclick="Telegram.WebApp.close()" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:white;padding:15px 30px;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;">Закрыть</button>
+                        </div>
+                    </div>
+                `;
+                throw new Error('Unauthorized');
+            }
+           
+            console.log('✅ Admin authenticated:', user.id);
+        })();
+    </script>
+
     <div class="admin-header">
         <h1>🏢 Админ-панель</h1>
         <p>Управление каталогом новостроек</p>
@@ -390,7 +415,8 @@
         <button class="tab-btn" onclick="switchTab('addProperty')">➕ Добавить объект</button>
         <button class="tab-btn" onclick="switchTab('leads')">📧 Заявки (<span id="leadsCount">0</span>)</button>
         <button class="tab-btn" onclick="switchTab('agent')">👤 Данные агента</button>
-        <button class="tab-btn" onclick="switchTab('settings')">⚙️ Настройки</button>    </div>
+        <button class="tab-btn" onclick="switchTab('settings')">⚙️ Настройки</button>
+    </div>
 
     <div id="alertContainer"></div>
 
@@ -413,8 +439,7 @@
                     <div class="form-group">
                         <label>Название объекта *</label>
                         <input type="text" name="name" required placeholder="ЖК «Название»">
-                    </div>
-                    <div class="form-group">
+                    </div>                    <div class="form-group">
                         <label>Район *</label>
                         <input type="text" name="district" required placeholder="Центральный">
                     </div>
@@ -439,7 +464,8 @@
                     <div class="form-group">
                         <label>Цена до (млн ₽)</label>
                         <input type="number" name="price_to" step="0.1" placeholder="50">
-                    </div>                </div>
+                    </div>
+                </div>
 
                 <div class="form-row">
                     <div class="form-group">
@@ -462,7 +488,6 @@
                         <input type="text" name="completion_date" placeholder="IV кв. 2026">
                     </div>
                 </div>
-
                 <div class="form-row">
                     <div class="form-group">
                         <label>Широта (lat)</label>
@@ -488,7 +513,8 @@
                     <label>📷 Главное фото</label>
                     <input type="file" accept="image/*" onchange="handleFileSelect(this, 'mainImagePreview')">
                     <div id="mainImagePreview" class="image-preview"></div>
-                </div>                <div class="form-group">
+                </div>
+                <div class="form-group">
                     <label>🖼️ Фото галереи (можно несколько)</label>
                     <input type="file" accept="image/*" multiple onchange="handleFilesSelect(this, 'galleryImagesPreview')">
                     <div id="galleryImagesPreview" class="image-preview"></div>
@@ -511,8 +537,7 @@
     </div>
 
     <!-- Вкладка: Заявки -->
-    <div id="tab-leads" class="tab-content">
-        <div class="card">
+    <div id="tab-leads" class="tab-content">        <div class="card">
             <h2>📧 Заявки от клиентов</h2>
             <div class="leads-table-wrapper">
                 <div id="leadsList">
@@ -537,6 +562,7 @@
                         <input type="text" name="position" placeholder="Риелтор">
                     </div>
                 </div>
+
                 <div class="form-row">
                     <div class="form-group">
                         <label>Телефон</label>
@@ -560,8 +586,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label>О себе</label>
-                    <textarea name="about" placeholder="Расскажите о себе..."></textarea>
+                    <label>О себе</label>                    <textarea name="about" placeholder="Расскажите о себе..."></textarea>
                 </div>
 
                 <button type="submit" class="btn btn-primary">💾 Сохранить данные</button>
@@ -586,7 +611,8 @@
 
                 <div class="form-group">
                     <label>Акцентный цвет (hex)</label>
-                    <input type="text" name="accent_color" placeholder="#3498DB">                </div>
+                    <input type="text" name="accent_color" placeholder="#3498DB">
+                </div>
                 <div class="form-group">
                     <label>URL логотипа</label>
                     <input type="text" name="logo_url" placeholder="https://...">
@@ -607,6 +633,6 @@
         </div>
     </div>
 
-    <script src="admin.js?v=4"></script>
+    <script src="admin.js?v=1.0.1"></script>
 </body>
 </html>
