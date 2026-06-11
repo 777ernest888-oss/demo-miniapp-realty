@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', async function() {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
 
-    // Грузим только объекты (без leads!) — ОПТИМИЗИРОВАНО
+    // Грузим только объекты (быстро)
     await loadProperties();
     await loadAgentData();
     await loadSettings();
@@ -36,7 +36,7 @@ function switchTab(tabName) {
     document.getElementById(`tab-${tabName}`).classList.add('active');
 
     if (tabName === 'properties') loadProperties();
-    if (tabName === 'leads') loadLeads(); // Грузим ТОЛЬКО когда открываем вкладку
+    if (tabName === 'leads') loadLeads();
 }
 
 // Показ уведомления
@@ -186,7 +186,7 @@ async function togglePropertyStatus(id, currentStatus) {
     }
 }
 
-// ========== ОБЪЕКТЫ (ОПТИМИЗИРОВАНО) ==========
+// ========== ОБЪЕКТЫ ==========
 async function loadProperties() {
     const container = document.getElementById('propertiesList');
     container.innerHTML = '<div style="text-align:center;padding:40px;color:#666;">⏳ Загрузка...</div>';
@@ -195,55 +195,61 @@ async function loadProperties() {
         container.innerHTML = '<div class="alert alert-error">Supabase не подключён</div>';
         return;
     }
-    // ОПТИМИЗАЦИЯ: загружаем ТОЛЬКО необходимые поля
-    const { data, error } = await supabaseClient
-        .from('properties')
-        .select('id, name, district, metro, price_from, active')
-        .order('created_at', { ascending: false })
-        .limit(50); // Ограничиваем количество
+    try {
+        // Загружаем ТОЛЬКО необходимые поля с лимитом
+        const { data, error } = await supabaseClient
+            .from('properties')
+            .select('id, name, district, metro, price_from, active')
+            .order('created_at', { ascending: false })
+            .limit(50);
 
-    if (error) {
-        container.innerHTML = `<div class="alert alert-error">Ошибка: ${error.message}</div>`;
-        return;
-    }
-
-    if (!data || data.length === 0) {
-        container.innerHTML = '<div class="alert alert-success">Объектов пока нет. Добавьте первый!</div>';
-        return;
-    }
-
-    container.innerHTML = '';
-    data.forEach(property => {
-        const item = document.createElement('div');
-        item.className = 'property-item';
-      
-        if (!property.active) {
-            item.classList.add('property-hidden');
+        if (error) {
+            console.error('❌ Ошибка загрузки объектов:', error);
+            container.innerHTML = `<div class="alert alert-error">Ошибка: ${error.message}</div>`;
+            return;
         }
-      
-        const toggleBtnText = property.active ? '👁 Скрыть' : '👁 Показать';
-        const toggleBtnClass = property.active ? 'btn-secondary' : 'btn-success';
-      
-        item.innerHTML = `
-            <div class="property-info">
-                <h3>${property.name || 'Без названия'} ${!property.active ? '<span class="hidden-badge">[СКРЫТ]</span>' : ''}</h3>
-                <p>📍 ${property.district || ''} ${property.metro ? '| м. ' + property.metro : ''}</p>
-                <p>💰 от ${formatPrice(property.price_from)} ₽ ${property.active ? '✅' : '❌'}</p>
-            </div>
-            <div class="property-actions">
-                <button class="btn ${toggleBtnClass} btn-small" onclick="togglePropertyStatus('${property.id}', ${property.active})">${toggleBtnText}</button>
-                <button class="btn btn-primary btn-small" onclick="editProperty('${property.id}')">✏️ Редактировать</button>
-                <button class="btn btn-danger btn-small" onclick="deleteProperty('${property.id}')">🗑 Удалить</button>
-            </div>
-        `;
-        container.appendChild(item);
-    });
-}
+
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="alert alert-success">Объектов пока нет. Добавьте первый!</div>';
+            return;
+        }
+
+        container.innerHTML = '';
+        data.forEach(property => {
+            const item = document.createElement('div');
+            item.className = 'property-item';
+          
+            if (!property.active) {
+                item.classList.add('property-hidden');
+            }
+          
+            const toggleBtnText = property.active ? '👁 Скрыть' : '👁 Показать';
+            const toggleBtnClass = property.active ? 'btn-secondary' : 'btn-success';
+          
+            item.innerHTML = `
+                <div class="property-info">
+                    <h3>${property.name || 'Без названия'} ${!property.active ? '<span class="hidden-badge">[СКРЫТ]</span>' : ''}</h3>
+                    <p>📍 ${property.district || ''} ${property.metro ? '| м. ' + property.metro : ''}</p>
+                    <p>💰 от ${formatPrice(property.price_from)} ₽ ${property.active ? '✅' : '❌'}</p>
+                </div>
+                <div class="property-actions">
+                    <button class="btn ${toggleBtnClass} btn-small" onclick="togglePropertyStatus('${property.id}', ${property.active})">${toggleBtnText}</button>
+                    <button class="btn btn-primary btn-small" onclick="editProperty('${property.id}')">✏️ Редактировать</button>
+                    <button class="btn btn-danger btn-small" onclick="deleteProperty('${property.id}')">🗑 Удалить</button>
+                </div>
+            `;
+            container.appendChild(item);
+        });
+    } catch (error) {
+        console.error('❌ Критическая ошибка:', error);
+        container.innerHTML = `<div class="alert alert-error">Ошибка загрузки: ${error.message}</div>`;
+    }}
 
 // Добавление объекта
 document.getElementById('addPropertyForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
-    const submitBtn = e.target.querySelector('button[type="submit"]');    const originalText = submitBtn.textContent;
+    const submitBtn = e.target.querySelector('button[type="submit"]');
+    const originalText = submitBtn.textContent;
     submitBtn.textContent = '💾 Сохранение...';
     submitBtn.disabled = true;
 
@@ -286,13 +292,13 @@ document.getElementById('addPropertyForm')?.addEventListener('submit', async fun
       
         if (uploadedFiles.floorPlans.length > 0) {
             showAlert('📤 Загружаем планировки...');
-            const plansUrls = [];
-            for (let i = 0; i < uploadedFiles.floorPlans.length; i++) {
+            const plansUrls = [];            for (let i = 0; i < uploadedFiles.floorPlans.length; i++) {
                 const path = `${propertyData.id}/plan_${i}_${Date.now()}.jpg`;
                 const url = await uploadToYandex(uploadedFiles.floorPlans[i], path);
                 plansUrls.push(url);
             }
-            propertyData.floor_plans_images = plansUrls.join(',');        }
+            propertyData.floor_plans_images = plansUrls.join(',');
+        }
       
         const { error } = await supabaseClient.from('properties').insert([propertyData]);
       
@@ -335,13 +341,13 @@ function handleFilesSelect(input, previewId) {
     const isFloorPlans = previewId === 'floorPlansPreview';
     if (isGallery) uploadedFiles.gallery = files;
     else if (isFloorPlans) uploadedFiles.floorPlans = files;
-
     const preview = document.getElementById(previewId);
     preview.innerHTML = '';
 
     files.forEach(file => {
         const reader = new FileReader();
-        reader.onload = function(e) {            const img = document.createElement('img');
+        reader.onload = function(e) {
+            const img = document.createElement('img');
             img.src = e.target.result;
             img.style.width = '100px';
             img.style.margin = '5px';
@@ -384,13 +390,13 @@ async function editProperty(id) {
         document.getElementById('mainImagePreview').innerHTML = `
             <div style="position:relative;display:inline-block;">
                 <img src="${data.image_main}" style="max-width:200px;border-radius:8px;">
-                <button onclick="deleteSingleImage('${data.image_main}', 'main', 0)"
-                    style="position:absolute;top:5px;right:5px;background:#e74c3c;color:white;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:18px;line-height:1;">×</button>
+                <button onclick="deleteSingleImage('${data.image_main}', 'main', 0)"                    style="position:absolute;top:5px;right:5px;background:#e74c3c;color:white;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:18px;line-height:1;">×</button>
             </div>
         `;
     }
 
-    if (data.images_gallery) {        const gallery = data.images_gallery.split(',');
+    if (data.images_gallery) {
+        const gallery = data.images_gallery.split(',');
         let galleryHTML = '';
         gallery.forEach((url, index) => {
             galleryHTML += `
@@ -433,13 +439,13 @@ async function updateProperty(id, form) {
     const propertyData = {};
     for (let [key, value] of formData.entries()) {
         if (key === 'active') {
-            propertyData[key] = document.getElementById('activeCheckbox').checked;
-        } else if (['price_from', 'price_to', 'area_min', 'area_max', 'price_per_sqm'].includes(key)) {
+            propertyData[key] = document.getElementById('activeCheckbox').checked;        } else if (['price_from', 'price_to', 'area_min', 'area_max', 'price_per_sqm'].includes(key)) {
             propertyData[key] = value ? parseFloat(value) : null;
         } else if (['lat', 'lng'].includes(key)) {
             propertyData[key] = value ? parseFloat(value) : null;
         } else {
-            propertyData[key] = value;        }
+            propertyData[key] = value;
+        }
     }
 
     propertyData.active = document.getElementById('activeCheckbox').checked;
@@ -482,12 +488,12 @@ async function updateProperty(id, form) {
     if (error) {
         console.error('❌ Ошибка обновления:', error);
         showAlert('❌ Ошибка: ' + error.message, 'error');
-        return;
-    }
+        return;    }
 
     showAlert('✅ Объект обновлён!');
     setTimeout(() => switchTab('properties'), 1000);
 }
+
 // Удаление объекта (с картинками!)
 async function deleteProperty(id) {
     if (!confirm('Вы уверены, что хотите удалить этот объект? Все фото будут удалены из облака!')) return;
@@ -531,29 +537,36 @@ async function deleteProperty(id) {
             .delete()
             .eq('id', id);
       
-        if (error) throw error;
-      
+        if (error) throw error;      
         showAlert('✅ Объект и все его фото удалены!');
         loadProperties();
     } catch (error) {
         showAlert('❌ Ошибка при удалении: ' + error.message, 'error');
-    }}
+    }
+}
 
 // ========== ДАННЫЕ АГЕНТА ==========
 async function loadAgentData() {
-    const { data, error } = await supabaseClient
-        .from('agent_data')
-        .select('*')
-        .limit(1);
-    if (error) return;
-
-    if (data && data.length > 0) {
-        currentAgentId = data[0].id;
-        const form = document.getElementById('agentForm');
-        for (let key in data[0]) {
-            const input = form.querySelector(`[name="${key}"]`);
-            if (input) input.value = data[0][key] || '';
+    try {
+        const { data, error } = await supabaseClient
+            .from('agent_data')
+            .select('*')
+            .limit(1);
+        if (error) {
+            console.error('Ошибка загрузки данных агента:', error);
+            return;
         }
+
+        if (data && data.length > 0) {
+            currentAgentId = data[0].id;
+            const form = document.getElementById('agentForm');
+            for (let key in data[0]) {
+                const input = form.querySelector(`[name="${key}"]`);
+                if (input) input.value = data[0][key] || '';
+            }
+        }
+    } catch (error) {
+        console.error('Критическая ошибка loadAgentData:', error);
     }
 }
 
@@ -573,8 +586,7 @@ document.getElementById('agentForm')?.addEventListener('submit', async function(
                 .eq('id', currentAgentId);
         } else {
             agentData.id = crypto.randomUUID();
-            await supabaseClient.from('agent_data').insert([agentData]);
-        }
+            await supabaseClient.from('agent_data').insert([agentData]);        }
         showAlert('✅ Данные агента сохранены!');
     } catch (error) {
         showAlert('❌ Ошибка: ' + error.message, 'error');
@@ -583,12 +595,20 @@ document.getElementById('agentForm')?.addEventListener('submit', async function(
 
 // ========== НАСТРОЙКИ ==========
 async function loadSettings() {
-    const { data, error } = await supabaseClient.from('settings').select('*');
-    if (error) return;
-    const form = document.getElementById('settingsForm');
-    data.forEach(setting => {        const input = form.querySelector(`[name="${setting.setting_key}"]`);
-        if (input) input.value = setting.setting_value || '';
-    });
+    try {
+        const { data, error } = await supabaseClient.from('settings').select('*');
+        if (error) {
+            console.error('Ошибка загрузки настроек:', error);
+            return;
+        }
+        const form = document.getElementById('settingsForm');
+        data.forEach(setting => {
+            const input = form.querySelector(`[name="${setting.setting_key}"]`);
+            if (input) input.value = setting.setting_value || '';
+        });
+    } catch (error) {
+        console.error('Критическая ошибка loadSettings:', error);
+    }
 }
 
 document.getElementById('settingsForm')?.addEventListener('submit', async function(e) {
@@ -615,57 +635,68 @@ document.getElementById('settingsForm')?.addEventListener('submit', async functi
         }
         showAlert('✅ Настройки сохранены!');
     } catch (error) {
-        showAlert('❌ Ошибка сохранения настроек', 'error');
-    }
+        showAlert('❌ Ошибка сохранения настроек', 'error');    }
 });
 
-// ========== ЗАЯВКИ (грузится только при открытии вкладки) ==========
+// ========== ЗАЯВКИ (ИСПРАВЛЕНО - с обработкой ошибок) ==========
 async function loadLeads() {
     const container = document.getElementById('leadsList');
     container.innerHTML = '<div style="text-align:center;padding:40px;color:#666;">⏳ Загрузка...</div>';
    
-    const { data, error } = await supabaseClient
-        .from('leads')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
+    try {
+        // Добавляем таймаут
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 секунд
+       
+        const { data, error } = await supabaseClient
+            .from('leads')
+            .select('*')
+            .order('created_at', { ascending: false })
+            .limit(50);
+       
+        clearTimeout(timeoutId);
 
-    if (error) {
-        container.innerHTML = `<div class="alert alert-error">Ошибка: ${error.message}</div>`;
-        return;
-    }
+        if (error) {
+            console.error('❌ Ошибка загрузки заявок:', error);
+            container.innerHTML = `<div class="alert alert-error">Ошибка: ${error.message}</div>`;
+            return;
+        }
 
-    document.getElementById('leadsCount').textContent = data ? data.length : 0;
-    if (!data || data.length === 0) {
-        container.innerHTML = '<div class="alert alert-success">Заявок пока нет</div>';
-        return;
-    }
+        document.getElementById('leadsCount').textContent = data ? data.length : 0;
 
-    const table = document.createElement('table');
-    table.className = 'leads-table';
-    table.innerHTML = `
-        <thead>
-            <tr>
-                <th>Дата</th>
-                <th>Объект</th>
-                <th>Имя</th>
-                <th>Телефон</th>
-                <th>Telegram</th>
-            </tr>
-        </thead>
-        <tbody>
-            ${data.map(lead => `
+        if (!data || data.length === 0) {
+            container.innerHTML = '<div class="alert alert-success">Заявок пока нет</div>';
+            return;
+        }
+
+        const table = document.createElement('table');
+        table.className = 'leads-table';
+        table.innerHTML = `
+            <thead>
                 <tr>
-                    <td>${lead.created_at ? new Date(lead.created_at).toLocaleDateString('ru-RU') : '-'}</td>
-                    <td>${lead.title || '-'}</td>
-                    <td>${lead.leadname || '-'}</td>
-                    <td>${lead.leadphone || '-'}</td>
-                    <td>${lead.leadtelegram || '-'}</td>
+                    <th>Дата</th>
+                    <th>Объект</th>
+                    <th>Имя</th>
+                    <th>Телефон</th>
+                    <th>Telegram</th>
                 </tr>
-            `).join('')}
-        </tbody>
-    `;
+            </thead>
+            <tbody>
+                ${data.map(lead => `
+                    <tr>
+                        <td>${lead.created_at ? new Date(lead.created_at).toLocaleDateString('ru-RU') : '-'}</td>                        <td>${lead.title || '-'}</td>
+                        <td>${lead.leadname || '-'}</td>
+                        <td>${lead.leadphone || '-'}</td>
+                        <td>${lead.leadtelegram || '-'}</td>
+                    </tr>
+                `).join('')}
+            </tbody>
+        `;
 
-    container.innerHTML = '';
-    container.appendChild(table);
+        container.innerHTML = '';
+        container.appendChild(table);
+    } catch (error) {
+        console.error('❌ Критическая ошибка loadLeads:', error);
+        container.innerHTML = `<div class="alert alert-error">Ошибка загрузки заявок: ${error.message}. Попробуйте обновить страницу.</div>`;
+    }
 }
