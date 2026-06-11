@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="styles.css">
  
   <style>
+    /* Стили для iframe-админки */
     .admin-frame {
       position: fixed;
       top: 0;
@@ -46,12 +47,68 @@
       align-items: center;
       gap: 5px;
       backdrop-filter: blur(10px);
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    }
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);    }
+
     .admin-close-btn:hover {
       background: rgba(61, 82, 102, 1);
     }
   </style>
+
+  <!-- ПРОВЕРКА АДМИНА -->
+  <script>
+    const ADMIN_USER_ID = 2038206387;
+   
+    function checkAdminAccess() {
+      if (window.Telegram && window.Telegram.WebApp) {
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+       
+        const user = tg.initDataUnsafe?.user;
+       
+        if (user && user.id === ADMIN_USER_ID) {
+          window.isAdmin = true;
+          console.log('✅ Админ обнаружен:', user.id);
+          return true;
+        }
+      }
+      window.isAdmin = false;
+      console.log('❌ Обычный пользователь');
+      return false;
+    }
+   
+    // Открытие админки через iframe
+    function openAdminPanel() {
+      if (!window.isAdmin) {
+        alert('⛔ Доступ запрещён!');
+        return;
+      }
+     
+      closeMenu();
+     
+      // Показываем iframe с админкой
+      const adminFrame = document.getElementById('adminFrame');
+      if (adminFrame) {
+        adminFrame.classList.add('active');
+        console.log('✅ Админка открыта через iframe');
+      }
+    }
+   
+    // Закрытие админки
+    function closeAdminPanel() {
+      const adminFrame = document.getElementById('adminFrame');      if (adminFrame) {
+        adminFrame.classList.remove('active');
+        console.log('✅ Админка закрыта');
+      }
+    }
+   
+    // Запускаем проверку при загрузке
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', checkAdminAccess);
+    } else {
+      checkAdminAccess();
+    }
+  </script>
 </head>
 <body>
 
@@ -88,15 +145,15 @@
         <h1 class="brand-title" id="headerTitle"></h1>
       </div>
     </header>
-   
-    <div class="filters-toggle">
+        <div class="filters-toggle">
       <button class="filters-toggle-btn" onclick="toggleFilters()">🔽 Фильтры</button>
     </div>
     <div id="filtersBlock" class="filters-block hidden">
       <div class="filter-group">
         <label>💰 Цена до (млн ₽)</label>
         <div class="price-buttons">
-          <button class="price-btn" data-price="5000000">До 5 млн</button>          <button class="price-btn" data-price="10000000">До 10 млн</button>
+          <button class="price-btn" data-price="5000000">До 5 млн</button>
+          <button class="price-btn" data-price="10000000">До 10 млн</button>
           <button class="price-btn" data-price="20000000">До 20 млн</button>
           <button class="price-btn" data-price="50000000">До 50 млн</button>
           <button class="price-btn" data-price="100000000">До 100 млн</button>
@@ -111,7 +168,7 @@
         <div id="metroCheckboxes" class="checkbox-group"></div>
       </div>
       <div class="filter-group">
-        <label>🚪 Комнаты</label>
+        <label> Комнаты</label>
         <div id="roomsCheckboxes" class="checkbox-group"></div>
       </div>
     </div>
@@ -137,15 +194,15 @@
       <div id="modalDescription" class="modal-desc"></div>
       <h3>✨ Преимущества</h3>
       <div id="modalFeatures" class="modal-features"></div>
-      <h3>📐 Планировки</h3>
-      <div id="modalFloorPlans" class="floor-plans"></div>
+      <h3>📐 Планировки</h3>      <div id="modalFloorPlans" class="floor-plans"></div>
       <button id="modalConsultBtn" class="tg-btn">Заказать консультацию</button>
     </div>
   </div>
 
   <!-- Модальное окно консультации -->
   <div id="consultModal" class="modal form-modal hidden">
-    <div class="modal-content">      <button class="modal-close" onclick="closeConsultModal()">×</button>
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeConsultModal()">×</button>
       <h3>Заказать консультацию</h3>
       <p id="consultObjectName" class="form-object"></p>
       <p class="form-hint">Оставьте контакты — мы перезвоним и ответим на все вопросы по объекту</p>
@@ -164,12 +221,12 @@
     <button class="menu-close" onclick="closeMenu()">×</button>
     <nav class="menu-nav">
       <button onclick="showPage('home')">🏠 Каталог</button>
-      <button onclick="showPage('about')">👤 Обо мне</button>
+      <button onclick="showPage('about')"> Обо мне</button>
       <button onclick="showPage('contacts')">📞 Контакты</button>
      
       <!-- ПУНКТ МЕНЮ ДЛЯ АДМИНА -->
       <button id="adminMenuItem" onclick="openAdminPanel()" style="display: none; border-top: 2px solid #ddd; margin-top: 15px; padding-top: 15px; color: #667eea; font-weight: 600;">
-        ⚙️ Админ-панель
+        ️ Админ-панель
       </button>
     </nav>
   </div>
@@ -186,15 +243,15 @@
       <ul>
         <li>Проверяю документы и историю застройщика.</li>
         <li>Торгуюсь за скидку (часто до 5-10%).</li>
-        <li>Помогаю с ипотекой и одобрением.</li>
-      </ul>
+        <li>Помогаю с ипотекой и одобрением.</li>      </ul>
     </div>
   </div>
 
   <!-- Страница "Контакты" -->
   <div id="page-contacts" class="page hidden">
     <div class="page-header">
-      <button class="page-back-btn" onclick="appBack()">← Назад</button>      <h2>Контакты</h2>
+      <button class="page-back-btn" onclick="appBack()">← Назад</button>
+      <h2>Контакты</h2>
     </div>
     <div class="page-content">
       <div class="contact-card">
@@ -218,71 +275,32 @@
     </div>
   </div>
 
-  <!-- IFRAME АДМИНКИ -->
+  <!-- IFRAME АДМИНКИ (скрыт по умолчанию) -->
   <div id="adminFrame" class="admin-frame">
     <button class="admin-close-btn" onclick="closeAdminPanel()">
       <span>←</span>
       <span>Назад</span>
     </button>
-    <iframe src="admin.html" id="adminIframe" style="display: none;"></iframe>
+    <iframe src="admin.html" id="adminIframe"></iframe>
   </div>
 
-<!-- ПОДКЛЮЧЕНИЕ СКРИПТОВ -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=1.0.11"></script>
+<script src="app.js?v=1.0.0"></script>
 
-<!-- СКРИПТ УПРАВЛЕНИЯ АДМИНКОЙ (ПОСЛЕ app.js!) -->
+<!-- ПОКАЗ ПУНКТА АДМИНКИ ПОСЛЕ ЗАГРУЗКИ -->
 <script>
-  const ADMIN_USER_ID = 2038206387;
-  window.isAdmin = false;
- 
-  // Проверка админа (НЕ вызывает tg.ready() и tg.expand() — они уже вызваны в app.js!)
-  function checkAdminAccess() {
-    try {
-      if (window.Telegram && window.Telegram.WebApp) {
-        const tg = window.Telegram.WebApp;
-        const user = tg.initDataUnsafe?.user;
-                if (user && user.id === ADMIN_USER_ID) {
-          window.isAdmin = true;
-          console.log('✅ Админ обнаружен:', user.id);
-         
-          setTimeout(function() {
-            const adminMenuItem = document.getElementById('adminMenuItem');
-            if (adminMenuItem) {
-              adminMenuItem.style.display = 'block';
-            }
-          }, 1000);
-        }
-      }
-    } catch (e) {
-      console.warn('Ошибка проверки админа:', e);
-    }
-  }
- 
-  function openAdminPanel() {
-    if (!window.isAdmin) {
-      alert('⛔ Доступ запрещён!');
-      return;
-    }
+  document.addEventListener('DOMContentLoaded', function() {
+    if (typeof window.isAdmin === 'undefined') {
+      checkAdminAccess();    }
    
-    closeMenu();
-    const adminFrame = document.getElementById('adminFrame');
-    if (adminFrame) {
-      adminFrame.classList.add('active');
+    if (window.isAdmin) {
+      const adminMenuItem = document.getElementById('adminMenuItem');
+      if (adminMenuItem) {
+        adminMenuItem.style.display = 'block';
+        console.log('✅ Пункт "Админ-панель" показан в меню');
+      }
     }
-  }
- 
-  function closeAdminPanel() {
-    const adminFrame = document.getElementById('adminFrame');
-    if (adminFrame) {
-      adminFrame.classList.remove('active');
-    }
-  }
- 
-  // Запускаем проверку ПОСЛЕ полной загрузки (не при DOMContentLoaded!)
-  window.addEventListener('load', function() {
-    setTimeout(checkAdminAccess, 2000); // Даём приложению полностью загрузиться
   });
 </script>
 </body>
