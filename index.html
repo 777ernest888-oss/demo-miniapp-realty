@@ -10,15 +10,12 @@
   <link rel="preconnect" href="https://storage.yandexcloud.net" crossorigin>
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-  <link rel="dns-prefetch" href="https://rqiutnpawsmqvmzewamc.supabase.co">
-  <link rel="dns-prefetch" href="https://storage.yandexcloud.net">
  
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="styles.css">
 
   <style>
-    /* Стили для iframe-админки */
     .admin-frame {
       position: fixed;
       top: 0;
@@ -47,10 +44,10 @@
       z-index: 10000;
       background: rgba(61, 82, 102, 0.9);
       color: white;
-      border: none;      padding: 10px 20px;
+      border: none;
+      padding: 10px 20px;
       border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
+      cursor: pointer;      font-size: 14px;
       display: flex;
       align-items: center;
       gap: 5px;
@@ -86,7 +83,6 @@
       return false;
     }
   
-    // Открытие админки через iframe
     function openAdminPanel() {
       if (!window.isAdmin) {
         alert('⛔ Доступ запрещён!');
@@ -95,14 +91,12 @@
     
       closeMenu();
     
-      // Показываем iframe с админкой
-      const adminFrame = document.getElementById('adminFrame');      if (adminFrame) {
+      const adminFrame = document.getElementById('adminFrame');
+      if (adminFrame) {
         adminFrame.classList.add('active');
         console.log('✅ Админка открыта через iframe');
       }
-    }
-  
-    // Закрытие админки
+    }  
     function closeAdminPanel() {
       const adminFrame = document.getElementById('adminFrame');
       if (adminFrame) {
@@ -111,7 +105,6 @@
       }
     }
   
-    // Запускаем проверку при загрузке
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', checkAdminAccess);
     } else {
@@ -145,14 +138,14 @@
   <div id="mainContent" class="screen hidden">
     <header id="headerBrand" class="header">
       <button class="menu-btn" onclick="openMenu()">☰</button>
-      <button id="headerBackBtn" class="header-back-btn hidden" onclick="appBack()">        <span class="back-arrow">←</span>
+      <button id="headerBackBtn" class="header-back-btn hidden" onclick="appBack()">
+        <span class="back-arrow">←</span>
         <span>Назад</span>
       </button>
       <div class="header-brand">
         <img src="logo.png" alt="Logo" class="brand-logo">
         <h1 class="brand-title" id="headerTitle"></h1>
-      </div>
-    </header>
+      </div>    </header>
    
     <div class="filters-toggle">
       <button class="filters-toggle-btn" onclick="toggleFilters()">🔽 Фильтры</button>
@@ -194,14 +187,14 @@
   <!-- Модальное окно деталей -->
   <div id="detailsModal" class="modal hidden">
     <div class="modal-content">
-      <button class="modal-close" onclick="closeModal()">×</button>      <div id="modalGallery" class="modal-gallery"></div>
+      <button class="modal-close" onclick="closeModal()">×</button>
+      <div id="modalGallery" class="modal-gallery"></div>
       <h2 id="modalTitle"></h2>
       <div id="modalPrice" class="modal-price"></div>
       <div id="modalMeta" class="modal-meta"></div>
       <h3>📖 Описание</h3>
       <div id="modalDescription" class="modal-desc"></div>
-      <h3>✨ Преимущества</h3>
-      <div id="modalFeatures" class="modal-features"></div>
+      <h3>✨ Преимущества</h3>      <div id="modalFeatures" class="modal-features"></div>
       <h3>📐 Планировки</h3>
       <div id="modalFloorPlans" class="floor-plans"></div>
       <button id="modalConsultBtn" class="tg-btn">Заказать консультацию</button>
@@ -243,14 +236,14 @@
   <!-- Страница "Обо мне" -->
   <div id="page-about" class="page hidden">
     <div class="page-header">
-      <button class="page-back-btn" onclick="appBack()">← Назад</button>      <h2>Обо мне</h2>
+      <button class="page-back-btn" onclick="appBack()">← Назад</button>
+      <h2>Обо мне</h2>
     </div>
     <div class="page-content">
       <p>Привет! Я — брокер по недвижимости. Помогаю подбирать объекты с максимальной доходностью и юридической чистотой.</p>
       <h3>🔍 Как я работаю:</h3>
       <ul>
-        <li>Проверяю документы и историю застройщика.</li>
-        <li>Торгуюсь за скидку (часто до 5-10%).</li>
+        <li>Проверяю документы и историю застройщика.</li>        <li>Торгуюсь за скидку (часто до 5-10%).</li>
         <li>Помогаю с ипотекой и одобрением.</li>
       </ul>
     </div>
@@ -290,17 +283,16 @@
       <span>←</span>
       <span>Назад</span>
     </button>
-    <!-- iframe скрыт через CSS (display:none в .admin-frame), но src указан — браузер начнёт загрузку -->
     <iframe src="admin.html" id="adminIframe"></iframe>
   </div>
-<!-- 🔥 ОПТИМИЗАЦИЯ 3: defer для скриптов (не блокируют рендеринг) -->
+
+<!-- 🔥 ОПТИМИЗАЦИЯ 3: defer для скриптов -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-<script src="app.js?v=1.1.0" defer></script>
+<script src="app.js?v=1.0.1" defer></script>
 
 <!-- ПОКАЗ ПУНКТА АДМИНКИ ПОСЛЕ ЗАГРУЗКИ -->
-<script>
-  document.addEventListener('DOMContentLoaded', function() {
+<script>  document.addEventListener('DOMContentLoaded', function() {
     if (typeof window.isAdmin === 'undefined') {
       checkAdminAccess();
     }
@@ -310,16 +302,6 @@
       if (adminMenuItem) {
         adminMenuItem.style.display = 'block';
         console.log('✅ Пункт "Админ-панель" показан в меню');
-      }
-     
-      // 🔥 ОПТИМИЗАЦИЯ 4: Предзагрузка iframe в фоне
-      // iframe уже начал загружаться (src указан), но мы форсируем это явно
-      const iframe = document.getElementById('adminIframe');
-      if (iframe) {
-        console.log('🚀 Iframe админки предзагружается в фоне...');
-        iframe.onload = function() {
-          console.log('✅ Iframe админки готов к использованию');
-        };
       }
     }
   });
