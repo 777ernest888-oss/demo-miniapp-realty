@@ -586,7 +586,8 @@ async function updateProperty(id, form) {
     setTimeout(() => switchTab('properties'), 1000);
 }
 
-// Удаление объекта (с картинками!)async function deleteProperty(id) {
+// Удаление объекта (с картинками!)
+async function deleteProperty(id) {
     if (!confirm('Вы уверены, что хотите удалить этот объект? Все фото будут удалены из облака!')) return;
     try {
         const { data: property, error: fetchError } = await supabaseClient
