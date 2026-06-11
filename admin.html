@@ -417,7 +417,7 @@
                 document.body.innerHTML = `
                     <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                         <div style="background:white;border-radius:20px;padding:40px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.2);max-width:400px;">
-                            <div style="font-size:80px;margin-bottom:20px;"></div>
+                            <div style="font-size:80px;margin-bottom:20px;">❌</div>
                             <h1 style="color:#e74c3c;margin:0 0 15px 0;font-size:24px;">ДОСТУП ЗАПРЕЩЁН</h1>
                             <p style="color:#666;margin:0 0 25px 0;line-height:1.6;">У вас нет прав администратора для доступа к этой панели.</p>
                             <button onclick="Telegram.WebApp.close()" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);color:white;padding:15px 30px;border:none;border-radius:10px;font-size:16px;font-weight:600;cursor:pointer;">Закрыть</button>
@@ -432,7 +432,7 @@
        
         // Функция возврата назад в каталог
         function adminBack() {
-            window.location.href = 'https://777ernest888-oss.github.io/demo-miniapp-realty/';
+            window.location.href = 'https://777ernest888-oss.github.io/demo-miniapp-realty/?view=catalog';
         }
     </script>
 
@@ -450,7 +450,7 @@
         <button class="tab-btn active" onclick="switchTab('properties')">🏠 Объекты</button>
         <button class="tab-btn" onclick="switchTab('addProperty')">➕ Добавить объект</button>
         <button class="tab-btn" onclick="switchTab('leads')">📧 Заявки (<span id="leadsCount">0</span>)</button>
-        <button class="tab-btn" onclick="switchTab('agent')"> Данные агента</button>
+        <button class="tab-btn" onclick="switchTab('agent')">👤 Данные агента</button>
         <button class="tab-btn" onclick="switchTab('settings')">⚙️ Настройки</button>
     </div>
 
@@ -546,7 +546,7 @@
                 </div>
 
                 <div class="form-group">
-                    <label> Главное фото</label>
+                    <label>📷 Главное фото</label>
                     <input type="file" accept="image/*" onchange="handleFileSelect(this, 'mainImagePreview')">
                     <div id="mainImagePreview" class="image-preview"></div>
                 </div>
@@ -578,7 +578,7 @@
             <h2>📧 Заявки от клиентов</h2>
             <div class="leads-table-wrapper">
                 <div id="leadsList">
-                    <div style="text-align:center;padding:40px;color:#666;"> Загрузка...</div>
+                    <div style="text-align:center;padding:40px;color:#666;">⏳ Загрузка...</div>
                 </div>
             </div>
         </div>
@@ -634,7 +634,7 @@
     <!-- Вкладка: Настройки -->
     <div id="tab-settings" class="tab-content">
         <div class="card">
-            <h2>️ Настройки приложения</h2>
+            <h2>⚙️ Настройки приложения</h2>
             <form id="settingsForm">                <div class="form-group">
                     <label>Название компании</label>
                     <input type="text" name="company_name" placeholder="Название компании">
@@ -669,6 +669,6 @@
         </div>
     </div>
 
-    <script src="admin.js?v=1.0.2"></script>
+    <script src="admin.js?v=1.0.3"></script>
 </body>
 </html>
