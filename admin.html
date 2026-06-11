@@ -430,16 +430,17 @@
             console.log('✅ Admin authenticated:', user.id);
         })();
        
-        // Функция возврата назад в каталог
+        // Функция возврата назад — ПРОСТО ЗАКРЫВАЕМ WEBAPP
         function adminBack() {
-            window.location.href = 'https://777ernest888-oss.github.io/demo-miniapp-realty/?view=catalog';
+            const tg = window.Telegram.WebApp;
+            tg.close();
         }
     </script>
 
     <div class="admin-header">
         <button class="admin-back-btn" onclick="adminBack()">
-            <span>←</span>
-            <span>Назад</span>        </button>
+            <span>←</span>            <span>Назад</span>
+        </button>
         <div>
             <h1>🏢 Админ-панель</h1>
             <p>Управление каталогом новостроек</p>
@@ -487,8 +488,8 @@
                         <label>Ближайшее метро</label>
                         <input type="text" name="metro" placeholder="м. Невский проспект">
                     </div>
-                    <div class="form-group">
-                        <label>Адрес</label>                        <input type="text" name="address" placeholder="ул. Примерная, д. 1">
+                    <div class="form-group">                        <label>Адрес</label>
+                        <input type="text" name="address" placeholder="ул. Примерная, д. 1">
                     </div>
                 </div>
 
@@ -536,8 +537,8 @@
                     </div>
                 </div>
 
-                <div class="form-group">
-                    <label>Описание</label>                    <textarea name="description" placeholder="Подробное описание объекта..."></textarea>
+                <div class="form-group">                    <label>Описание</label>
+                    <textarea name="description" placeholder="Подробное описание объекта..."></textarea>
                 </div>
 
                 <div class="form-group">
@@ -585,8 +586,8 @@
     </div>
 
     <!-- Вкладка: Данные агента -->
-    <div id="tab-agent" class="tab-content">
-        <div class="card">            <h2>👤 Данные агента</h2>
+    <div id="tab-agent" class="tab-content">        <div class="card">
+            <h2>👤 Данные агента</h2>
             <form id="agentForm">
                 <div class="form-row">
                     <div class="form-group">
@@ -634,8 +635,8 @@
     <!-- Вкладка: Настройки -->
     <div id="tab-settings" class="tab-content">
         <div class="card">
-            <h2>⚙️ Настройки приложения</h2>
-            <form id="settingsForm">                <div class="form-group">
+            <h2>⚙️ Настройки приложения</h2>            <form id="settingsForm">
+                <div class="form-group">
                     <label>Название компании</label>
                     <input type="text" name="company_name" placeholder="Название компании">
                 </div>
@@ -669,6 +670,6 @@
         </div>
     </div>
 
-    <script src="admin.js?v=1.0.3"></script>
+    <script src="admin.js?v=1.0.4"></script>
 </body>
 </html>
