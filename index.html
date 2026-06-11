@@ -8,11 +8,56 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="styles.css">
  
-  <!-- ПРОВЕРКА АДМИНА И URL ПАРАМЕТРОВ -->
+  <style>
+    /* Стили для iframe-админки */
+    .admin-frame {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 9999;
+      background: white;
+      display: none;
+    }
+
+    .admin-frame.active {
+      display: block;
+    }
+
+    .admin-frame iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    .admin-close-btn {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      z-index: 10000;
+      background: rgba(61, 82, 102, 0.9);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);    }
+
+    .admin-close-btn:hover {
+      background: rgba(61, 82, 102, 1);
+    }
+  </style>
+
+  <!-- ПРОВЕРКА АДМИНА -->
   <script>
     const ADMIN_USER_ID = 2038206387;
    
-    // Проверка прав администратора
     function checkAdminAccess() {
       if (window.Telegram && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
@@ -32,46 +77,29 @@
       return false;
     }
    
-    // Открытие админ-панели с передачей данных пользователя
+    // Открытие админки через iframe
     function openAdminPanel() {
-      console.log('🔔 Попытка открыть админку...');
-      console.log('window.isAdmin:', window.isAdmin);
-     
       if (!window.isAdmin) {
         alert('⛔ Доступ запрещён!');
         return;
       }
      
-      // Получаем данные пользователя из Telegram
-      const tg = window.Telegram.WebApp;
-      const user = tg.initDataUnsafe?.user;
-     
-      console.log('User data:', user);
-            if (!user) {
-        alert('⛔ Не удалось получить данные пользователя');
-        return;
-      }
-     
-      // Закрываем меню
       closeMenu();
      
-      // Кодируем данные для передачи в URL
-      const userData = {
-        id: user.id,
-        name: user.first_name || 'User',
-        username: user.username || ''
-      };
-     
-      const jsonString = JSON.stringify(userData);
-      const encodedData = btoa(unescape(encodeURIComponent(jsonString)));
-     
-      console.log('Encoded user data:', encodedData);
-     
-      // Открываем админку с параметрами
-      const adminUrl = `https://rqiutnpawsmqvmzewamc.supabase.co/functions/v1/admin-panel?user=${encodedData}`;
-     
-      console.log('Redirect to:', adminUrl);
-      window.location.href = adminUrl;
+      // Показываем iframe с админкой
+      const adminFrame = document.getElementById('adminFrame');
+      if (adminFrame) {
+        adminFrame.classList.add('active');
+        console.log('✅ Админка открыта через iframe');
+      }
+    }
+   
+    // Закрытие админки
+    function closeAdminPanel() {
+      const adminFrame = document.getElementById('adminFrame');      if (adminFrame) {
+        adminFrame.classList.remove('active');
+        console.log('✅ Админка закрыта');
+      }
     }
    
     // Запускаем проверку при загрузке
@@ -80,33 +108,6 @@
     } else {
       checkAdminAccess();
     }
-   
-    // ПРОВЕРКА URL ПАРАМЕТРА ?view=catalog
-    window.addEventListener('DOMContentLoaded', function() {
-      const urlParams = new URLSearchParams(window.location.search);
-      const view = urlParams.get('view');
-     
-      // Если параметр view=catalog — сразу показываем каталог
-      if (view === 'catalog') {
-        console.log(' Прямой вход в каталог (минуя welcome)');
-       
-        // Скрываем welcome screen
-        const welcomeScreen = document.getElementById('welcomeScreen');
-        if (welcomeScreen) {
-          welcomeScreen.classList.add('hidden');
-        }
-       
-        // Показываем loading screen        const loadingScreen = document.getElementById('loadingScreen');
-        if (loadingScreen) {
-          loadingScreen.classList.remove('hidden');
-        }
-       
-        // Запускаем приложение
-        if (typeof startApp === 'function') {
-          startApp();
-        }
-      }
-    });
   </script>
 </head>
 <body>
@@ -144,8 +145,8 @@
         <h1 class="brand-title" id="headerTitle"></h1>
       </div>
     </header>
-   
-    <div class="filters-toggle">      <button class="filters-toggle-btn" onclick="toggleFilters()">🔽 Фильтры</button>
+        <div class="filters-toggle">
+      <button class="filters-toggle-btn" onclick="toggleFilters()">🔽 Фильтры</button>
     </div>
     <div id="filtersBlock" class="filters-block hidden">
       <div class="filter-group">
@@ -167,7 +168,7 @@
         <div id="metroCheckboxes" class="checkbox-group"></div>
       </div>
       <div class="filter-group">
-        <label>🚪 Комнаты</label>
+        <label> Комнаты</label>
         <div id="roomsCheckboxes" class="checkbox-group"></div>
       </div>
     </div>
@@ -193,8 +194,8 @@
       <div id="modalDescription" class="modal-desc"></div>
       <h3>✨ Преимущества</h3>
       <div id="modalFeatures" class="modal-features"></div>
-      <h3>📐 Планировки</h3>
-      <div id="modalFloorPlans" class="floor-plans"></div>      <button id="modalConsultBtn" class="tg-btn">Заказать консультацию</button>
+      <h3>📐 Планировки</h3>      <div id="modalFloorPlans" class="floor-plans"></div>
+      <button id="modalConsultBtn" class="tg-btn">Заказать консультацию</button>
     </div>
   </div>
 
@@ -220,12 +221,12 @@
     <button class="menu-close" onclick="closeMenu()">×</button>
     <nav class="menu-nav">
       <button onclick="showPage('home')">🏠 Каталог</button>
-      <button onclick="showPage('about')">👤 Обо мне</button>
+      <button onclick="showPage('about')"> Обо мне</button>
       <button onclick="showPage('contacts')">📞 Контакты</button>
      
-      <!-- ПУНКТ МЕНЮ ДЛЯ АДМИНА (скрыт по умолчанию) -->
+      <!-- ПУНКТ МЕНЮ ДЛЯ АДМИНА -->
       <button id="adminMenuItem" onclick="openAdminPanel()" style="display: none; border-top: 2px solid #ddd; margin-top: 15px; padding-top: 15px; color: #667eea; font-weight: 600;">
-        ⚙️ Админ-панель
+        ️ Админ-панель
       </button>
     </nav>
   </div>
@@ -242,8 +243,8 @@
       <ul>
         <li>Проверяю документы и историю застройщика.</li>
         <li>Торгуюсь за скидку (часто до 5-10%).</li>
-        <li>Помогаю с ипотекой и одобрением.</li>
-      </ul>    </div>
+        <li>Помогаю с ипотекой и одобрением.</li>      </ul>
+    </div>
   </div>
 
   <!-- Страница "Контакты" -->
@@ -274,6 +275,15 @@
     </div>
   </div>
 
+  <!-- IFRAME АДМИНКИ (скрыт по умолчанию) -->
+  <div id="adminFrame" class="admin-frame">
+    <button class="admin-close-btn" onclick="closeAdminPanel()">
+      <span>←</span>
+      <span>Назад</span>
+    </button>
+    <iframe src="admin.html" id="adminIframe"></iframe>
+  </div>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="app.js?v=1.0.0"></script>
@@ -281,10 +291,8 @@
 <!-- ПОКАЗ ПУНКТА АДМИНКИ ПОСЛЕ ЗАГРУЗКИ -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    // Проверяем ещё раз на всякий случай
     if (typeof window.isAdmin === 'undefined') {
-      checkAdminAccess();
-    }
+      checkAdminAccess();    }
    
     if (window.isAdmin) {
       const adminMenuItem = document.getElementById('adminMenuItem');
@@ -292,7 +300,8 @@
         adminMenuItem.style.display = 'block';
         console.log('✅ Пункт "Админ-панель" показан в меню');
       }
-    }  });
+    }
+  });
 </script>
 </body>
 </html>
