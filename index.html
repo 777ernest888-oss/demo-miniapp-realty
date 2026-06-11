@@ -146,7 +146,7 @@
       </div>
     </header>
         <div class="filters-toggle">
-      <button class="filters-toggle-btn" onclick="toggleFilters()">🔽 Фильтры</button>
+      <button class="filters-toggle-btn" onclick="toggleFilters()"> Фильтры</button>
     </div>
     <div id="filtersBlock" class="filters-block hidden">
       <div class="filter-group">
@@ -164,11 +164,11 @@
         <div id="districtCheckboxes" class="checkbox-group"></div>
       </div>
       <div class="filter-group">
-        <label>🚇 Метро</label>
+        <label> Метро</label>
         <div id="metroCheckboxes" class="checkbox-group"></div>
       </div>
       <div class="filter-group">
-        <label> Комнаты</label>
+        <label>🚪 Комнаты</label>
         <div id="roomsCheckboxes" class="checkbox-group"></div>
       </div>
     </div>
@@ -190,7 +190,7 @@
       <h2 id="modalTitle"></h2>
       <div id="modalPrice" class="modal-price"></div>
       <div id="modalMeta" class="modal-meta"></div>
-      <h3>📖 Описание</h3>
+      <h3> Описание</h3>
       <div id="modalDescription" class="modal-desc"></div>
       <h3>✨ Преимущества</h3>
       <div id="modalFeatures" class="modal-features"></div>
@@ -220,13 +220,13 @@
   <div id="sideMenu" class="side-menu hidden">
     <button class="menu-close" onclick="closeMenu()">×</button>
     <nav class="menu-nav">
-      <button onclick="showPage('home')">🏠 Каталог</button>
-      <button onclick="showPage('about')"> Обо мне</button>
+      <button onclick="showPage('home')"> Каталог</button>
+      <button onclick="showPage('about')">👤 Обо мне</button>
       <button onclick="showPage('contacts')">📞 Контакты</button>
      
       <!-- ПУНКТ МЕНЮ ДЛЯ АДМИНА -->
       <button id="adminMenuItem" onclick="openAdminPanel()" style="display: none; border-top: 2px solid #ddd; margin-top: 15px; padding-top: 15px; color: #667eea; font-weight: 600;">
-        ️ Админ-панель
+        ⚙️ Админ-панель
       </button>
     </nav>
   </div>
@@ -239,7 +239,7 @@
     </div>
     <div class="page-content">
       <p>Привет! Я — брокер по недвижимости. Помогаю подбирать объекты с максимальной доходностью и юридической чистотой.</p>
-      <h3>🔍 Как я работаю:</h3>
+      <h3> Как я работаю:</h3>
       <ul>
         <li>Проверяю документы и историю застройщика.</li>
         <li>Торгуюсь за скидку (часто до 5-10%).</li>
@@ -270,35 +270,49 @@
     
       <div class="contact-actions">
         <button class="btn-tg" onclick="openDirectChat()">✈️ Написать в Telegram</button>
-        <button class="btn-phone" onclick="callAgent()">📞 Позвонить</button>
+        <button class="btn-phone" onclick="callAgent()"> Позвонить</button>
       </div>
     </div>
   </div>
 
-  <!-- IFRAME АДМИНКИ (скрыт по умолчанию) -->
+  <!-- IFRAME АДМИНКИ (предзагружается сразу для админа) -->
   <div id="adminFrame" class="admin-frame">
     <button class="admin-close-btn" onclick="closeAdminPanel()">
       <span>←</span>
       <span>Назад</span>
     </button>
-    <iframe src="admin.html" id="adminIframe"></iframe>
+    <iframe src="admin.html" id="adminIframe" style="display: none;"></iframe>
   </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="app.js?v=1.0.0"></script>
 
-<!-- ПОКАЗ ПУНКТА АДМИНКИ ПОСЛЕ ЗАГРУЗКИ -->
+<!-- ПОКАЗ ПУНКТА АДМИНКИ И ПРЕДЗАГРУЗКА IFRAME -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     if (typeof window.isAdmin === 'undefined') {
       checkAdminAccess();    }
    
     if (window.isAdmin) {
+      // Показываем пункт меню
       const adminMenuItem = document.getElementById('adminMenuItem');
       if (adminMenuItem) {
         adminMenuItem.style.display = 'block';
         console.log('✅ Пункт "Админ-панель" показан в меню');
+      }
+     
+      // ПРЕДЗАГРУЗКА IFRAME — загружаем сразу, но скрыто
+      const iframe = document.getElementById('adminIframe');
+      if (iframe) {
+        iframe.style.display = 'block';
+        console.log(' Iframe админки предзагружается в фоне...');
+       
+        // Когда iframe загрузится — скрываем его (но он остаётся в DOM)
+        iframe.onload = function() {
+          iframe.style.display = 'none';
+          console.log('✅ Iframe админки готов к использованию');
+        };
       }
     }
   });
