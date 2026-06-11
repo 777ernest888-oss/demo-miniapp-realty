@@ -22,12 +22,10 @@ document.addEventListener('DOMContentLoaded', async function() {
         supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
     }
 
-    // Грузим только объекты, агента и настройки (leads — по требованию)
-    await Promise.all([
-        loadProperties(),
-        loadAgentData(),
-        loadSettings()
-    ]);
+    // Грузим только объекты (без leads!) — ОПТИМИЗИРОВАНО
+    await loadProperties();
+    await loadAgentData();
+    await loadSettings();
 });
 
 // Переключение вкладок
@@ -38,7 +36,7 @@ function switchTab(tabName) {
     document.getElementById(`tab-${tabName}`).classList.add('active');
 
     if (tabName === 'properties') loadProperties();
-    if (tabName === 'leads') loadLeads();
+    if (tabName === 'leads') loadLeads(); // Грузим ТОЛЬКО когда открываем вкладку
 }
 
 // Показ уведомления
@@ -47,9 +45,9 @@ function showAlert(message, type = 'success') {
     const alert = document.createElement('div');
     alert.className = `alert alert-${type}`;
     alert.textContent = message;
-    container.appendChild(alert);    setTimeout(() => alert.remove(), 3000);
+    container.appendChild(alert);
+    setTimeout(() => alert.remove(), 3000);
 }
-
 // Форматирование цены
 function formatPrice(price) {
     if (!price) return '0';
@@ -97,8 +95,8 @@ async function deleteFromYandex(paths) {
     });
 
     const result = await response.json();
-    if (!result.success) {
-        throw new Error(result.error || 'Failed to delete');
+
+    if (!result.success) {        throw new Error(result.error || 'Failed to delete');
     }
 }
 
@@ -145,9 +143,9 @@ async function deleteSingleImage(url, type, index) {
             .update(updateData)
             .eq('id', currentEditData.id);
       
-        if (error) throw error;      
-        showAlert('✅ Фото удалено!');
-        await editProperty(currentEditData.id);
+        if (error) throw error;
+      
+        showAlert('✅ Фото удалено!');        await editProperty(currentEditData.id);
       
     } catch (error) {
         showAlert('❌ Ошибка: ' + error.message, 'error');
@@ -188,19 +186,21 @@ async function togglePropertyStatus(id, currentStatus) {
     }
 }
 
-// ========== ОБЪЕКТЫ ==========
+// ========== ОБЪЕКТЫ (ОПТИМИЗИРОВАНО) ==========
 async function loadProperties() {
     const container = document.getElementById('propertiesList');
     container.innerHTML = '<div style="text-align:center;padding:40px;color:#666;">⏳ Загрузка...</div>';
    
     if (!supabaseClient) {
-        container.innerHTML = '<div class="alert alert-error">Supabase не подключён</div>';        return;
+        container.innerHTML = '<div class="alert alert-error">Supabase не подключён</div>';
+        return;
     }
-
+    // ОПТИМИЗАЦИЯ: загружаем ТОЛЬКО необходимые поля
     const { data, error } = await supabaseClient
         .from('properties')
         .select('id, name, district, metro, price_from, active')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(50); // Ограничиваем количество
 
     if (error) {
         container.innerHTML = `<div class="alert alert-error">Ошибка: ${error.message}</div>`;
@@ -619,7 +619,7 @@ document.getElementById('settingsForm')?.addEventListener('submit', async functi
     }
 });
 
-// ========== ЗАЯВКИ ==========
+// ========== ЗАЯВКИ (грузится только при открытии вкладки) ==========
 async function loadLeads() {
     const container = document.getElementById('leadsList');
     container.innerHTML = '<div style="text-align:center;padding:40px;color:#666;">⏳ Загрузка...</div>';
