@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>КАТАЛОГ НОВОСТРОЕК</title>
  
-  <!-- 🔥 ОПТИМИЗАЦИЯ 1: Preconnect к внешним ресурсам -->
+  <!-- Preconnect к внешним ресурсам для ускорения -->
   <link rel="preconnect" href="https://rqiutnpawsmqvmzewamc.supabase.co" crossorigin>
   <link rel="preconnect" href="https://storage.yandexcloud.net" crossorigin>
   <link rel="preconnect" href="https://unpkg.com" crossorigin>
@@ -16,6 +16,7 @@
   <link rel="stylesheet" href="styles.css">
 
   <style>
+    /* Стили для iframe-админки */
     .admin-frame {
       position: fixed;
       top: 0;
@@ -46,8 +47,8 @@
       color: white;
       border: none;
       padding: 10px 20px;
-      border-radius: 8px;
-      cursor: pointer;      font-size: 14px;
+      border-radius: 8px;      cursor: pointer;
+      font-size: 14px;
       display: flex;
       align-items: center;
       gap: 5px;
@@ -83,6 +84,7 @@
       return false;
     }
   
+    // Открытие админки через iframe
     function openAdminPanel() {
       if (!window.isAdmin) {
         alert('⛔ Доступ запрещён!');
@@ -91,12 +93,14 @@
     
       closeMenu();
     
+      // Показываем iframe с админкой
       const adminFrame = document.getElementById('adminFrame');
       if (adminFrame) {
-        adminFrame.classList.add('active');
-        console.log('✅ Админка открыта через iframe');
+        adminFrame.classList.add('active');        console.log('✅ Админка открыта через iframe');
       }
-    }  
+    }
+  
+    // Закрытие админки
     function closeAdminPanel() {
       const adminFrame = document.getElementById('adminFrame');
       if (adminFrame) {
@@ -105,6 +109,7 @@
       }
     }
   
+    // Запускаем проверку при загрузке
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', checkAdminAccess);
     } else {
@@ -140,12 +145,12 @@
       <button class="menu-btn" onclick="openMenu()">☰</button>
       <button id="headerBackBtn" class="header-back-btn hidden" onclick="appBack()">
         <span class="back-arrow">←</span>
-        <span>Назад</span>
-      </button>
+        <span>Назад</span>      </button>
       <div class="header-brand">
         <img src="logo.png" alt="Logo" class="brand-logo">
         <h1 class="brand-title" id="headerTitle"></h1>
-      </div>    </header>
+      </div>
+    </header>
    
     <div class="filters-toggle">
       <button class="filters-toggle-btn" onclick="toggleFilters()">🔽 Фильтры</button>
@@ -177,7 +182,7 @@
   
     <div class="view-toggle">
       <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>
-      <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺️ Карта</button>
+      <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">️ Карта</button>
     </div>
   
     <div id="listingsContainer" class="listings"></div>
@@ -189,13 +194,13 @@
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal()">×</button>
       <div id="modalGallery" class="modal-gallery"></div>
-      <h2 id="modalTitle"></h2>
-      <div id="modalPrice" class="modal-price"></div>
+      <h2 id="modalTitle"></h2>      <div id="modalPrice" class="modal-price"></div>
       <div id="modalMeta" class="modal-meta"></div>
       <h3>📖 Описание</h3>
       <div id="modalDescription" class="modal-desc"></div>
-      <h3>✨ Преимущества</h3>      <div id="modalFeatures" class="modal-features"></div>
-      <h3>📐 Планировки</h3>
+      <h3>✨ Преимущества</h3>
+      <div id="modalFeatures" class="modal-features"></div>
+      <h3> Планировки</h3>
       <div id="modalFloorPlans" class="floor-plans"></div>
       <button id="modalConsultBtn" class="tg-btn">Заказать консультацию</button>
     </div>
@@ -238,12 +243,12 @@
     <div class="page-header">
       <button class="page-back-btn" onclick="appBack()">← Назад</button>
       <h2>Обо мне</h2>
-    </div>
-    <div class="page-content">
+    </div>    <div class="page-content">
       <p>Привет! Я — брокер по недвижимости. Помогаю подбирать объекты с максимальной доходностью и юридической чистотой.</p>
-      <h3>🔍 Как я работаю:</h3>
+      <h3> Как я работаю:</h3>
       <ul>
-        <li>Проверяю документы и историю застройщика.</li>        <li>Торгуюсь за скидку (часто до 5-10%).</li>
+        <li>Проверяю документы и историю застройщика.</li>
+        <li>Торгуюсь за скидку (часто до 5-10%).</li>
         <li>Помогаю с ипотекой и одобрением.</li>
       </ul>
     </div>
@@ -272,12 +277,12 @@
    
       <div class="contact-actions">
         <button class="btn-tg" onclick="openDirectChat()">✈️ Написать в Telegram</button>
-        <button class="btn-phone" onclick="callAgent()">📞 Позвонить</button>
+        <button class="btn-phone" onclick="callAgent()"> Позвонить</button>
       </div>
     </div>
   </div>
 
-  <!-- 🔥 ОПТИМИЗАЦИЯ 2: IFRAME АДМИНКИ С ПРЕДЗАГРУЗКОЙ -->
+  <!-- IFRAME АДМИНКИ (скрыт по умолчанию) -->
   <div id="adminFrame" class="admin-frame">
     <button class="admin-close-btn" onclick="closeAdminPanel()">
       <span>←</span>
@@ -286,13 +291,13 @@
     <iframe src="admin.html" id="adminIframe"></iframe>
   </div>
 
-<!-- 🔥 ОПТИМИЗАЦИЯ 3: defer для скриптов -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" defer></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-<script src="app.js?v=1.0.1" defer></script>
+<!-- ПОДКЛЮЧЕНИЕ СКРИПТОВ (БЕЗ defer!) -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js?v=1.0.2"></script>
 
 <!-- ПОКАЗ ПУНКТА АДМИНКИ ПОСЛЕ ЗАГРУЗКИ -->
-<script>  document.addEventListener('DOMContentLoaded', function() {
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
     if (typeof window.isAdmin === 'undefined') {
       checkAdminAccess();
     }
