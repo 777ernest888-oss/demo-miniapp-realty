@@ -4,19 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>КАТАЛОГ НОВОСТРОЕК</title>
- 
-  <!-- Preconnect к внешним ресурсам для ускорения -->
-  <link rel="preconnect" href="https://rqiutnpawsmqvmzewamc.supabase.co" crossorigin>
-  <link rel="preconnect" href="https://storage.yandexcloud.net" crossorigin>
-  <link rel="preconnect" href="https://unpkg.com" crossorigin>
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
- 
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="styles.css">
 
   <style>
-    /* Стили для iframe-админки */
     .admin-frame {
       position: fixed;
       top: 0;
@@ -47,7 +39,8 @@
       color: white;
       border: none;
       padding: 10px 20px;
-      border-radius: 8px;      cursor: pointer;
+      border-radius: 8px;
+      cursor: pointer;
       font-size: 14px;
       display: flex;
       align-items: center;
@@ -55,71 +48,61 @@
       backdrop-filter: blur(10px);
       box-shadow: 0 2px 10px rgba(0,0,0,0.2);
     }
-
     .admin-close-btn:hover {
       background: rgba(61, 82, 102, 1);
     }
   </style>
 
-  <!-- ПРОВЕРКА АДМИНА -->
   <script>
     const ADMIN_USER_ID = 2038206387;
+    let adminLoaded = false;
   
     function checkAdminAccess() {
       if (window.Telegram && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-      
         const user = tg.initDataUnsafe?.user;
-      
         if (user && user.id === ADMIN_USER_ID) {
           window.isAdmin = true;
-          console.log('✅ Админ обнаружен:', user.id);
           return true;
         }
       }
       window.isAdmin = false;
-      console.log('❌ Обычный пользователь');
       return false;
     }
   
-    // Открытие админки через iframe
     function openAdminPanel() {
       if (!window.isAdmin) {
-        alert('⛔ Доступ запрещён!');
+        alert(' Доступ запрещён!');
         return;
       }
-    
       closeMenu();
-    
-      // Показываем iframe с админкой
       const adminFrame = document.getElementById('adminFrame');
       if (adminFrame) {
-        adminFrame.classList.add('active');        console.log('✅ Админка открыта через iframe');
+        adminFrame.classList.add('active');
+        // 🔥 Загружаем iframe ТОЛЬКО при клике (не заранее!)
+        const iframe = document.getElementById('adminIframe');
+        if (!adminLoaded && iframe) {
+          iframe.src = 'admin.html';
+          adminLoaded = true;
+        }
       }
     }
   
-    // Закрытие админки
     function closeAdminPanel() {
       const adminFrame = document.getElementById('adminFrame');
       if (adminFrame) {
         adminFrame.classList.remove('active');
-        console.log('✅ Админка закрыта');
       }
     }
   
-    // Запускаем проверку при загрузке
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', checkAdminAccess);
-    } else {
+      document.addEventListener('DOMContentLoaded', checkAdminAccess);    } else {
       checkAdminAccess();
     }
   </script>
 </head>
 <body>
 
-  <!-- Экран приветствия -->
   <div id="welcomeScreen" class="screen welcome">
     <div id="welcomeBrand" class="welcome-brand">
       <img src="logo.png" alt="Logo" class="brand-logo">
@@ -133,19 +116,18 @@
     </div>
   </div>
 
-  <!-- Индикатор загрузки -->
   <div id="loadingScreen" class="screen loading hidden">
     <div class="loading-spinner"></div>
     <p class="loading-text">Загружаем объекты...</p>
   </div>
 
-  <!-- Основной контент -->
   <div id="mainContent" class="screen hidden">
     <header id="headerBrand" class="header">
       <button class="menu-btn" onclick="openMenu()">☰</button>
       <button id="headerBackBtn" class="header-back-btn hidden" onclick="appBack()">
         <span class="back-arrow">←</span>
-        <span>Назад</span>      </button>
+        <span>Назад</span>
+      </button>
       <div class="header-brand">
         <img src="logo.png" alt="Logo" class="brand-logo">
         <h1 class="brand-title" id="headerTitle"></h1>
@@ -163,8 +145,7 @@
           <button class="price-btn" data-price="10000000">До 10 млн</button>
           <button class="price-btn" data-price="20000000">До 20 млн</button>
           <button class="price-btn" data-price="50000000">До 50 млн</button>
-          <button class="price-btn" data-price="100000000">До 100 млн</button>
-        </div>
+          <button class="price-btn" data-price="100000000">До 100 млн</button>        </div>
       </div>
       <div class="filter-group">
         <label>📍 Районы</label>
@@ -175,38 +156,37 @@
         <div id="metroCheckboxes" class="checkbox-group"></div>
       </div>
       <div class="filter-group">
-        <label>🚪 Комнаты</label>
+        <label> Комнаты</label>
         <div id="roomsCheckboxes" class="checkbox-group"></div>
       </div>
     </div>
   
     <div class="view-toggle">
       <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>
-      <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">️ Карта</button>
+      <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺️ Карта</button>
     </div>
   
     <div id="listingsContainer" class="listings"></div>
     <div id="mapContainer" class="map-container hidden"></div>
   </div>
 
-  <!-- Модальное окно деталей -->
   <div id="detailsModal" class="modal hidden">
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal()">×</button>
       <div id="modalGallery" class="modal-gallery"></div>
-      <h2 id="modalTitle"></h2>      <div id="modalPrice" class="modal-price"></div>
+      <h2 id="modalTitle"></h2>
+      <div id="modalPrice" class="modal-price"></div>
       <div id="modalMeta" class="modal-meta"></div>
       <h3>📖 Описание</h3>
       <div id="modalDescription" class="modal-desc"></div>
       <h3>✨ Преимущества</h3>
       <div id="modalFeatures" class="modal-features"></div>
-      <h3> Планировки</h3>
+      <h3>📐 Планировки</h3>
       <div id="modalFloorPlans" class="floor-plans"></div>
       <button id="modalConsultBtn" class="tg-btn">Заказать консультацию</button>
     </div>
   </div>
 
-  <!-- Модальное окно консультации -->
   <div id="consultModal" class="modal form-modal hidden">
     <div class="modal-content">
       <button class="modal-close" onclick="closeConsultModal()">×</button>
@@ -214,15 +194,13 @@
       <p id="consultObjectName" class="form-object"></p>
       <p class="form-hint">Оставьте контакты — мы перезвоним и ответим на все вопросы по объекту</p>
       <form id="consultForm" onsubmit="submitConsultForm(event)">
-        <input id="consultName" type="text" placeholder="Ваше имя" required>
-        <input id="consultPhone" type="tel" placeholder="+7 (___) ___-__-__" required>
+        <input id="consultName" type="text" placeholder="Ваше имя" required>        <input id="consultPhone" type="tel" placeholder="+7 (___) ___-__-__" required>
         <input id="consultTelegram" type="text" placeholder="Telegram (необязательно)">
         <button type="submit" class="tg-btn">Отправить заявку</button>
       </form>
     </div>
   </div>
 
-  <!-- Меню -->
   <div id="menuOverlay" class="menu-overlay hidden" onclick="closeMenu()"></div>
   <div id="sideMenu" class="side-menu hidden">
     <button class="menu-close" onclick="closeMenu()">×</button>
@@ -230,22 +208,20 @@
       <button onclick="showPage('home')">🏠 Каталог</button>
       <button onclick="showPage('about')">👤 Обо мне</button>
       <button onclick="showPage('contacts')">📞 Контакты</button>
-    
-      <!-- ПУНКТ МЕНЮ ДЛЯ АДМИНА -->
       <button id="adminMenuItem" onclick="openAdminPanel()" style="display: none; border-top: 2px solid #ddd; margin-top: 15px; padding-top: 15px; color: #667eea; font-weight: 600;">
         ⚙️ Админ-панель
       </button>
     </nav>
   </div>
 
-  <!-- Страница "Обо мне" -->
   <div id="page-about" class="page hidden">
     <div class="page-header">
       <button class="page-back-btn" onclick="appBack()">← Назад</button>
       <h2>Обо мне</h2>
-    </div>    <div class="page-content">
+    </div>
+    <div class="page-content">
       <p>Привет! Я — брокер по недвижимости. Помогаю подбирать объекты с максимальной доходностью и юридической чистотой.</p>
-      <h3> Как я работаю:</h3>
+      <h3>🔍 Как я работаю:</h3>
       <ul>
         <li>Проверяю документы и историю застройщика.</li>
         <li>Торгуюсь за скидку (часто до 5-10%).</li>
@@ -254,7 +230,6 @@
     </div>
   </div>
 
-  <!-- Страница "Контакты" -->
   <div id="page-contacts" class="page hidden">
     <div class="page-header">
       <button class="page-back-btn" onclick="appBack()">← Назад</button>
@@ -268,45 +243,40 @@
           <p id="agentRole">Эксперт по недвижимости</p>
         </div>
       </div>
-   
-      <div id="agencyBlock" class="agency-block">
-        <h4>🏢 Агентство</h4>
+      <div id="agencyBlock" class="agency-block">        <h4>🏢 Агентство</h4>
         <p id="agencyName">Название АН</p>
         <p id="agencyAddress" class="address-text">📍 Адрес офиса</p>
       </div>
-   
       <div class="contact-actions">
         <button class="btn-tg" onclick="openDirectChat()">✈️ Написать в Telegram</button>
-        <button class="btn-phone" onclick="callAgent()"> Позвонить</button>
+        <button class="btn-phone" onclick="callAgent()">📞 Позвонить</button>
       </div>
     </div>
   </div>
 
-  <!-- IFRAME АДМИНКИ (скрыт по умолчанию) -->
+  <!--  IFRAME БЕЗ src — загружается только при клике на "Админ-панель" -->
   <div id="adminFrame" class="admin-frame">
     <button class="admin-close-btn" onclick="closeAdminPanel()">
       <span>←</span>
       <span>Назад</span>
     </button>
-    <iframe src="admin.html" id="adminIframe"></iframe>
+    <iframe id="adminIframe"></iframe>
   </div>
 
-<!-- ПОДКЛЮЧЕНИЕ СКРИПТОВ (БЕЗ defer!) -->
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=1.0.2"></script>
+<!-- СКРИПТЫ БЕЗ defer -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="app.js?v=1.0.3"></script>
 
-<!-- ПОКАЗ ПУНКТА АДМИНКИ ПОСЛЕ ЗАГРУЗКИ -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     if (typeof window.isAdmin === 'undefined') {
       checkAdminAccess();
     }
-  
     if (window.isAdmin) {
       const adminMenuItem = document.getElementById('adminMenuItem');
       if (adminMenuItem) {
         adminMenuItem.style.display = 'block';
-        console.log('✅ Пункт "Админ-панель" показан в меню');
       }
     }
   });
