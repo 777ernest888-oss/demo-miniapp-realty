@@ -53,56 +53,6 @@
       background: rgba(61, 82, 102, 1);
     }
   </style>
-
-  <!-- ПРОВЕРКА АДМИНА (НЕ БЛОКИРУЮЩАЯ) -->
-  <script>
-    const ADMIN_USER_ID = 2038206387;
-    window.isAdmin = false;
-   
-    // Проверяем админа, но НЕ блокируем загрузку приложения
-    function checkAdminAccess() {
-      try {
-        if (window.Telegram && window.Telegram.WebApp) {
-          const tg = window.Telegram.WebApp;
-          const user = tg.initDataUnsafe?.user;
-         
-          if (user && user.id === ADMIN_USER_ID) {
-            window.isAdmin = true;
-            console.log('✅ Админ обнаружен:', user.id);
-          }
-        }
-      } catch (e) {
-        console.warn('Ошибка проверки админа:', e);
-      }
-    }
-   
-    // Открытие админки через iframe
-    function openAdminPanel() {
-      if (!window.isAdmin) {
-        alert('⛔ Доступ запрещён!');
-        return;
-      }
-     
-      closeMenu();
-     
-      const adminFrame = document.getElementById('adminFrame');
-      if (adminFrame) {
-        adminFrame.classList.add('active');
-        console.log('✅ Админка открыта через iframe');
-      }
-    }
-   
-    // Закрытие админки
-    function closeAdminPanel() {
-      const adminFrame = document.getElementById('adminFrame');
-      if (adminFrame) {
-        adminFrame.classList.remove('active');        console.log('✅ Админка закрыта');
-      }
-    }
-   
-    // Запускаем проверку
-    checkAdminAccess();
-  </script>
 </head>
 <body>
 
@@ -145,8 +95,8 @@
     </div>
     <div id="filtersBlock" class="filters-block hidden">
       <div class="filter-group">
-        <label>💰 Цена до (млн ₽)</label>        <div class="price-buttons">
-          <button class="price-btn" data-price="5000000">До 5 млн</button>
+        <label>💰 Цена до (млн ₽)</label>
+        <div class="price-buttons">          <button class="price-btn" data-price="5000000">До 5 млн</button>
           <button class="price-btn" data-price="10000000">До 10 млн</button>
           <button class="price-btn" data-price="20000000">До 20 млн</button>
           <button class="price-btn" data-price="50000000">До 50 млн</button>
@@ -169,7 +119,7 @@
    
     <div class="view-toggle">
       <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>
-      <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺️ Карта</button>
+      <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">️ Карта</button>
     </div>
    
     <div id="listingsContainer" class="listings"></div>
@@ -184,18 +134,18 @@
       <h2 id="modalTitle"></h2>
       <div id="modalPrice" class="modal-price"></div>
       <div id="modalMeta" class="modal-meta"></div>
-      <h3>📖 Описание</h3>
+      <h3> Описание</h3>
       <div id="modalDescription" class="modal-desc"></div>
       <h3>✨ Преимущества</h3>
       <div id="modalFeatures" class="modal-features"></div>
-      <h3>📐 Планировки</h3>
+      <h3> Планировки</h3>
       <div id="modalFloorPlans" class="floor-plans"></div>
       <button id="modalConsultBtn" class="tg-btn">Заказать консультацию</button>
     </div>
   </div>
 
-  <!-- Модальное окно консультации -->  <div id="consultModal" class="modal form-modal hidden">
-    <div class="modal-content">
+  <!-- Модальное окно консультации -->
+  <div id="consultModal" class="modal form-modal hidden">    <div class="modal-content">
       <button class="modal-close" onclick="closeConsultModal()">×</button>
       <h3>Заказать консультацию</h3>
       <p id="consultObjectName" class="form-object"></p>
@@ -214,7 +164,7 @@
   <div id="sideMenu" class="side-menu hidden">
     <button class="menu-close" onclick="closeMenu()">×</button>
     <nav class="menu-nav">
-      <button onclick="showPage('home')">🏠 Каталог</button>
+      <button onclick="showPage('home')"> Каталог</button>
       <button onclick="showPage('about')">👤 Обо мне</button>
       <button onclick="showPage('contacts')">📞 Контакты</button>
      
@@ -233,7 +183,7 @@
     </div>
     <div class="page-content">
       <p>Привет! Я — брокер по недвижимости. Помогаю подбирать объекты с максимальной доходностью и юридической чистотой.</p>
-      <h3>🔍 Как я работаю:</h3>
+      <h3> Как я работаю:</h3>
       <ul>
         <li>Проверяю документы и историю застройщика.</li>
         <li>Торгуюсь за скидку (часто до 5-10%).</li>
@@ -243,8 +193,8 @@
   </div>
 
   <!-- Страница "Контакты" -->
-  <div id="page-contacts" class="page hidden">    <div class="page-header">
-      <button class="page-back-btn" onclick="appBack()">← Назад</button>
+  <div id="page-contacts" class="page hidden">
+    <div class="page-header">      <button class="page-back-btn" onclick="appBack()">← Назад</button>
       <h2>Контакты</h2>
     </div>
     <div class="page-content">
@@ -264,12 +214,12 @@
     
       <div class="contact-actions">
         <button class="btn-tg" onclick="openDirectChat()">✈️ Написать в Telegram</button>
-        <button class="btn-phone" onclick="callAgent()">📞 Позвонить</button>
+        <button class="btn-phone" onclick="callAgent()"> Позвонить</button>
       </div>
     </div>
   </div>
 
-  <!-- IFRAME АДМИНКИ (предзагружается сразу для админа) -->
+  <!-- IFRAME АДМИНКИ -->
   <div id="adminFrame" class="admin-frame">
     <button class="admin-close-btn" onclick="closeAdminPanel()">
       <span>←</span>
@@ -280,30 +230,63 @@
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=1.0.1"></script>
+<script src="app.js?v=1.0.2"></script>
 
-<!-- ПОКАЗ ПУНКТА АДМИНКИ И ПРЕДЗАГРУЗКА IFRAME (НЕ БЛОКИРУЯ) -->
+<!-- ПРОВЕРКА АДМИНА И УПРАВЛЕНИЕ IFRAME (ПОСЛЕ ЗАГРУЗКИ APP.JS) -->
 <script>
-  // Ждём полной загрузки страницы
-  window.addEventListener('load', function() {
-    // Показываем пункт меню админу
-    if (window.isAdmin) {
-      const adminMenuItem = document.getElementById('adminMenuItem');
-      if (adminMenuItem) {
-        adminMenuItem.style.display = 'block';
-        console.log('✅ Пункт "Админ-панель" показан в меню');
-      }     
-      // Предзагружаем iframe с задержкой (чтобы не мешать основной загрузке)
-      setTimeout(function() {
-        const iframe = document.getElementById('adminIframe');
-        if (iframe) {
-          console.log('🔄 Iframe админки предзагружается в фоне...');
-          iframe.onload = function() {
-            console.log('✅ Iframe админки готов');
-          };
+  const ADMIN_USER_ID = 2038206387;
+  window.isAdmin = false;
+ 
+  // Проверяем админа ПОСЛЕ загрузки приложения
+  function checkAdminAccess() {
+    try {
+      if (window.Telegram && window.Telegram.WebApp) {
+        const tg = window.Telegram.WebApp;
+        const user = tg.initDataUnsafe?.user;
+                if (user && user.id === ADMIN_USER_ID) {
+          window.isAdmin = true;
+          console.log('✅ Админ обнаружен:', user.id);
+         
+          // Показываем пункт меню
+          const adminMenuItem = document.getElementById('adminMenuItem');
+          if (adminMenuItem) {
+            adminMenuItem.style.display = 'block';
+          }
         }
-      }, 2000);
+      }
+    } catch (e) {
+      console.warn('Ошибка проверки админа:', e);
     }
+  }
+ 
+  // Открытие админки через iframe
+  function openAdminPanel() {
+    if (!window.isAdmin) {
+      alert('⛔ Доступ запрещён!');
+      return;
+    }
+   
+    closeMenu();
+   
+    const adminFrame = document.getElementById('adminFrame');
+    if (adminFrame) {
+      adminFrame.classList.add('active');
+      console.log('✅ Админка открыта через iframe');
+    }
+  }
+ 
+  // Закрытие админки
+  function closeAdminPanel() {
+    const adminFrame = document.getElementById('adminFrame');
+    if (adminFrame) {
+      adminFrame.classList.remove('active');
+      console.log('✅ Админка закрыта');
+    }
+  }
+ 
+  // Запускаем проверку после полной загрузки
+  window.addEventListener('load', function() {
+    setTimeout(checkAdminAccess, 1000);
   });
 </script>
 </body>
