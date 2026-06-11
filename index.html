@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="styles.css">
  
-  <!-- ПРОВЕРКА АДМИНА -->
+  <!-- ПРОВЕРКА АДМИНА И URL ПАРАМЕТРОВ -->
   <script>
     const ADMIN_USER_ID = 2038206387;
    
@@ -80,6 +80,33 @@
     } else {
       checkAdminAccess();
     }
+   
+    // ПРОВЕРКА URL ПАРАМЕТРА ?view=catalog
+    window.addEventListener('DOMContentLoaded', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const view = urlParams.get('view');
+     
+      // Если параметр view=catalog — сразу показываем каталог
+      if (view === 'catalog') {
+        console.log(' Прямой вход в каталог (минуя welcome)');
+       
+        // Скрываем welcome screen
+        const welcomeScreen = document.getElementById('welcomeScreen');
+        if (welcomeScreen) {
+          welcomeScreen.classList.add('hidden');
+        }
+       
+        // Показываем loading screen        const loadingScreen = document.getElementById('loadingScreen');
+        if (loadingScreen) {
+          loadingScreen.classList.remove('hidden');
+        }
+       
+        // Запускаем приложение
+        if (typeof startApp === 'function') {
+          startApp();
+        }
+      }
+    });
   </script>
 </head>
 <body>
@@ -97,6 +124,7 @@
       <button class="btn-primary" id="welcomeButton" onclick="startApp()">НАЧАТЬ ПОДБОР</button>
     </div>
   </div>
+
   <!-- Индикатор загрузки -->
   <div id="loadingScreen" class="screen loading hidden">
     <div class="loading-spinner"></div>
@@ -117,8 +145,7 @@
       </div>
     </header>
    
-    <div class="filters-toggle">
-      <button class="filters-toggle-btn" onclick="toggleFilters()">🔽 Фильтры</button>
+    <div class="filters-toggle">      <button class="filters-toggle-btn" onclick="toggleFilters()">🔽 Фильтры</button>
     </div>
     <div id="filtersBlock" class="filters-block hidden">
       <div class="filter-group">
@@ -145,7 +172,8 @@
       </div>
     </div>
    
-    <div class="view-toggle">      <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>
+    <div class="view-toggle">
+      <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>
       <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺️ Карта</button>
     </div>
    
@@ -166,8 +194,7 @@
       <h3>✨ Преимущества</h3>
       <div id="modalFeatures" class="modal-features"></div>
       <h3>📐 Планировки</h3>
-      <div id="modalFloorPlans" class="floor-plans"></div>
-      <button id="modalConsultBtn" class="tg-btn">Заказать консультацию</button>
+      <div id="modalFloorPlans" class="floor-plans"></div>      <button id="modalConsultBtn" class="tg-btn">Заказать консультацию</button>
     </div>
   </div>
 
@@ -194,7 +221,8 @@
     <nav class="menu-nav">
       <button onclick="showPage('home')">🏠 Каталог</button>
       <button onclick="showPage('about')">👤 Обо мне</button>
-      <button onclick="showPage('contacts')">📞 Контакты</button>     
+      <button onclick="showPage('contacts')">📞 Контакты</button>
+     
       <!-- ПУНКТ МЕНЮ ДЛЯ АДМИНА (скрыт по умолчанию) -->
       <button id="adminMenuItem" onclick="openAdminPanel()" style="display: none; border-top: 2px solid #ddd; margin-top: 15px; padding-top: 15px; color: #667eea; font-weight: 600;">
         ⚙️ Админ-панель
@@ -215,8 +243,7 @@
         <li>Проверяю документы и историю застройщика.</li>
         <li>Торгуюсь за скидку (часто до 5-10%).</li>
         <li>Помогаю с ипотекой и одобрением.</li>
-      </ul>
-    </div>
+      </ul>    </div>
   </div>
 
   <!-- Страница "Контакты" -->
@@ -243,7 +270,8 @@
       <div class="contact-actions">
         <button class="btn-tg" onclick="openDirectChat()">✈️ Написать в Telegram</button>
         <button class="btn-phone" onclick="callAgent()">📞 Позвонить</button>
-      </div>    </div>
+      </div>
+    </div>
   </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -264,8 +292,7 @@
         adminMenuItem.style.display = 'block';
         console.log('✅ Пункт "Админ-панель" показан в меню');
       }
-    }
-  });
+    }  });
 </script>
 </body>
 </html>
