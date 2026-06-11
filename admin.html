@@ -18,7 +18,7 @@
             background-color: #f5f5f5;
             color: #333;
             line-height: 1.6;
-            padding-top: 10px;
+            padding-top: 10px; /* Отступ для кнопки "Назад" из iframe */
         }
 
         .admin-header {
@@ -26,7 +26,7 @@
             color: white;
             padding: 20px 30px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-top: 50px;
+            margin-top: 50px; /* Отступ для кнопки закрытия iframe */
         }
 
         .admin-header h1 {
@@ -385,35 +385,16 @@
     </style>
 </head>
 <body>
-    <!-- ПРОВЕРКА АВТОРИЗАЦИИ С ОЖИДАНИЕМ TELEGRAM -->
+    <!-- ПРОВЕРКА АВТОРИЗАЦИИ -->
     <script>
-        console.log('🔍 Начинаем проверку авторизации...');
-       
-        // Ждём готовности Telegram WebApp
-        function waitForTelegram(callback) {            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe) {
-                callback();
-            } else {
-                console.log('⏳ Ждём инициализации Telegram WebApp...');
-                setTimeout(() => waitForTelegram(callback), 100);
-            }
-        }
-       
-        waitForTelegram(function() {
-            console.log('Telegram WebApp найден');
+        (function checkAuth() {
             const tg = window.Telegram.WebApp;
             tg.ready();
-            tg.expand();
-           
-            console.log('Telegram WebApp готов:', tg.initDataUnsafe);
-           
+            tg.expand();           
             const user = tg.initDataUnsafe?.user;
             const ADMIN_USER_ID = 2038206387;
            
-            console.log('User:', user);
-            console.log('User ID:', user?.id);
-           
             if (!user || user.id !== ADMIN_USER_ID) {
-                console.log('❌ Доступ запрещён! User ID:', user?.id, 'Admin ID:', ADMIN_USER_ID);
                 document.body.innerHTML = `
                     <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                         <div style="background:white;border-radius:20px;padding:40px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.2);max-width:400px;">
@@ -424,11 +405,11 @@
                         </div>
                     </div>
                 `;
-                return;
+                throw new Error('Unauthorized');
             }
            
             console.log('✅ Admin authenticated:', user.id);
-        });
+        })();
     </script>
 
     <div class="admin-header">
@@ -439,7 +420,8 @@
     <div class="tabs">
         <button class="tab-btn active" onclick="switchTab('properties')">🏠 Объекты</button>
         <button class="tab-btn" onclick="switchTab('addProperty')">➕ Добавить объект</button>
-        <button class="tab-btn" onclick="switchTab('leads')">📧 Заявки (<span id="leadsCount">0</span>)</button>        <button class="tab-btn" onclick="switchTab('agent')">👤 Данные агента</button>
+        <button class="tab-btn" onclick="switchTab('leads')">📧 Заявки (<span id="leadsCount">0</span>)</button>
+        <button class="tab-btn" onclick="switchTab('agent')">👤 Данные агента</button>
         <button class="tab-btn" onclick="switchTab('settings')">⚙️ Настройки</button>
     </div>
 
@@ -457,8 +439,7 @@
 
     <!-- Вкладка: Добавить объект -->
     <div id="tab-addProperty" class="tab-content">
-        <div class="card">
-            <h2>➕ Добавить новый объект</h2>
+        <div class="card">            <h2>➕ Добавить новый объект</h2>
             <form id="addPropertyForm">
                 <div class="form-row">
                     <div class="form-group">
@@ -488,7 +469,8 @@
                         <input type="number" name="price_from" step="0.1" placeholder="10">
                     </div>
                     <div class="form-group">
-                        <label>Цена до (млн ₽)</label>                        <input type="number" name="price_to" step="0.1" placeholder="50">
+                        <label>Цена до (млн ₽)</label>
+                        <input type="number" name="price_to" step="0.1" placeholder="50">
                     </div>
                 </div>
 
@@ -506,8 +488,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Цена за м² (тыс. ₽)</label>
-                        <input type="number" name="price_per_sqm" step="0.1" placeholder="300">
-                    </div>
+                        <input type="number" name="price_per_sqm" step="0.1" placeholder="300">                    </div>
                     <div class="form-group">
                         <label>Срок сдачи</label>
                         <input type="text" name="completion_date" placeholder="IV кв. 2026">
@@ -537,7 +518,8 @@
 
                 <div class="form-group">
                     <label>📷 Главное фото</label>
-                    <input type="file" accept="image/*" onchange="handleFileSelect(this, 'mainImagePreview')">                    <div id="mainImagePreview" class="image-preview"></div>
+                    <input type="file" accept="image/*" onchange="handleFileSelect(this, 'mainImagePreview')">
+                    <div id="mainImagePreview" class="image-preview"></div>
                 </div>
                 <div class="form-group">
                     <label>🖼️ Фото галереи (можно несколько)</label>
@@ -555,7 +537,6 @@
                     <input type="checkbox" id="activeCheckbox" name="active" checked>
                     <label for="activeCheckbox" style="margin:0;">Активный (показывать в каталоге)</label>
                 </div>
-
                 <button type="submit" class="btn btn-primary">💾 Сохранить объект</button>
             </form>
         </div>
@@ -586,7 +567,8 @@
                     <div class="form-group">
                         <label>Должность</label>
                         <input type="text" name="position" placeholder="Риелтор">
-                    </div>                </div>
+                    </div>
+                </div>
 
                 <div class="form-row">
                     <div class="form-group">
@@ -604,8 +586,7 @@
                         <label>Telegram</label>
                         <input type="text" name="telegram" placeholder="@username">
                     </div>
-                    <div class="form-group">
-                        <label>WhatsApp</label>
+                    <div class="form-group">                        <label>WhatsApp</label>
                         <input type="text" name="whatsapp" placeholder="+79991234567">
                     </div>
                 </div>
@@ -635,7 +616,8 @@
                     <input type="text" name="primary_color" placeholder="#3D5266">
                 </div>
 
-                <div class="form-group">                    <label>Акцентный цвет (hex)</label>
+                <div class="form-group">
+                    <label>Акцентный цвет (hex)</label>
                     <input type="text" name="accent_color" placeholder="#3498DB">
                 </div>
                 <div class="form-group">
@@ -653,8 +635,7 @@
                     <input type="text" name="telegram_chat_id" placeholder="-1001234567890">
                 </div>
 
-                <button type="submit" class="btn btn-primary">💾 Сохранить настройки</button>
-            </form>
+                <button type="submit" class="btn btn-primary">💾 Сохранить настройки</button>            </form>
         </div>
     </div>
 
