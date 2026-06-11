@@ -38,7 +38,7 @@ function switchTab(tabName) {
     document.getElementById(`tab-${tabName}`).classList.add('active');
 
     if (tabName === 'properties') loadProperties();
-    if (tabName === 'leads') loadLeads();  // Грузим только когда открываем вкладку
+    if (tabName === 'leads') loadLeads();
 }
 
 // Показ уведомления
@@ -263,9 +263,7 @@ document.getElementById('addPropertyForm')?.addEventListener('submit', async fun
             }
         }
       
-        // Явно устанавливаем active
         propertyData.active = document.getElementById('activeCheckbox').checked;
-      
         propertyData.id = 'spb-' + Date.now();
         propertyData.created_at = new Date().toISOString();
       
@@ -292,9 +290,9 @@ document.getElementById('addPropertyForm')?.addEventListener('submit', async fun
             for (let i = 0; i < uploadedFiles.floorPlans.length; i++) {
                 const path = `${propertyData.id}/plan_${i}_${Date.now()}.jpg`;
                 const url = await uploadToYandex(uploadedFiles.floorPlans[i], path);
-                plansUrls.push(url);            }
-            propertyData.floor_plans_images = plansUrls.join(',');
-        }
+                plansUrls.push(url);
+            }
+            propertyData.floor_plans_images = plansUrls.join(',');        }
       
         const { error } = await supabaseClient.from('properties').insert([propertyData]);
       
@@ -341,9 +339,9 @@ function handleFilesSelect(input, previewId) {
     const preview = document.getElementById(previewId);
     preview.innerHTML = '';
 
-    files.forEach(file => {        const reader = new FileReader();
-        reader.onload = function(e) {
-            const img = document.createElement('img');
+    files.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = function(e) {            const img = document.createElement('img');
             img.src = e.target.result;
             img.style.width = '100px';
             img.style.margin = '5px';
@@ -391,8 +389,8 @@ async function editProperty(id) {
             </div>
         `;
     }
-    if (data.images_gallery) {
-        const gallery = data.images_gallery.split(',');
+
+    if (data.images_gallery) {        const gallery = data.images_gallery.split(',');
         let galleryHTML = '';
         gallery.forEach((url, index) => {
             galleryHTML += `
@@ -439,12 +437,11 @@ async function updateProperty(id, form) {
         } else if (['price_from', 'price_to', 'area_min', 'area_max', 'price_per_sqm'].includes(key)) {
             propertyData[key] = value ? parseFloat(value) : null;
         } else if (['lat', 'lng'].includes(key)) {
-            propertyData[key] = value ? parseFloat(value) : null;        } else {
-            propertyData[key] = value;
-        }
+            propertyData[key] = value ? parseFloat(value) : null;
+        } else {
+            propertyData[key] = value;        }
     }
 
-    // Явно устанавливаем active, даже если чекбокс не отмечен
     propertyData.active = document.getElementById('activeCheckbox').checked;
 
     if (uploadedFiles.main) {
@@ -488,9 +485,9 @@ async function updateProperty(id, form) {
         return;
     }
 
-    showAlert('✅ Объект обновлён!');    setTimeout(() => switchTab('properties'), 1000);
+    showAlert('✅ Объект обновлён!');
+    setTimeout(() => switchTab('properties'), 1000);
 }
-
 // Удаление объекта (с картинками!)
 async function deleteProperty(id) {
     if (!confirm('Вы уверены, что хотите удалить этот объект? Все фото будут удалены из облака!')) return;
@@ -537,10 +534,10 @@ async function deleteProperty(id) {
         if (error) throw error;
       
         showAlert('✅ Объект и все его фото удалены!');
-        loadProperties();    } catch (error) {
+        loadProperties();
+    } catch (error) {
         showAlert('❌ Ошибка при удалении: ' + error.message, 'error');
-    }
-}
+    }}
 
 // ========== ДАННЫЕ АГЕНТА ==========
 async function loadAgentData() {
@@ -586,10 +583,10 @@ document.getElementById('agentForm')?.addEventListener('submit', async function(
 
 // ========== НАСТРОЙКИ ==========
 async function loadSettings() {
-    const { data, error } = await supabaseClient.from('settings').select('*');    if (error) return;
+    const { data, error } = await supabaseClient.from('settings').select('*');
+    if (error) return;
     const form = document.getElementById('settingsForm');
-    data.forEach(setting => {
-        const input = form.querySelector(`[name="${setting.setting_key}"]`);
+    data.forEach(setting => {        const input = form.querySelector(`[name="${setting.setting_key}"]`);
         if (input) input.value = setting.setting_value || '';
     });
 }
@@ -635,10 +632,10 @@ async function loadLeads() {
 
     if (error) {
         container.innerHTML = `<div class="alert alert-error">Ошибка: ${error.message}</div>`;
-        return;    }
+        return;
+    }
 
     document.getElementById('leadsCount').textContent = data ? data.length : 0;
-
     if (!data || data.length === 0) {
         container.innerHTML = '<div class="alert alert-success">Заявок пока нет</div>';
         return;
