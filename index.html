@@ -166,6 +166,8 @@
       <button onclick="showPage('home')">🏠 Каталог</button>
       <button onclick="showPage('about')">👤 Обо мне</button>
       <button onclick="showPage('contacts')">📞 Контакты</button>
+     
+      <!-- ПУНКТ МЕНЮ ДЛЯ АДМИНА -->
       <button id="adminMenuItem" onclick="openAdminPanel()" style="display: none; border-top: 2px solid #ddd; margin-top: 15px; padding-top: 15px; color: #667eea; font-weight: 600;">
         ⚙️ Админ-панель
       </button>
@@ -192,9 +194,9 @@
   <!-- Страница "Контакты" -->
   <div id="page-contacts" class="page hidden">
     <div class="page-header">
-      <button class="page-back-btn" onclick="appBack()">← Назад</button>
-      <h2>Контакты</h2>
-    </div>    <div class="page-content">
+      <button class="page-back-btn" onclick="appBack()">← Назад</button>      <h2>Контакты</h2>
+    </div>
+    <div class="page-content">
       <div class="contact-card">
         <div class="agent-avatar"></div>
         <div class="agent-info">
@@ -228,22 +230,23 @@
 <!-- ПОДКЛЮЧЕНИЕ СКРИПТОВ -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=1.0.5"></script>
+<script src="app.js?v=1.0.11"></script>
 
-<!-- СКРИПТ УПРАВЛЕНИЯ АДМИНКОЙ -->
+<!-- СКРИПТ УПРАВЛЕНИЯ АДМИНКОЙ (ПОСЛЕ app.js!) -->
 <script>
   const ADMIN_USER_ID = 2038206387;
   window.isAdmin = false;
  
+  // Проверка админа (НЕ вызывает tg.ready() и tg.expand() — они уже вызваны в app.js!)
   function checkAdminAccess() {
     try {
       if (window.Telegram && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
         const user = tg.initDataUnsafe?.user;
-       
-        if (user && user.id === ADMIN_USER_ID) {
+                if (user && user.id === ADMIN_USER_ID) {
           window.isAdmin = true;
-          console.log('✅ Админ обнаружен:', user.id);         
+          console.log('✅ Админ обнаружен:', user.id);
+         
           setTimeout(function() {
             const adminMenuItem = document.getElementById('adminMenuItem');
             if (adminMenuItem) {
@@ -277,8 +280,9 @@
     }
   }
  
+  // Запускаем проверку ПОСЛЕ полной загрузки (не при DOMContentLoaded!)
   window.addEventListener('load', function() {
-    setTimeout(checkAdminAccess, 1500);
+    setTimeout(checkAdminAccess, 2000); // Даём приложению полностью загрузиться
   });
 </script>
 </body>
