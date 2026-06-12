@@ -47,16 +47,14 @@
       gap: 5px;
       backdrop-filter: blur(10px);
       box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    }
-    .admin-close-btn:hover {
+    }    .admin-close-btn:hover {
       background: rgba(61, 82, 102, 1);
     }
   </style>
 
   <script>
     const ADMIN_USER_ID = 2038206387;
-    let adminLoaded = false;
-  
+ 
     function checkAdminAccess() {
       if (window.Telegram && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
@@ -69,10 +67,10 @@
       window.isAdmin = false;
       return false;
     }
-  
+ 
     function openAdminPanel() {
       if (!window.isAdmin) {
-        alert(' Доступ запрещён!');
+        alert('⛔ Доступ запрещён!');
         return;
       }
       closeMenu();
@@ -81,25 +79,24 @@
         adminFrame.classList.add('active');
         // 🔥 Загружаем iframe ТОЛЬКО при клике (не заранее!)
         const iframe = document.getElementById('adminIframe');
-        if (!adminLoaded && iframe) {
-          iframe.src = 'admin.html';
-          adminLoaded = true;
+        if (iframe) {
+          iframe.src = 'admin.html?v=1.0.7';
         }
       }
     }
-  
+ 
     function closeAdminPanel() {
       const adminFrame = document.getElementById('adminFrame');
       if (adminFrame) {
         adminFrame.classList.remove('active');
       }
     }
-  
+ 
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', checkAdminAccess);    } else {
+      document.addEventListener('DOMContentLoaded', checkAdminAccess);
+    } else {
       checkAdminAccess();
-    }
-  </script>
+    }  </script>
 </head>
 <body>
 
@@ -133,7 +130,7 @@
         <h1 class="brand-title" id="headerTitle"></h1>
       </div>
     </header>
-   
+  
     <div class="filters-toggle">
       <button class="filters-toggle-btn" onclick="toggleFilters()">🔽 Фильтры</button>
     </div>
@@ -145,10 +142,10 @@
           <button class="price-btn" data-price="10000000">До 10 млн</button>
           <button class="price-btn" data-price="20000000">До 20 млн</button>
           <button class="price-btn" data-price="50000000">До 50 млн</button>
-          <button class="price-btn" data-price="100000000">До 100 млн</button>        </div>
+          <button class="price-btn" data-price="100000000">До 100 млн</button>
+        </div>
       </div>
-      <div class="filter-group">
-        <label>📍 Районы</label>
+      <div class="filter-group">        <label>📍 Районы</label>
         <div id="districtCheckboxes" class="checkbox-group"></div>
       </div>
       <div class="filter-group">
@@ -156,16 +153,16 @@
         <div id="metroCheckboxes" class="checkbox-group"></div>
       </div>
       <div class="filter-group">
-        <label> Комнаты</label>
+        <label>🚪 Комнаты</label>
         <div id="roomsCheckboxes" class="checkbox-group"></div>
       </div>
     </div>
-  
+ 
     <div class="view-toggle">
       <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>
       <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺️ Карта</button>
     </div>
-  
+ 
     <div id="listingsContainer" class="listings"></div>
     <div id="mapContainer" class="map-container hidden"></div>
   </div>
@@ -194,10 +191,10 @@
       <p id="consultObjectName" class="form-object"></p>
       <p class="form-hint">Оставьте контакты — мы перезвоним и ответим на все вопросы по объекту</p>
       <form id="consultForm" onsubmit="submitConsultForm(event)">
-        <input id="consultName" type="text" placeholder="Ваше имя" required>        <input id="consultPhone" type="tel" placeholder="+7 (___) ___-__-__" required>
+        <input id="consultName" type="text" placeholder="Ваше имя" required>
+        <input id="consultPhone" type="tel" placeholder="+7 (___) ___-__-__" required>
         <input id="consultTelegram" type="text" placeholder="Telegram (необязательно)">
-        <button type="submit" class="tg-btn">Отправить заявку</button>
-      </form>
+        <button type="submit" class="tg-btn">Отправить заявку</button>      </form>
     </div>
   </div>
 
@@ -243,10 +240,10 @@
           <p id="agentRole">Эксперт по недвижимости</p>
         </div>
       </div>
-      <div id="agencyBlock" class="agency-block">        <h4>🏢 Агентство</h4>
+      <div id="agencyBlock" class="agency-block">
+        <h4>🏢 Агентство</h4>
         <p id="agencyName">Название АН</p>
-        <p id="agencyAddress" class="address-text">📍 Адрес офиса</p>
-      </div>
+        <p id="agencyAddress" class="address-text">📍 Адрес офиса</p>      </div>
       <div class="contact-actions">
         <button class="btn-tg" onclick="openDirectChat()">✈️ Написать в Telegram</button>
         <button class="btn-phone" onclick="callAgent()">📞 Позвонить</button>
@@ -254,7 +251,7 @@
     </div>
   </div>
 
-  <!--  IFRAME БЕЗ src — загружается только при клике на "Админ-панель" -->
+  <!-- IFRAME БЕЗ src — загружается только при клике на "Админ-панель" -->
   <div id="adminFrame" class="admin-frame">
     <button class="admin-close-btn" onclick="closeAdminPanel()">
       <span>←</span>
