@@ -55,7 +55,7 @@
 
   <script>
     const ADMIN_USER_ID = 2038206387;
-      
+  
     function checkAdminAccess() {
       if (window.Telegram && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
@@ -65,18 +65,21 @@
           return true;
         }
       }
+      window.isAdmin = false;
+      return false;
+    }
   
     function openAdminPanel() {
-  if (!window.isAdmin) {
-    alert('⛔ Доступ запрещён!');
-    return;
-  }
-  closeMenu();
-  const adminFrame = document.getElementById('adminFrame');
-  if (adminFrame) {
-    adminFrame.classList.add('active');
-  }
-}
+      if (!window.isAdmin) {
+        alert('⛔ Доступ запрещён!');
+        return;
+      }
+      closeMenu();
+      const adminFrame = document.getElementById('adminFrame');
+      if (adminFrame) {
+        adminFrame.classList.add('active');
+      }
+    }
   
     function closeAdminPanel() {
       const adminFrame = document.getElementById('adminFrame');
@@ -86,13 +89,13 @@
     }
   
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', checkAdminAccess);    } else {
+      document.addEventListener('DOMContentLoaded', checkAdminAccess);
+    } else {
       checkAdminAccess();
     }
   </script>
 </head>
 <body>
-
   <div id="welcomeScreen" class="screen welcome">
     <div id="welcomeBrand" class="welcome-brand">
       <img src="logo.png" alt="Logo" class="brand-logo">
@@ -135,18 +138,18 @@
           <button class="price-btn" data-price="10000000">До 10 млн</button>
           <button class="price-btn" data-price="20000000">До 20 млн</button>
           <button class="price-btn" data-price="50000000">До 50 млн</button>
-          <button class="price-btn" data-price="100000000">До 100 млн</button>        </div>
+          <button class="price-btn" data-price="100000000">До 100 млн</button>
+        </div>
       </div>
       <div class="filter-group">
         <label>📍 Районы</label>
         <div id="districtCheckboxes" class="checkbox-group"></div>
       </div>
-      <div class="filter-group">
-        <label>🚇 Метро</label>
+      <div class="filter-group">        <label>🚇 Метро</label>
         <div id="metroCheckboxes" class="checkbox-group"></div>
       </div>
       <div class="filter-group">
-        <label> Комнаты</label>
+        <label>🚪 Комнаты</label>
         <div id="roomsCheckboxes" class="checkbox-group"></div>
       </div>
     </div>
@@ -184,13 +187,13 @@
       <p id="consultObjectName" class="form-object"></p>
       <p class="form-hint">Оставьте контакты — мы перезвоним и ответим на все вопросы по объекту</p>
       <form id="consultForm" onsubmit="submitConsultForm(event)">
-        <input id="consultName" type="text" placeholder="Ваше имя" required>        <input id="consultPhone" type="tel" placeholder="+7 (___) ___-__-__" required>
+        <input id="consultName" type="text" placeholder="Ваше имя" required>
+        <input id="consultPhone" type="tel" placeholder="+7 (___) ___-__-__" required>
         <input id="consultTelegram" type="text" placeholder="Telegram (необязательно)">
         <button type="submit" class="tg-btn">Отправить заявку</button>
       </form>
     </div>
   </div>
-
   <div id="menuOverlay" class="menu-overlay hidden" onclick="closeMenu()"></div>
   <div id="sideMenu" class="side-menu hidden">
     <button class="menu-close" onclick="closeMenu()">×</button>
@@ -233,18 +236,17 @@
           <p id="agentRole">Эксперт по недвижимости</p>
         </div>
       </div>
-      <div id="agencyBlock" class="agency-block">        <h4>🏢 Агентство</h4>
+      <div id="agencyBlock" class="agency-block">
+        <h4>🏢 Агентство</h4>
         <p id="agencyName">Название АН</p>
         <p id="agencyAddress" class="address-text">📍 Адрес офиса</p>
       </div>
       <div class="contact-actions">
         <button class="btn-tg" onclick="openDirectChat()">✈️ Написать в Telegram</button>
-        <button class="btn-phone" onclick="callAgent()">📞 Позвонить</button>
-      </div>
+        <button class="btn-phone" onclick="callAgent()">📞 Позвонить</button>      </div>
     </div>
   </div>
 
-  <!--  IFRAME БЕЗ src — загружается только при клике на "Админ-панель" -->
   <div id="adminFrame" class="admin-frame">
     <button class="admin-close-btn" onclick="closeAdminPanel()">
       <span>←</span>
@@ -253,7 +255,6 @@
     <iframe id="adminIframe" src="admin.html?v=1.0.7"></iframe>
   </div>
 
-<!-- СКРИПТЫ БЕЗ defer -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="app.js?v=1.0.3"></script>
