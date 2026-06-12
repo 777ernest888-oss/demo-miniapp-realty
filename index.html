@@ -71,10 +71,22 @@
     }
   
     function openAdminPanel() {
-      if (!window.isAdmin) {
-        alert(' Доступ запрещён!');
-        return;
-      }
+  if (!window.isAdmin) {
+    alert('⛔ Доступ запрещён!');
+    return;
+  }
+  closeMenu();
+  const adminFrame = document.getElementById('adminFrame');
+  if (adminFrame) {
+    adminFrame.classList.add('active');
+    // 🔥 ВСЕГДА перезагружаем iframe с новой версией
+    const iframe = document.getElementById('adminIframe');
+    if (iframe) {
+      iframe.src = 'admin.html?v=' + Date.now();
+      console.log('🔄 Iframe перезагружается с версией', Date.now());
+    }
+  }
+}
       closeMenu();
       const adminFrame = document.getElementById('adminFrame');
       if (adminFrame) {
