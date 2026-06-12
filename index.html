@@ -55,8 +55,7 @@
 
   <script>
     const ADMIN_USER_ID = 2038206387;
-    let adminLoaded = false;
-  
+      
     function checkAdminAccess() {
       if (window.Telegram && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
@@ -66,9 +65,6 @@
           return true;
         }
       }
-      window.isAdmin = false;
-      return false;
-    }
   
     function openAdminPanel() {
   if (!window.isAdmin) {
@@ -79,26 +75,8 @@
   const adminFrame = document.getElementById('adminFrame');
   if (adminFrame) {
     adminFrame.classList.add('active');
-    // 🔥 ВСЕГДА перезагружаем iframe с новой версией
-    const iframe = document.getElementById('adminIframe');
-    if (iframe) {
-      iframe.src = 'admin.html?v=' + Date.now();
-      console.log('🔄 Iframe перезагружается с версией', Date.now());
-    }
   }
 }
-      closeMenu();
-      const adminFrame = document.getElementById('adminFrame');
-      if (adminFrame) {
-        adminFrame.classList.add('active');
-        // 🔥 Загружаем iframe ТОЛЬКО при клике (не заранее!)
-        const iframe = document.getElementById('adminIframe');
-        if (!adminLoaded && iframe) {
-          iframe.src = 'admin.html';
-          adminLoaded = true;
-        }
-      }
-    }
   
     function closeAdminPanel() {
       const adminFrame = document.getElementById('adminFrame');
@@ -272,7 +250,7 @@
       <span>←</span>
       <span>Назад</span>
     </button>
-    <iframe id="adminIframe"></iframe>
+    <iframe id="adminIframe" src="admin.html?v=1.0.7"></iframe>
   </div>
 
 <!-- СКРИПТЫ БЕЗ defer -->
