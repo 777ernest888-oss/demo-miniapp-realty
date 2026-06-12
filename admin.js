@@ -8,7 +8,6 @@ let currentEditData = null;
 async function warmupDatabase() {
     try {
         console.log('🔥 Прогреваю базу данных...');
-        // Простой запрос для "пробуждения" Supabase
         const { error } = await supabaseClient.from('properties').select('id').limit(1);
         if (error) {
             console.warn('⚠️ Ошибка прогрева:', error.message);
@@ -17,7 +16,6 @@ async function warmupDatabase() {
         }
     } catch (error) {
         console.error('❌ Ошибка прогрева:', error);
-        // Не критично, продолжаем работу
     }
 }
 
@@ -48,8 +46,8 @@ function getCachedData(key) {
         return data;
     } catch (e) { return null; }
 }
-function setCachedData(key, data) {
-    try { localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() })); } catch (e) {}
+
+function setCachedData(key, data) {    try { localStorage.setItem(key, JSON.stringify({ data, timestamp: Date.now() })); } catch (e) {}
 }
 
 function invalidateCache(key) {
@@ -88,7 +86,7 @@ function showConfirm(title, message) {
     });
 }
 
-// ========== ИНИЦИАЛИЗАЦИЯ С ПРОГРЕВОМ ==========
+// ========== ИНИЦИАЛИЗАЦИЯ ==========
 document.addEventListener('DOMContentLoaded', async function() {
     try {
         const SUPABASE_URL = 'https://rqiutnpawsmqvmzewamc.supabase.co';
@@ -96,11 +94,10 @@ document.addEventListener('DOMContentLoaded', async function() {
        
         if (!window.supabase) {
             throw new Error('Supabase библиотека не загружена');
-        }       
-        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        console.log('✅ Supabase инициализирован');
+        }
        
-        // 🔥 Прогрев базы ПЕРЕД загрузкой данных
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);        console.log('✅ Supabase инициализирован');
+       
         await warmupDatabase();
        
         await loadProperties();
@@ -137,7 +134,7 @@ function showAlert(message, type = 'success') {
     setTimeout(() => alert.remove(), 3000);
 }
 
-// ========== РАБОТА С ФАЙЛАМИ ==========
+// ========== 🔥 РАБОТА С ФАЙЛАМИ (С АВТОРИЗАЦИЕЙ) ==========
 async function uploadToYandex(file, path) {
     const SUPABASE_URL = 'https://rqiutnpawsmqvmzewamc.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_K1aNLiU_605Z7WccyWWPbQ_or-QVNbX';
@@ -145,11 +142,20 @@ async function uploadToYandex(file, path) {
     formData.append('file', file);
     formData.append('path', path);
 
-    try {        const response = await fetch(`${SUPABASE_URL}/functions/v1/upload-to-yandex`, {
+    try {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/upload-to-yandex`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'apikey': SUPABASE_ANON_KEY },
+            headers: {                 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,  // 🔥 ДОБАВЛЕНО
+                'apikey': SUPABASE_ANON_KEY                       // 🔥 ДОБАВЛЕНО
+            },
             body: formData
         });
+       
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+            throw new Error(errorData.error || `HTTP ${response.status}: ${response.statusText}`);
+        }
+       
         const result = await response.json();
         if (!result.success) throw new Error(result.error || 'Failed to upload');
         return result.url;
@@ -164,7 +170,11 @@ async function deleteFromYandex(paths) {
     const SUPABASE_ANON_KEY = 'sb_publishable_K1aNLiU_605Z7WccyWWPbQ_or-QVNbX';
     const response = await fetch(`${SUPABASE_URL}/functions/v1/delete-from-yandex`, {
         method: 'POST',
-        headers: { 'Authorization': `Bearer ${SUPABASE_ANON_KEY}`, 'apikey': SUPABASE_ANON_KEY, 'Content-Type': 'application/json' },
+        headers: {
+            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+            'apikey': SUPABASE_ANON_KEY,
+            'Content-Type': 'application/json'
+        },
         body: JSON.stringify({ paths })
     });
     const result = await response.json();
@@ -184,8 +194,7 @@ async function loadProperties() {
         container.innerHTML = '<div class="alert alert-error">Supabase не подключён</div>';
         return;
     }
-
-    const cachedData = getCachedData(CACHE_KEYS.properties);
+     const cachedData = getCachedData(CACHE_KEYS.properties);
     if (cachedData && cachedData.length > 0) {
         renderPropertiesList(container, cachedData);
     } else {
@@ -194,7 +203,8 @@ async function loadProperties() {
 
     try {
         const { data, error } = await supabaseClient
-            .from('properties')            .select('*')
+            .from('properties')
+            .select('*')
             .order('created_at', { ascending: false })
             .limit(50);
 
@@ -233,8 +243,7 @@ function renderPropertiesList(container, data) {
                 <h3>${property.name || 'Без названия'} ${!property.active ? '<span class="hidden-badge">[СКРЫТ]</span>' : ''}</h3>
                 <p>📍 ${addressText}</p>
             </div>
-            <div class="property-actions">
-                <button class="btn ${toggleBtnClass} btn-small" onclick="togglePropertyStatus('${property.id}', ${property.active})">${toggleBtnText}</button>
+            <div class="property-actions">                <button class="btn ${toggleBtnClass} btn-small" onclick="togglePropertyStatus('${property.id}', ${property.active})">${toggleBtnText}</button>
                 <button class="btn btn-primary btn-small" onclick="editProperty('${property.id}')">✏️ Редактировать</button>
                 <button class="btn btn-danger btn-small" onclick="deleteProperty('${property.id}')">🗑 Удалить</button>
             </div>
@@ -243,7 +252,8 @@ function renderPropertiesList(container, data) {
     });
 }
 
-async function togglePropertyStatus(id, currentStatus) {    if (!id) return showAlert('❌ Ошибка: ID не определён', 'error');
+async function togglePropertyStatus(id, currentStatus) {
+    if (!id) return showAlert('❌ Ошибка: ID не определён', 'error');
     const newStatus = !currentStatus;
     const actionText = newStatus ? 'показать' : 'скрыть';
 
@@ -282,8 +292,7 @@ if (addForm) {
                     propertyData[key] = document.getElementById('activeCheckbox').checked;
                 } else if (['price_from', 'price_to', 'area_min', 'area_max', 'price_per_sqm', 'lat', 'lng'].includes(key)) {
                     propertyData[key] = value && value !== '' ? parseFloat(value) : null;
-                } else {
-                    propertyData[key] = value;
+                } else {                    propertyData[key] = value;
                 }
             }
          
@@ -292,7 +301,8 @@ if (addForm) {
             propertyData.created_at = new Date().toISOString();
          
             if (uploadedFiles.main) {
-                showAlert('📤 Загружаем главное фото...');                propertyData.image_main = await uploadToYandex(uploadedFiles.main, `${propertyData.id}/main_${Date.now()}.jpg`);
+                showAlert('📤 Загружаем главное фото...');
+                propertyData.image_main = await uploadToYandex(uploadedFiles.main, `${propertyData.id}/main_${Date.now()}.jpg`);
             }
          
             if (uploadedFiles.gallery.length > 0) {
@@ -331,8 +341,7 @@ function handleFileSelect(input, previewId) {
     const file = input.files[0];
     if (!file) return;
     uploadedFiles.main = file;
-    const reader = new FileReader();
-    reader.onload = (e) => {
+    const reader = new FileReader();    reader.onload = (e) => {
         document.getElementById(previewId).innerHTML = `<img src="${e.target.result}" style="max-width:200px;border-radius:8px;">`;
     };
     reader.readAsDataURL(file);
@@ -341,7 +350,8 @@ function handleFileSelect(input, previewId) {
 function handleFilesSelect(input, previewId) {
     const files = Array.from(input.files);
     if (files.length === 0) return;
-    if (previewId === 'galleryImagesPreview') uploadedFiles.gallery = files;    else uploadedFiles.floorPlans = files;
+    if (previewId === 'galleryImagesPreview') uploadedFiles.gallery = files;
+    else uploadedFiles.floorPlans = files;
 
     const preview = document.getElementById(previewId);
     preview.innerHTML = '';
@@ -360,8 +370,13 @@ function handleFilesSelect(input, previewId) {
 // ========== РЕДАКТИРОВАНИЕ ==========
 async function editProperty(id) {
     try {
+        console.log('🔄 Загрузка объекта для редактирования:', id);
+       
         const { data, error } = await supabaseClient.from('properties').select('*').eq('id', id).single();
-        if (error) throw error;
+        if (error) {
+            console.error('❌ Ошибка загрузки объекта:', error);
+            throw error;
+        }
     
         currentEditData = data;
         switchTab('addProperty');
@@ -375,12 +390,13 @@ async function editProperty(id) {
             }
         }
      
-        if (data.image_main) {
-            document.getElementById('mainImagePreview').innerHTML = `
+        if (data.image_main) {            document.getElementById('mainImagePreview').innerHTML = `
                 <div style="position:relative;display:inline-block;">
                     <img src="${data.image_main}" style="max-width:200px;border-radius:8px;">
                     <button onclick="deleteSingleImage('${data.image_main}', 'main', 0)" style="position:absolute;top:5px;right:5px;background:#e74c3c;color:white;border:none;border-radius:50%;width:30px;height:30px;cursor:pointer;font-size:18px;">×</button>
                 </div>`;
+        } else {
+            document.getElementById('mainImagePreview').innerHTML = '<p style="color:#999;">Главное фото не загружено</p>';
         }
     
         if (data.images_gallery) {
@@ -390,7 +406,10 @@ async function editProperty(id) {
                     <img src="${url}" style="width:100px;border-radius:8px;">
                     <button onclick="deleteSingleImage('${url}', 'gallery', ${i})" style="position:absolute;top:2px;right:2px;background:#e74c3c;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;font-size:16px;">×</button>
                 </div>`).join('');
-        }    
+        } else {
+            document.getElementById('galleryImagesPreview').innerHTML = '<p style="color:#999;">Фото галереи пусто</p>';
+        }
+    
         if (data.floor_plans_images) {
             const plans = data.floor_plans_images.split(',');
             document.getElementById('floorPlansPreview').innerHTML = plans.map((url, i) => `
@@ -398,14 +417,36 @@ async function editProperty(id) {
                     <img src="${url}" style="width:100px;border-radius:8px;">
                     <button onclick="deleteSingleImage('${url}', 'floorPlans', ${i})" style="position:absolute;top:2px;right:2px;background:#e74c3c;color:white;border:none;border-radius:50%;width:25px;height:25px;cursor:pointer;font-size:16px;">×</button>
                 </div>`).join('');
+        } else {
+            document.getElementById('floorPlansPreview').innerHTML = '<p style="color:#999;">Планировки не загружены</p>';
         }
     
         const submitBtn = form.querySelector('button[type="submit"]');
         submitBtn.textContent = '💾 Обновить объект';
-        submitBtn.disabled = false; // 🔥 Разблокируем кнопку
-        submitBtn.onclick = async function(ev) { ev.preventDefault(); await updateProperty(id, form); };
+        submitBtn.disabled = false;
+        submitBtn.onclick = async function(ev) {
+            ev.preventDefault();
+            await updateProperty(id, form);
+        };
+       
+        let cancelBtn = document.getElementById('cancelEditBtn');
+        if (!cancelBtn) {
+            cancelBtn = document.createElement('button');
+            cancelBtn.id = 'cancelEditBtn';
+            cancelBtn.type = 'button';
+            cancelBtn.className = 'btn btn-secondary';
+            cancelBtn.style.cssText = 'margin-left:10px;margin-top:10px;';
+            cancelBtn.textContent = '❌ Отмена';
+            form.appendChild(cancelBtn);
+        }
+        cancelBtn.onclick = function() {            uploadedFiles = { main: null, gallery: [], floorPlans: [] };
+            switchTab('properties');
+        };
+       
+        console.log('✅ Форма редактирования открыта');
     } catch (error) {
-        showAlert('❌ Ошибка: ' + error.message, 'error');
+        console.error('❌ Ошибка в editProperty:', error);
+        showAlert('❌ Ошибка загрузки объекта: ' + error.message, 'error');
     }
 }
 
@@ -439,12 +480,15 @@ async function deleteSingleImage(url, type, index) {
 
 async function updateProperty(id, form) {
     const submitBtn = form.querySelector('button[type="submit"]');
-    submitBtn.disabled = true;    submitBtn.textContent = '💾 Сохранение...';
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = '💾 Сохранение...';
    
     try {
+        console.log('🔄 Начало обновления объекта:', id);
+       
         const formData = new FormData(form);
-        const propertyData = {};
-        for (let [key, value] of formData.entries()) {
+        const propertyData = {};        for (let [key, value] of formData.entries()) {
             if (key === 'active') propertyData[key] = document.getElementById('activeCheckbox').checked;
             else if (['price_from', 'price_to', 'area_min', 'area_max', 'price_per_sqm', 'lat', 'lng'].includes(key)) {
                 propertyData[key] = value && value !== '' ? parseFloat(value) : null;
@@ -453,32 +497,66 @@ async function updateProperty(id, form) {
         propertyData.active = document.getElementById('activeCheckbox').checked;
     
         if (uploadedFiles.main) {
-            showAlert('📤 Загружаем новое фото...');
-            propertyData.image_main = await uploadToYandex(uploadedFiles.main, `${id}/main_${Date.now()}.jpg`);
+            console.log('📤 Загрузка нового главного фото...');
+            try {
+                propertyData.image_main = await uploadToYandex(uploadedFiles.main, `${id}/main_${Date.now()}.jpg`);
+                console.log('✅ Главное фото загружено:', propertyData.image_main);
+            } catch (uploadError) {
+                console.error('❌ Ошибка загрузки главного фото:', uploadError);
+                throw new Error('Не удалось загрузить фото: ' + uploadError.message);
+            }
         }
     
         if (uploadedFiles.gallery.length > 0) {
+            console.log('📤 Загрузка фото галереи...');
             const existing = currentEditData.images_gallery ? currentEditData.images_gallery.split(',') : [];
-            const newUrls = await Promise.all(uploadedFiles.gallery.map((f, i) => uploadToYandex(f, `${id}/gallery_${Date.now()}_${i}.jpg`)));
-            propertyData.images_gallery = [...existing, ...newUrls].join(',');
+            try {
+                const newUrls = await Promise.all(
+                    uploadedFiles.gallery.map((f, i) => uploadToYandex(f, `${id}/gallery_${Date.now()}_${i}.jpg`))
+                );
+                propertyData.images_gallery = [...existing, ...newUrls].join(',');
+                console.log('✅ Галерея загружена:', newUrls.length, 'фото');
+            } catch (uploadError) {
+                console.error('❌ Ошибка загрузки галереи:', uploadError);
+                throw new Error('Не удалось загрузить галерею: ' + uploadError.message);
+            }
         }
     
         if (uploadedFiles.floorPlans.length > 0) {
+            console.log('📤 Загрузка планировок...');
             const existing = currentEditData.floor_plans_images ? currentEditData.floor_plans_images.split(',') : [];
-            const newUrls = await Promise.all(uploadedFiles.floorPlans.map((f, i) => uploadToYandex(f, `${id}/plan_${Date.now()}_${i}.jpg`)));
-            propertyData.floor_plans_images = [...existing, ...newUrls].join(',');
+            try {
+                const newUrls = await Promise.all(
+                    uploadedFiles.floorPlans.map((f, i) => uploadToYandex(f, `${id}/plan_${Date.now()}_${i}.jpg`))
+                );
+                propertyData.floor_plans_images = [...existing, ...newUrls].join(',');
+                console.log('✅ Планировки загружены:', newUrls.length, 'фото');
+            } catch (uploadError) {
+                console.error('❌ Ошибка загрузки планировок:', uploadError);
+                throw new Error('Не удалось загрузить планировки: ' + uploadError.message);
+            }
         }
     
-        const { error } = await supabaseClient.from('properties').update(propertyData).eq('id', id);
-        if (error) throw error;
+        console.log('🔄 Обновление объекта в БД...');        const { data: updatedData, error } = await supabaseClient.from('properties').update(propertyData).eq('id', id).select();
+       
+        if (error) {
+            console.error('❌ Ошибка обновления в БД:', error);
+            throw error;
+        }
+       
+        console.log('✅ Объект обновлён:', updatedData);
     
         invalidateCache(CACHE_KEYS.properties);
         showAlert('✅ Объект обновлён!');
+       
+        uploadedFiles = { main: null, gallery: [], floorPlans: [] };
+       
         setTimeout(() => switchTab('properties'), 1000);
     } catch (error) {
+        console.error('❌ Ошибка в updateProperty:', error);
         showAlert('❌ Ошибка: ' + error.message, 'error');
         submitBtn.disabled = false;
-        submitBtn.textContent = '💾 Обновить объект';
+        submitBtn.textContent = originalText;
     }
 }
 
@@ -488,7 +566,8 @@ async function deleteProperty(id) {
     if (!confirmed) return;
    
     try {
-        showAlert('⏳ Удаляю...');        const { data: property } = await supabaseClient.from('properties').select('image_main, images_gallery, floor_plans_images').eq('id', id).single();
+        showAlert('⏳ Удаляю...');
+        const { data: property } = await supabaseClient.from('properties').select('image_main, images_gallery, floor_plans_images').eq('id', id).single();
        
         const pathsToDelete = [];
         if (property.image_main) { const p = extractPathFromUrl(property.image_main); if (p) pathsToDelete.push(p); }
@@ -507,8 +586,7 @@ async function deleteProperty(id) {
         loadProperties();
     } catch (error) {
         showAlert('❌ Ошибка: ' + error.message, 'error');
-    }
-}
+    }}
 
 // ========== АГЕНТ И НАСТРОЙКИ ==========
 async function loadAgentData() {
@@ -537,7 +615,8 @@ function fillForm(formId, data) {
 
 document.getElementById('agentForm')?.addEventListener('submit', async function(e) {
     e.preventDefault();
-    const data = Object.fromEntries(new FormData(e.target));    try {
+    const data = Object.fromEntries(new FormData(e.target));
+    try {
         if (currentAgentId) await supabaseClient.from('agent_data').update(data).eq('id', currentAgentId);
         else { data.id = 'agent_' + Date.now(); await supabaseClient.from('agent_data').insert([data]); }
         invalidateCache(CACHE_KEYS.agentData);
@@ -556,7 +635,6 @@ async function loadSettings() {
         fillSettingsForm(data);
     } catch (e) { console.error(e); }
 }
-
 function fillSettingsForm(data) {
     const form = document.getElementById('settingsForm');
     if (!form) return;
@@ -586,7 +664,8 @@ async function loadLeads() {
     if (cached && cached.length) {
         document.getElementById('leadsCount').textContent = cached.length;
         renderLeadsTable(container, cached);
-    } else {        container.innerHTML = '<div style="text-align:center;padding:40px;color:#666;">⏳ Загрузка...</div>';
+    } else {
+        container.innerHTML = '<div style="text-align:center;padding:40px;color:#666;">⏳ Загрузка...</div>';
     }
    
     try {
