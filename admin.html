@@ -18,7 +18,7 @@
             background-color: #f5f5f5;
             color: #333;
             line-height: 1.6;
-            padding-top: 10px; /* Отступ для кнопки "Назад" из iframe */
+            padding-top: 10px;
         }
 
         .admin-header {
@@ -26,7 +26,7 @@
             color: white;
             padding: 20px 30px;
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-top: 50px; /* Отступ для кнопки закрытия iframe */
+            margin-top: 50px;
         }
 
         .admin-header h1 {
@@ -96,8 +96,7 @@
             margin-bottom: 20px;
             font-size: 20px;
         }
-        .property-item {
-            background: white;
+        .property-item {            background: white;
             border-radius: 12px;
             padding: 20px;
             margin-bottom: 15px;
@@ -145,8 +144,8 @@
         }
 
         .btn {
-            padding: 10px 20px;            border: none;
-            border-radius: 8px;
+            padding: 10px 20px;
+            border: none;            border-radius: 8px;
             cursor: pointer;
             font-size: 14px;
             font-weight: 500;
@@ -157,6 +156,12 @@
         .btn:hover {
             opacity: 0.9;
             transform: translateY(-1px);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
         }
 
         .btn-primary {
@@ -190,11 +195,11 @@
             font-weight: 500;
             color: #3D5266;
         }
-
         .form-group input,
         .form-group textarea,
         .form-group select {
-            width: 100%;            padding: 12px;
+            width: 100%;
+            padding: 12px;
             border: 1px solid #ddd;
             border-radius: 8px;
             font-size: 14px;
@@ -238,12 +243,12 @@
             border-radius: 8px;
             border: 2px dashed #ddd;
         }
-
-        .alert {
+         .alert {
             padding: 15px 20px;
             border-radius: 8px;
             margin-bottom: 20px;
-            animation: slideIn 0.3s ease;        }
+            animation: slideIn 0.3s ease;
+        }
 
         .alert-success {
             background-color: #d4edda;
@@ -288,11 +293,11 @@
             top: 0;
             z-index: 10;
         }
-
         .leads-table th,
         .leads-table td {
             padding: 14px 18px;
-            text-align: left;            border-bottom: 1px solid #eee;
+            text-align: left;
+            border-bottom: 1px solid #eee;
             min-width: 130px;
             word-wrap: break-word;
             word-break: break-word;
@@ -336,12 +341,12 @@
             gap: 20px;
             margin-bottom: 30px;
         }
-
-        .stat-card {
+         .stat-card {
             background: white;
             padding: 20px;
             border-radius: 12px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);            text-align: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            text-align: center;
         }
 
         .stat-card .number {
@@ -356,6 +361,73 @@
             margin-top: 5px;
         }
 
+        /* 🔥 СТИЛИ ДЛЯ МОДАЛЬНОГО ОКНА ПОДТВЕРЖДЕНИЯ */
+        .confirm-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            animation: fadeIn 0.2s ease;
+        }
+
+        .confirm-modal.hidden {
+            display: none;
+        }
+
+        .confirm-modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            animation: slideUp 0.3s ease;
+        }
+
+        .confirm-modal-content h3 {            margin: 0 0 15px 0;
+            color: #3D5266;
+            font-size: 20px;
+        }
+
+        .confirm-modal-content p {
+            margin: 0 0 25px 0;
+            color: #666;
+            line-height: 1.5;
+            font-size: 15px;
+        }
+
+        .confirm-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
+        .confirm-buttons .btn {
+            min-width: 120px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         @media (max-width: 768px) {
             .property-item {
                 flex-direction: column;
@@ -367,8 +439,7 @@
             }
 
             .property-actions .btn {
-                flex: 1;
-            }
+                flex: 1;            }
 
             .tab-content {
                 padding: 15px;
@@ -381,6 +452,18 @@
             .admin-header h1 {
                 font-size: 20px;
             }
+
+            .confirm-modal-content {
+                padding: 25px;
+            }
+
+            .confirm-buttons {
+                flex-direction: column-reverse;
+            }
+
+            .confirm-buttons .btn {
+                width: 100%;
+            }
         }
     </style>
 </head>
@@ -390,10 +473,10 @@
         (function checkAuth() {
             const tg = window.Telegram.WebApp;
             tg.ready();
-            tg.expand();           
+            tg.expand();          
             const user = tg.initDataUnsafe?.user;
             const ADMIN_USER_ID = 2038206387;
-           
+          
             if (!user || user.id !== ADMIN_USER_ID) {
                 document.body.innerHTML = `
                     <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
@@ -405,9 +488,8 @@
                         </div>
                     </div>
                 `;
-                throw new Error('Unauthorized');
-            }
-           
+                throw new Error('Unauthorized');            }
+          
             console.log('✅ Admin authenticated:', user.id);
         })();
     </script>
@@ -439,7 +521,8 @@
 
     <!-- Вкладка: Добавить объект -->
     <div id="tab-addProperty" class="tab-content">
-        <div class="card">            <h2>➕ Добавить новый объект</h2>
+        <div class="card">
+            <h2>➕ Добавить новый объект</h2>
             <form id="addPropertyForm">
                 <div class="form-row">
                     <div class="form-group">
@@ -454,8 +537,7 @@
 
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Ближайшее метро</label>
-                        <input type="text" name="metro" placeholder="м. Невский проспект">
+                        <label>Ближайшее метро</label>                        <input type="text" name="metro" placeholder="м. Невский проспект">
                     </div>
                     <div class="form-group">
                         <label>Адрес</label>
@@ -488,7 +570,8 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label>Цена за м² (тыс. ₽)</label>
-                        <input type="number" name="price_per_sqm" step="0.1" placeholder="300">                    </div>
+                        <input type="number" name="price_per_sqm" step="0.1" placeholder="300">
+                    </div>
                     <div class="form-group">
                         <label>Срок сдачи</label>
                         <input type="text" name="completion_date" placeholder="IV кв. 2026">
@@ -503,8 +586,7 @@
                     <div class="form-group">
                         <label>Долгота (lng)</label>
                         <input type="number" name="lng" step="0.000001" placeholder="30.335099">
-                    </div>
-                </div>
+                    </div>                </div>
 
                 <div class="form-group">
                     <label>Описание</label>
@@ -553,8 +635,7 @@
             </div>
         </div>
     </div>
-
-    <!-- Вкладка: Данные агента -->
+     <!-- Вкладка: Данные агента -->
     <div id="tab-agent" class="tab-content">
         <div class="card">
             <h2>👤 Данные агента</h2>
@@ -586,7 +667,8 @@
                         <label>Telegram</label>
                         <input type="text" name="telegram" placeholder="@username">
                     </div>
-                    <div class="form-group">                        <label>WhatsApp</label>
+                    <div class="form-group">
+                        <label>WhatsApp</label>
                         <input type="text" name="whatsapp" placeholder="+79991234567">
                     </div>
                 </div>
@@ -602,8 +684,7 @@
     </div>
 
     <!-- Вкладка: Настройки -->
-    <div id="tab-settings" class="tab-content">
-        <div class="card">
+    <div id="tab-settings" class="tab-content">        <div class="card">
             <h2>⚙️ Настройки приложения</h2>
             <form id="settingsForm">
                 <div class="form-group">
@@ -635,10 +716,22 @@
                     <input type="text" name="telegram_chat_id" placeholder="-1001234567890">
                 </div>
 
-                <button type="submit" class="btn btn-primary">💾 Сохранить настройки</button>            </form>
+                <button type="submit" class="btn btn-primary">💾 Сохранить настройки</button>
+            </form>
         </div>
     </div>
 
-    <script src="admin.js?v=1.0.5"></script>
-</body>
+    <!-- 🔥 МОДАЛЬНОЕ ОКНО ПОДТВЕРЖДЕНИЯ -->
+    <div id="confirmModal" class="confirm-modal hidden">
+        <div class="confirm-modal-content">
+            <h3 id="confirmTitle">Подтверждение</h3>
+            <p id="confirmMessage">Вы уверены?</p>
+            <div class="confirm-buttons">
+                <button id="confirmCancel" class="btn btn-secondary">Отмена</button>
+                <button id="confirmOk" class="btn btn-danger">Подтвердить</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="admin.js?v=1.0.6"></script></body>
 </html>
