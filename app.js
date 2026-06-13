@@ -9,101 +9,25 @@ let currentPage = 'home';
 let tg;
 let supabaseClient = null;
 
-// ===== КЭШ ИЗОБРАЖЕНИЙ =====
-const IMAGE_CACHE = {};
-
-// ===== ФУНКЦИЯ ЗАГРУЗКИ ФОТО ЧЕРЕЗ PROXY =====
-async function loadImageSafe(url) {
-    if (!url) {
-        console.warn('❌ [Image] URL is empty');
-        return null;
-    }
-   
-    // Если уже в кэше — возвращаем
-    if (IMAGE_CACHE[url]) {
-        console.log('✅ [Image] Loaded from cache:', url);
-        return IMAGE_CACHE[url];
-    }
-   
-    console.log('📥 [Image] Loading:', url);
-   
-    try {
-        // Пробуем загрузить напрямую (с CORS)
-        const response = await fetch(url, {
-            method: 'GET',
-            mode: 'cors',
-            credentials: 'omit'
-        });
-       
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-       
-        const blob = await response.blob();
-        const blobUrl = URL.createObjectURL(blob);
-       
-        IMAGE_CACHE[url] = blobUrl;
-        console.log('✅ [Image] Loaded successfully:', url, '-> Blob URL created');
-        return blobUrl;
-       
-    } catch (error) {
-        console.error('❌ [Image] Direct load failed:', url, error);       
-        // Пробуем через AllOrigins proxy
-        try {
-            const proxyUrl = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(url);
-            console.log('🔄 [Image] Trying proxy:', proxyUrl);
-           
-            const proxyResponse = await fetch(proxyUrl, {
-                method: 'GET',
-                mode: 'cors'
-            });
-           
-            if (!proxyResponse.ok) {
-                throw new Error(`Proxy HTTP ${proxyResponse.status}`);
-            }
-           
-            const blob = await proxyResponse.blob();
-            const blobUrl = URL.createObjectURL(blob);
-           
-            IMAGE_CACHE[url] = blobUrl;
-            console.log('✅ [Image] Loaded via proxy:', url);
-            return blobUrl;
-           
-        } catch (proxyError) {
-            console.error('❌ [Image] Proxy also failed:', url, proxyError);
-            // Возвращаем оригинальный URL (на всякий случай)
-            return url;
-        }
-    }
-}
-
 function getImageUrl(sourceUrl) {
     if (!sourceUrl) return '';
-   
-    // Если уже полный URL (Supabase или любой другой) — возвращаем как есть
     if (sourceUrl.startsWith('http://') || sourceUrl.startsWith('https://')) {
         return sourceUrl;
     }
-   
-    // Если относительный путь
     if (sourceUrl.startsWith('property-images/')) {
         return 'https://rqiutnpawsmqvmzewamc.supabase.co/storage/v1/object/public/' + sourceUrl;
     }
-   
-    // Для старых Yandex URL (на всякий случай)
     if (sourceUrl.includes('storage.yandexcloud.net')) {
         return sourceUrl;
     }
-   
     return sourceUrl;
 }
+
 function onImgError(e) {
     const img = e.target || e;
     if (img && img.tagName === 'IMG') {
-        const src = img.src;
-        console.error('❌ [Image] Failed to load:', src);
         img.onerror = null;
-        img.src = 'data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200"><rect width="300" height="200" fill="%23f0f0f0"/><text x="50%" y="50%" font-family="sans-serif" font-size="14" fill="%23999" text-anchor="middle" dy=".3em">Фото отсутствует</text></svg>';
+        img.src = 'data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200"><rect width="300" height="200" fill="%23f0f0f0"/><text x="50%" y="50%" font-family="sans-serif" font-size="14" fill="%23999" text-anchor="middle" dy=".3em">Фото</text></svg>';
     }
 }
 
@@ -112,7 +36,6 @@ try {
         tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
-        console.log('✅ Telegram WebApp initialized');
     } else {
         tg = {
             ready: function() {},
@@ -123,47 +46,38 @@ try {
             close: function() { window.close(); },
             openTelegramLink: function(url) { window.open(url); }
         };
-        console.warn('⚠️ Telegram WebApp not available, using mock');
     }
-} catch (e) {
-    console.error('❌ Telegram init error:', e);
-}
-
+} catch (e) { console.error(e); }
 async function loadClientConfig() {
     try {
-        console.log('📥 Loading client-config.json...');
         const response = await fetch('client-config.json');
         config = await response.json();
-        console.log('✅ Client config loaded');
         if (config.supabase && window.supabase) {
             supabaseClient = window.supabase.createClient(
                 config.supabase.url,
                 config.supabase.anonKey
             );
-            console.log('✅ Supabase initialized');
         }
     } catch (error) {
-        console.error('❌ Failed to load config:', error);
+        console.error('Config error:', error);
         alert('Ошибка загрузки конфигурации!');
-    }}
+    }
+}
 
 async function loadAgentData() {
     try {
-        console.log('📥 Loading agent data...');
         const res = await fetch(config.sheets.agentData);
         if (!res.ok) throw new Error('Network error');
         const csv = await res.text();
         const parsed = parseCSV(csv);
         if (parsed.length > 0) {
             currentAgentData = parsed[0];
-            console.log('✅ Agent data loaded');
         }
-    } catch (e) { console.warn('⚠️ Agent data error:', e); }
+    } catch (e) { console.warn('Agent data error:', e); }
 }
 
 async function loadPagesData() {
     try {
-        console.log('📥 Loading pages data...');
         const res = await fetch(config.sheets.pages);
         if (!res.ok) throw new Error('Network error');
         const csv = await res.text();
@@ -173,28 +87,22 @@ async function loadPagesData() {
                 pagesData[row.page] = { title: row.title, content: row.content || '' };
             }
         });
-        console.log('✅ Pages data loaded');
-    } catch (e) { console.warn('⚠️ Pages data error:', e); }
+    } catch (e) { console.warn('Pages data error:', e); }
 }
 
 async function loadPropertiesFromSupabase() {
-    if (!supabaseClient) {
-        console.error('❌ Supabase client not initialized!');
-        return null;
-    }
+    if (!supabaseClient) return null;
     try {
-        console.log('📥 Loading properties from Supabase...');
         const result = await supabaseClient
             .from('properties')
             .select('*')
-            .eq('active', true)
-            .order('created_at', { ascending: false });
+            .eq('active', true)            .order('created_at', { ascending: false });
         if (result.error) throw result.error;
-        console.log('✅ Loaded ' + (result.data ? result.data.length : 0) + ' properties from Supabase');
         return result.data;
     } catch (e) {
-        console.error('❌ Supabase load error:', e);
-        return null;    }
+        console.error('Supabase load error:', e);
+        return null;
+    }
 }
 
 function parseCSV(csv) {
@@ -237,13 +145,13 @@ function showBack() {
     if (btn) btn.classList.remove('hidden');
 }
 
-function hideBack() {
-    const btn = document.getElementById('headerBackBtn');
+function hideBack() {    const btn = document.getElementById('headerBackBtn');
     if (btn) btn.classList.add('hidden');
 }
 
 function appBack() {
-    if (!document.getElementById('consultModal').classList.contains('hidden')) { closeConsultModal(); return; }    if (!document.getElementById('detailsModal').classList.contains('hidden')) { closeModal(); return; }
+    if (!document.getElementById('consultModal').classList.contains('hidden')) { closeConsultModal(); return; }
+    if (!document.getElementById('detailsModal').classList.contains('hidden')) { closeModal(); return; }
     if (!document.getElementById('mapContainer').classList.contains('hidden')) { switchView('list'); return; }
     if (currentPage !== 'home') { showPage('home'); return; }
     if (tg.close) tg.close();
@@ -286,13 +194,13 @@ function showPage(pageId) {
                     const yandexSrc = getImageUrl(imageSrc);
                     img.src = yandexSrc;
                     img.className = 'about-agent-photo';
-                    img.alt = 'Фото';
-                    img.onerror = onImgError;
+                    img.alt = 'Фото';                    img.onerror = onImgError;
                     contentDiv.insertBefore(img, contentDiv.firstChild);
                 }
             }
             targetPage.classList.remove('hidden');
-            showBack();        } else {
+            showBack();
+        } else {
             if (targetPage) {
                 targetPage.querySelector('.page-header h2').textContent = pageId === 'about' ? 'Обо мне' : 'Информация';
                 targetPage.querySelector('.page-content').innerHTML = '<p>Информация загружается...</p>';
@@ -336,11 +244,11 @@ function renderContactsPage() {
     document.getElementById('agencyName').textContent = data.agencyName || '';
     document.getElementById('agencyAddress').textContent = data.agencyAddress ? '📍 ' + data.agencyAddress : '';
 }
-
 function openMenu() {
     document.getElementById('menuOverlay').classList.remove('hidden');
     document.getElementById('sideMenu').classList.remove('hidden');
 }
+
 function closeMenu() {
     document.getElementById('menuOverlay').classList.add('hidden');
     document.getElementById('sideMenu').classList.add('hidden');
@@ -384,33 +292,31 @@ function switchView(view) {
         listBtn.classList.remove('active'); mapBtn.classList.add('active');
         listContainer.classList.add('hidden'); mapContainer.classList.remove('hidden');
         showBack();
-        setTimeout(function() { initMap(); }, 100);
-    }
+        setTimeout(function() { initMap(); }, 100);    }
 }
 
 async function init() {
     try {
-        await loadClientConfig();        applyTheme();
+        await loadClientConfig();
+        applyTheme();
         applyBranding();
         await loadAgentData();
         await loadPagesData();
         let propertiesData = await loadPropertiesFromSupabase();
         if (!propertiesData || propertiesData.length === 0) {
-            console.warn('⚠️ No properties in Supabase');
             propertiesData = [];
         }
         listings = propertiesData;
         renderWelcome();
         renderFilters();
-        await renderListings(listings.filter(function(l) { return l.active; }));
+        renderListings(listings.filter(function(l) { return l.active; }));
         initPhoneMask();
         initTelegramMask();
         hideBack();
         const loadingScreen = document.getElementById('loadingScreen');
         if (loadingScreen) loadingScreen.classList.add('hidden');
-        console.log('✅ App initialized successfully');
     } catch (error) {
-        console.error('❌ Init Error:', error);
+        console.error('Init Error:', error);
         const loadingScreen = document.getElementById('loadingScreen');
         if (loadingScreen) loadingScreen.classList.add('hidden');
     }
@@ -435,11 +341,11 @@ function applyBranding() {
     const headerTitle = document.getElementById('headerTitle');
     if (headerTitle && config.branding.name) {
         headerTitle.textContent = config.branding.name.toUpperCase();
-    }
-    const headerLogo = document.querySelector('#headerBrand .brand-logo');
+    }    const headerLogo = document.querySelector('#headerBrand .brand-logo');
     if (headerLogo && config.branding.logo) {
         const yandexLogo = getImageUrl(config.branding.logo);
-        headerLogo.src = yandexLogo;        headerLogo.onerror = onImgError;
+        headerLogo.src = yandexLogo;
+        headerLogo.onerror = onImgError;
     }
 }
 
@@ -484,11 +390,11 @@ function renderFilters() {
         allRooms.sort();
         roomsContainer.innerHTML = '';
         allRooms.forEach(function(r) {
-            const label = document.createElement('label');
-            label.className = 'checkbox-label';
+            const label = document.createElement('label');            label.className = 'checkbox-label';
             label.innerHTML = '<input type="checkbox" value="' + escapeHtml(r) + '" class="filter-checkbox" data-filter="rooms"><span>' + escapeHtml(r) + '</span>';
             roomsContainer.appendChild(label);
-        });    }
+        });
+    }
     document.querySelectorAll('.price-btn').forEach(function(btn) {
         btn.addEventListener('click', function() {
             if (this.classList.contains('active')) this.classList.remove('active');
@@ -530,13 +436,9 @@ function resetFilters() {
     renderListings(listings.filter(function(l) { return l.active; }));
 }
 
-async function renderListings(data) {
-    console.log('📋 Rendering listings:', data.length, 'items');
+function renderListings(data) {
     const container = document.getElementById('listingsContainer');
-    if (!container) {
-        console.error('❌ listingsContainer not found!');
-        return;
-    }
+    if (!container) return;
     container.innerHTML = '';    if (listings.length === 0) {
         container.innerHTML = '<div class="empty-state"><div class="empty-icon">🏗️</div><h3>База пуста</h3><p>Объекты ещё не добавлены.</p></div>';
         return;
@@ -545,48 +447,37 @@ async function renderListings(data) {
         container.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><h3>Ничего не найдено</h3><p>Попробуйте изменить параметры поиска.</p><button class="btn-reset-filters" onclick="resetFilters()">Сбросить фильтры</button></div>';
         return;
     }
-   
-    for (const item of data) {
-        try {
-            let priceDisplay = '?';
-            if (typeof item.price_from === 'number') {
-                priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) + ' млн ₽' : (item.price_from / 1000000).toFixed(1) + ' млн ₽';
-            }
-            const priceTo = typeof item.price_to === 'number' ? item.price_to.toFixed(1) : '';
-            const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
-            const area = (typeof item.area_min === 'number' && typeof item.area_max === 'number') ? item.area_min + '–' + item.area_max + ' м²' : '';
-            const statusKey = (item.status || 'other').toString().replace(/\s+/g, '-');
-            const statusText = item.status === 'Сдан' ? '✅ Сдан' : item.status === 'Строится' ? '️ Строится' : '🟡 Частично сдан';
-           
-            // Загружаем фото через proxy
-            const imageUrl = getImageUrl(item.image_main);
-            console.log('🖼️ Loading image for', item.name, ':', imageUrl);
-            const safeImageUrl = await loadImageSafe(imageUrl);
-           
-            const card = document.createElement('div');
-            card.className = 'listing-card';
-            card.onclick = function(e) { if (!e.target.closest('.consult-btn-inline')) openDetails(item.id); };
-           
-            card.innerHTML = '<img src="' + safeImageUrl + '" alt="' + escapeHtml(item.name) + '" class="listing-image" crossorigin="anonymous" referrerpolicy="no-referrer" onerror="onImgError(event)">' +
-                '<div class="listing-info">' +
-                '<h3>' + (escapeHtml(item.name) || 'Без названия') + '</h3>' +
-                '<div class="listing-meta">' +
-                '<span>📍 ' + (escapeHtml(item.district) || '') + '</span>' +
-                '<span>🚇 ' + (escapeHtml(item.metro) || '') + '</span>' +
-                (item.rooms ? '<span>🚪 ' + escapeHtml(item.rooms) + '</span>' : '') +
-                (area ? '<span>📐 ' + escapeHtml(area) + '</span>' : '') +
-                '</div>' +
-                '<div class="listing-price">от ' + priceDisplay + (priceTo ? ' до ' + priceTo + ' млн ₽' : '') + (ppsqm ? '<br><span class="price-per-sqm">~' + ppsqm + ' ₽/м²</span>' : '') + '</div>' +
-                '<div class="listing-status status-' + statusKey + '">' + statusText + '</div>' +
-                '<button class="tg-btn consult-btn-inline" onclick="openConsultForm(\'' + item.id + '\', event)">📞 Получить консультацию</button>' +
-                '</div>';
-            container.appendChild(card);
-            console.log('✅ Rendered card for', item.name);
-        } catch (err) {
-            console.error('❌ Error rendering card for', item.name, ':', err);
+    data.forEach(function(item) {
+        let priceDisplay = '?';
+        if (typeof item.price_from === 'number') {
+            priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) + ' млн ₽' : (item.price_from / 1000000).toFixed(1) + ' млн ₽';
         }
-    }
+        const priceTo = typeof item.price_to === 'number' ? item.price_to.toFixed(1) : '';
+        const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
+        const area = (typeof item.area_min === 'number' && typeof item.area_max === 'number') ? item.area_min + '–' + item.area_max + ' м²' : '';
+        const statusKey = (item.status || 'other').toString().replace(/\s+/g, '-');
+        const statusText = item.status === 'Сдан' ? '✅ Сдан' : item.status === 'Строится' ? '️ Строится' : '🟡 Частично сдан';
+        const imageUrl = getImageUrl(item.image_main);
+        const card = document.createElement('div');
+        card.className = 'listing-card';
+        card.onclick = function(e) { if (!e.target.closest('.consult-btn-inline')) openDetails(item.id); };
+        card.innerHTML = '<img src="' + imageUrl + '" alt="' + escapeHtml(item.name) + '" class="listing-image" onerror="onImgError(event)">' +
+            '<div class="listing-info">' +
+            '<h3>' + (escapeHtml(item.name) || 'Без названия') + '</h3>' +
+            '<div class="listing-meta">' +
+            '<span>📍 ' + (escapeHtml(item.district) || '') + '</span>' +
+            '<span>🚇 ' + (escapeHtml(item.metro) || '') + '</span>' +
+            (item.rooms ? '<span>🚪 ' + escapeHtml(item.rooms) + '</span>' : '') +
+            (area ? '<span>📐 ' + escapeHtml(area) + '</span>' : '') +
+            '</div>' +
+            '<div class="listing-price">от ' + priceDisplay + (priceTo ? ' до ' + priceTo + ' млн ₽' : '') + (ppsqm ? '<br><span class="price-per-sqm">~' + ppsqm + ' ₽/м²</span>' : '') + '</div>' +
+            '<div class="listing-status status-' + statusKey + '">' + statusText + '</div>' +
+            '<button class="tg-btn consult-btn-inline" onclick="openConsultForm(\'' + item.id + '\', event)">📞 Получить консультацию</button>' +
+            '</div>';
+        container.appendChild(card);
+    });
 }
+
 function initMap() {
     if (typeof L === 'undefined') return;
     const mapContainer = document.getElementById('mapContainer');
@@ -598,7 +489,6 @@ function initMap() {
     filterListings();
     setTimeout(function() { map.invalidateSize(); }, 150);
 }
-
 function updateMapMarkers(filteredItems) {
     if (!map) return;
     markers.forEach(function(m) { map.removeLayer(m); });
@@ -624,25 +514,20 @@ function updateMapMarkers(filteredItems) {
     }
 }
 
-async function openDetails(id) {
-    console.log('🔍 Opening details for ID:', id);
+function openDetails(id) {
     const item = listings.find(function(l) { return l.id === id; });
-    if (!item) {
-        console.error('❌ Item not found:', id);
-        return;
-    }
+    if (!item) return;
     currentModalId = id;
     document.getElementById('modalTitle').textContent = item.name || '';
     let priceDisplay = '?';
     if (typeof item.price_from === 'number') {
-        priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);    }
+        priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
+    }
     const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
     document.getElementById('modalPrice').innerHTML = 'от <b>' + priceDisplay + '</b> млн ₽' + (ppsqm ? '<span class="price-per-sqm">~' + ppsqm + ' ₽/м²</span>' : '');
     document.getElementById('modalMeta').innerHTML = '<div class="meta-row"><span>📍 ' + (escapeHtml(item.address) || '') + '</span></div><div class="meta-row"><span> м. ' + (escapeHtml(item.metro) || '') + '</span></div><div class="meta-row"><span>🏗️ Класс: ' + (escapeHtml(item.class) || '') + '</span></div><div class="meta-row"><span> Отделка: ' + (escapeHtml(item.finishing) || '') + '</span></div><div class="meta-row"><span>📅 Срок сдачи: ' + (escapeHtml(item.completion_soonest) || '') + (item.completion_soonest && item.completion_all ? ' - ' : '') + (escapeHtml(item.completion_all) || '') + '</span></div>';
     document.getElementById('modalDescription').textContent = item.description || 'Описание отсутствует';
     document.getElementById('modalFeatures').innerHTML = item.features ? '<ul>' + item.features.split(',').map(function(f) { return '<li>' + escapeHtml(f.trim()) + '</li>'; }).join('') + '</ul>' : '<p style="color: var(--text-secondary);">Информация уточняется</p>';
-   
-    // Галерея
     const galleryContainer = document.getElementById('modalGallery');
     galleryContainer.innerHTML = '';
     let allImages = [];
@@ -650,33 +535,25 @@ async function openDetails(id) {
     if (item.images_gallery) {
         allImages = allImages.concat(item.images_gallery.split(',').map(function(u) { return u.trim(); }).filter(function(u) { return u; }));
     }
-    console.log('🖼️ Loading gallery:', allImages.length, 'images');
-   
     if (allImages.length > 0) {
         const track = document.createElement('div');
-        track.className = 'carousel-track';
-        const dotsContainer = document.createElement('div');
+        track.className = 'carousel-track';        const dotsContainer = document.createElement('div');
         dotsContainer.className = 'carousel-dots';
-       
-        for (let i = 0; i < allImages.length; i++) {
-            const url = allImages[i];
+        allImages.forEach(function(url, index) {
             const slide = document.createElement('div');
             slide.className = 'slide';
             const img = document.createElement('img');
-            const fullUrl = getImageUrl(url);
-            const safeUrl = await loadImageSafe(fullUrl);
-            img.src = safeUrl;
-            img.crossOrigin = 'anonymous';
-            img.referrerPolicy = 'no-referrer';
-            img.onclick = function() { window.open(safeUrl, '_blank'); };
+            const yandexUrl = getImageUrl(url);
+            img.src = yandexUrl;
+            img.onclick = function() { window.open(yandexUrl, '_blank'); };
             img.onerror = onImgError;
             slide.appendChild(img);
             track.appendChild(slide);
             const dot = document.createElement('div');
-            dot.className = 'dot ' + (i === 0 ? 'active' : '');
+            dot.className = 'dot ' + (index === 0 ? 'active' : '');
             dot.onclick = function() { track.scrollTo({ left: slide.offsetLeft, behavior: 'smooth' }); };
             dotsContainer.appendChild(dot);
-        }
+        });
         galleryContainer.appendChild(track);
         galleryContainer.appendChild(dotsContainer);
         track.addEventListener('scroll', function() {
@@ -684,9 +561,8 @@ async function openDetails(id) {
             dotsContainer.querySelectorAll('.dot').forEach(function(d, i) { d.classList.toggle('active', i === index); });
         });
     } else {
-        galleryContainer.innerHTML = '<p style="color: var(--text-secondary); text-align:center; padding: 20px;">Фото нет</p>';    }
-   
-    // Планировки
+        galleryContainer.innerHTML = '<p style="color: var(--text-secondary); text-align:center; padding: 20px;">Фото нет</p>';
+    }
     const plansContainer = document.getElementById('modalFloorPlans');
     plansContainer.innerHTML = '';
     let plansImages = [];
@@ -700,27 +576,22 @@ async function openDetails(id) {
         plansContainer.appendChild(title);
         const plansTrack = document.createElement('div');
         plansTrack.className = 'carousel-track';
-        for (const url of plansImages) {
+        plansImages.forEach(function(url) {
             const slide = document.createElement('div');
             slide.className = 'slide';
             slide.style.flex = '0 0 85%';
             const img = document.createElement('img');
-            const fullUrl = getImageUrl(url);
-            const safeUrl = await loadImageSafe(fullUrl);
-            img.src = safeUrl;
-            img.crossOrigin = 'anonymous';
-            img.referrerPolicy = 'no-referrer';
+            const yandexUrl = getImageUrl(url);
+            img.src = yandexUrl;
             img.style.height = '200px';
-            img.onclick = function() { window.open(safeUrl, '_blank'); };
+            img.onclick = function() { window.open(yandexUrl, '_blank'); };
             img.onerror = onImgError;
-            slide.appendChild(img);
-            plansTrack.appendChild(slide);
-        }
+            slide.appendChild(img);            plansTrack.appendChild(slide);
+        });
         plansContainer.appendChild(plansTrack);
     } else if (item.floor_plans_text) {
         plansContainer.innerHTML = '<h3 class="plans-section-title"> Планировки</h3><p class="floor-plans-text">' + item.floor_plans_text + '</p>';
     }
-   
     const modalContent = document.querySelector('#detailsModal .modal-content');
     let btn = document.getElementById('modalConsultBtn');
     if (!btn) {
@@ -733,9 +604,9 @@ async function openDetails(id) {
     }
     btn.textContent = ' Получить консультацию';
     btn.onclick = function() { openConsultForm(id); };
-    document.getElementById('detailsModal').classList.remove('hidden');    document.body.style.overflow = 'hidden';
+    document.getElementById('detailsModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
     showBack();
-    console.log('✅ Details opened for', item.name);
 }
 
 function closeModal() {
@@ -764,8 +635,7 @@ function openConsultForm(id, event) {
     }
 }
 
-function closeConsultModal() {
-    document.getElementById('consultModal').classList.add('hidden');
+function closeConsultModal() {    document.getElementById('consultModal').classList.add('hidden');
     document.getElementById('consultForm').reset();
     const submitBtn = document.querySelector('#consultForm button[type="submit"]');
     if (submitBtn) {
@@ -782,7 +652,8 @@ function initPhoneMask() {
         let x = e.target.value.replace(/\D/g, '').match(/(\d{0,1})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
         e.target.value = !x[2] ? '+7 (' : '+7 (' + x[2] + (x[3] ? ') ' + x[3] : '') + (x[4] ? '-' + x[4] : '') + (x[5] ? '-' + x[5] : '');
     });
-    input.addEventListener('focus', function(e) { if (e.target.value === '') e.target.value = '+7 ('; });}
+    input.addEventListener('focus', function(e) { if (e.target.value === '') e.target.value = '+7 ('; });
+}
 
 function initTelegramMask() {
     const input = document.getElementById('consultTelegram');
@@ -798,10 +669,8 @@ function initTelegramMask() {
 function submitConsultForm(event) {
     event.preventDefault();
     try {
-        console.log('📱 Отправка заявки (мобильная версия)');
         const item = listings.find(function(l) { return l.id === currentModalId; });
         if (!item) {
-            console.error('❌ Объект не найден:', currentModalId);
             tg.showAlert('❌ Ошибка: объект не найден');
             return;
         }
@@ -815,8 +684,7 @@ function submitConsultForm(event) {
         if (phone.replace(/\D/g, '').length < 10) {
             tg.showAlert('❌ Введите корректный телефон');
             return;
-        }
-        if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) {
+        }        if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) {
             tg.showAlert('❌ Telegram только латиницей');
             return;
         }
@@ -825,27 +693,24 @@ function submitConsultForm(event) {
         submitBtn.textContent = 'Отправка...';
         submitBtn.disabled = true;
         if (!supabaseClient) {
-            console.error('❌ Supabase client не инициализирован!');
             tg.showAlert('⚠️ Ошибка подключения. Попробуйте позже.');
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
             return;
         }
-        const supabasePayload = {            secret: config.client.secretKey,
+        const supabasePayload = {
+            secret: config.client.secretKey,
             projectid: config.client.projectId,
             title: item.name,
             leadname: name,
             leadphone: phone,
             leadtelegram: telegram || 'Не указан'
         };
-        console.log('📤 Отправка:', supabasePayload);
         supabaseClient
             .from('leads')
             .insert([supabasePayload])
             .then(function(result) {
-                console.log('✅ Результат:', result);
                 if (result.error) {
-                    console.error('❌ Ошибка Supabase:', result.error);
                     tg.showAlert('⚠️ Ошибка: ' + result.error.message);
                     submitBtn.textContent = originalText;
                     submitBtn.disabled = false;
@@ -865,44 +730,32 @@ function submitConsultForm(event) {
                             leadtelegram: telegram || 'Не указан',
                             title: item.name
                         })
-                    }).catch(function() { /* игнорируем ошибки уведомления */ });
+                    }).catch(function() { });
                 }
                 submitBtn.textContent = 'Отправить заявку';
-                submitBtn.disabled = false;
-                document.getElementById('consultForm').reset();
+                submitBtn.disabled = false;                document.getElementById('consultForm').reset();
                 closeConsultModal();
                 setTimeout(function() {
-                    tg.showAlert('✅ Заявка отправлена! Мы свяжемся с вами в ближайшее время.');
+                    tg.showAlert('✅ Заявка отправлена!');
                 }, 100);
             })
             .catch(function(err) {
-                console.error('❌ Ошибка:', err);
-                tg.showAlert('⚠️ Ошибка отправки. Проверьте интернет-соединение.');
+                tg.showAlert('⚠️ Ошибка отправки.');
                 submitBtn.textContent = originalText;
                 submitBtn.disabled = false;
-            });    } catch (e) {
-        console.error('❌ Критическая ошибка:', e);
-        tg.showAlert('⚠️ Произошла ошибка. Попробуйте позже.');
+            });
+    } catch (e) {
+        tg.showAlert('⚠️ Произошла ошибка.');
     }
 }
 
 async function submitLeadToSupabase(payload) {
-    console.log('📥 Отправка в Supabase leads...');
-    if (!supabaseClient) {
-        console.error('❌ Supabase client не инициализирован!');
-        return null;
-    }
+    if (!supabaseClient) return null;
     try {
         const result = await supabaseClient.from('leads').insert([payload]);
-        console.log('📥 Результат:', result);
-        if (result.error) {
-            console.error('❌ Ошибка Supabase:', result.error);
-            throw result.error;
-        }
-        console.log('✅ Успешно сохранено!');
+        if (result.error) throw result.error;
         return { success: true };
     } catch (e) {
-        console.error('Supabase lead error:', e);
         return null;
     }
 }
