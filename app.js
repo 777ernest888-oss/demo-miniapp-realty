@@ -17,9 +17,9 @@ function getImageUrl(sourceUrl) {
         return sourceUrl;
     }
    
-    // Если относительный путь — добавляем GitHub URL
+    // Если относительный путь — добавляем CDN URL
     if (sourceUrl.startsWith('property-images/')) {
-        return 'https://raw.githubusercontent.com/777ernest888-oss/demo-miniapp-realty/main/' + sourceUrl;
+        return 'https://cdn.jsdelivr.net/gh/777ernest888-oss/demo-miniapp-realty@main/' + sourceUrl;
     }
    
     return sourceUrl;
