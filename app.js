@@ -474,7 +474,7 @@ function renderListings(data) {
         const card = document.createElement('div');
         card.className = 'listing-card';
         card.onclick = function(e) { if (!e.target.closest('.consult-btn-inline')) openDetails(item.id); };
-        card.innerHTML = '<img src="' + escapeHtml(yandexMain) + '" alt="' + escapeHtml(item.name) + '" class="listing-image" onerror="onImgError(event)">' +
+        card.innerHTML = '<img src="' + yandexMain + '" alt="' + escapeHtml(item.name) + '" class="listing-image" crossorigin="anonymous" referrerpolicy="no-referrer" onerror="onImgError(event)">' +
             '<div class="listing-info">' +
             '<h3>' + (escapeHtml(item.name) || 'Без названия') + '</h3>' +
             '<div class="listing-meta">' +
@@ -558,6 +558,8 @@ function openDetails(id) {
             const img = document.createElement('img');
             const yandexUrl = getImageUrl(url);
             img.src = yandexUrl;
+            img.crossOrigin = 'anonymous';
+            img.referrerPolicy = 'no-referrer';
             img.onclick = function() { window.open(yandexUrl, '_blank'); };
             img.onerror = onImgError;
             slide.appendChild(img);
@@ -584,9 +586,9 @@ function openDetails(id) {
     }
     if (plansImages.length > 0) {
         const title = document.createElement('h3');
-        title.className = 'plans-section-title';
-        title.textContent = '📐 Планировки';
-        plansContainer.appendChild(title);        const plansTrack = document.createElement('div');
+        title.className = 'plans-section-title';        title.textContent = '📐 Планировки';
+        plansContainer.appendChild(title);
+        const plansTrack = document.createElement('div');
         plansTrack.className = 'carousel-track';
         plansImages.forEach(function(url) {
             const slide = document.createElement('div');
@@ -595,6 +597,8 @@ function openDetails(id) {
             const img = document.createElement('img');
             const yandexUrl = getImageUrl(url);
             img.src = yandexUrl;
+            img.crossOrigin = 'anonymous';
+            img.referrerPolicy = 'no-referrer';
             img.style.height = '200px';
             img.onclick = function() { window.open(yandexUrl, '_blank'); };
             img.onerror = onImgError;
@@ -631,11 +635,11 @@ function closeModal() {
 
 function openConsultForm(id, event) {
     if (event) event.stopPropagation();
-    currentModalId = id;
-    const item = listings.find(function(l) { return l.id === id; });
+    currentModalId = id;    const item = listings.find(function(l) { return l.id === id; });
     if (item) {
         document.getElementById('consultObjectName').textContent = '🏢 ' + item.name;
-        document.getElementById('consultName').value = '';        document.getElementById('consultPhone').value = '+7 (';
+        document.getElementById('consultName').value = '';
+        document.getElementById('consultPhone').value = '+7 (';
         document.getElementById('consultTelegram').value = '';
         const submitBtn = document.querySelector('#consultForm button[type="submit"]');
         if (submitBtn) {
@@ -680,11 +684,11 @@ function initTelegramMask() {
 }
 
 function submitConsultForm(event) {
-    event.preventDefault();
-    try {
+    event.preventDefault();    try {
         console.log('📱 Отправка заявки (мобильная версия)');
         const item = listings.find(function(l) { return l.id === currentModalId; });
-        if (!item) {            console.error('Объект не найден:', currentModalId);
+        if (!item) {
+            console.error('Объект не найден:', currentModalId);
             tg.showAlert('❌ Ошибка: объект не найден');
             return;
         }
@@ -729,11 +733,11 @@ function submitConsultForm(event) {
             .then(function(result) {
                 console.log('✅ Результат:', result);
                 if (result.error) {
-                    console.error('❌ Ошибка Supabase:', result.error);
-                    tg.showAlert('⚠️ Ошибка: ' + result.error.message);
+                    console.error('❌ Ошибка Supabase:', result.error);                    tg.showAlert('⚠️ Ошибка: ' + result.error.message);
                     submitBtn.textContent = originalText;
                     submitBtn.disabled = false;
-                    return;                }
+                    return;
+                }
                 if (config.supabase && config.supabase.url) {
                     fetch(config.supabase.url + '/functions/v1/notify-lead', {
                         method: 'POST',
@@ -778,11 +782,11 @@ async function submitLeadToSupabase(payload) {
     }
     try {
         const result = await supabaseClient.from('leads').insert([payload]);
-        console.log('📥 Результат:', result);
-        if (result.error) {
+        console.log('📥 Результат:', result);        if (result.error) {
             console.error('❌ Ошибка Supabase:', result.error);
             throw result.error;
-        }        console.log('✅ Успешно сохранено!');
+        }
+        console.log('✅ Успешно сохранено!');
         return { success: true };
     } catch (e) {
         console.error('Supabase lead error:', e);
