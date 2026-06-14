@@ -1,4 +1,4 @@
-// admin.js v1.2.2 - Исправлено чтение вложенной структуры config
+// admin.js v1.4.0 - Полный функционал + безопасность
 // Telegram Mini App Realty - Admin Panel
 
 // ============================================
@@ -6,8 +6,8 @@
 // ============================================
 const ADMIN_USER_ID = '2038206387';
 const CDN_BASE = 'https://cdn.jsdelivr.net/gh/777ernest888-oss/demo-miniapp-realty@main/';
-const MOBILE_TIMEOUT = 25000;
-const DESKTOP_TIMEOUT = 15000;
+const MOBILE_TIMEOUT = 30000; // 30 сек для мобильных
+const DESKTOP_TIMEOUT = 15000; // 15 сек для ПК
 
 // Глобальные переменные
 let config = {};
@@ -71,11 +71,7 @@ function hideLoading() {
 
 function showError(message) {
     console.error('❌', message);
-    if (tg && tg.showAlert) {
-        tg.showAlert(message);
-    } else {
-        alert(message);
-    }
+    alert(message);
 }
 
 function showSuccess(message) {
@@ -93,15 +89,14 @@ async function initializeApp() {
         const configResponse = await fetch('client-config.json');
         const rawConfig = await configResponse.json();
        
-        // Правильно читаем вложенную структуру
         config = {
             supabaseUrl: rawConfig.supabase?.url || rawConfig.supabaseUrl,
-            supabaseAnonKey: rawConfig.supabase?.anonKey || rawConfig.supabaseAnonKey,            ...rawConfig
+            supabaseAnonKey: rawConfig.supabase?.anonKey || rawConfig.supabaseAnonKey,
+            ...rawConfig
         };
        
-        console.log('✅ Конфиг загружен', config);
-       
-        if (!config.supabaseUrl || !config.supabaseAnonKey) {
+        console.log('✅ Конфиг загружен');
+                if (!config.supabaseUrl || !config.supabaseAnonKey) {
             throw new Error('Не найдены данные для подключения к Supabase');
         }
        
@@ -119,16 +114,18 @@ async function initializeApp() {
                 return;
             }
         } catch (authError) {
-            console.log('ℹ️ Тестовый режим (вне Telegram)');
+            console.log('ℹ️ Тестовый режим');
         }
        
         await loadProperties();
         await warmupDatabase();
        
         console.log('✅ Админка готова');
+        hideLoading();
     } catch (error) {
         console.error('❌ Ошибка инициализации:', error);
         showError('Ошибка: ' + error.message);
+        hideLoading();
     }
 }
 
@@ -137,7 +134,7 @@ function showAuthError() {
 }
 
 // ============================================
-// ЗАГРУЗКА И ОТОБРАЖЕНИЕ ОБЪЕКТОВ
+// ЗАГРУЗКА ОБЪЕКТОВ
 // ============================================
 async function loadProperties() {
     showLoading('Загрузка объектов...');
@@ -145,10 +142,10 @@ async function loadProperties() {
         const { data, error } = await db.from('properties').select('*').order('created_at', { ascending: false });
         hideLoading();
         if (error) throw error;
-        renderProperties(data || []);    } catch (error) {
+        renderProperties(data || []);
+    } catch (error) {
         console.error('Ошибка загрузки:', error);
-        hideLoading();
-        showError('Не удалось загрузить объекты');
+        hideLoading();        showError('Не удалось загрузить объекты');
     }
 }
 
@@ -171,9 +168,6 @@ function renderProperties(properties) {
                 <div style="flex:1;min-width:250px;">
                     <h3 style="margin:0 0 10px 0;color:#333;">${escapeHtml(prop.title)}</h3>
                     <p style="margin:5px 0;color:#666;">📍 ${escapeHtml(prop.address || prop.district || '')}</p>
-                    <p style="margin:5px 0;color:#666;">💰 ${prop.price ? prop.price.toLocaleString('ru-RU') : '—'} ₽</p>
-                    <p style="margin:5px 0;color:#666;">🏠 ${prop.rooms || '—'} комн.</p>
-                    <p style="margin:5px 0;color:#666;">📐 ${prop.area || '—'} м²</p>
                     <div style="margin-top:15px;display:flex;gap:10px;flex-wrap:wrap;">
                         <button onclick="toggleProperty('${prop.id}',${isActive})" style="padding:8px 16px;border:none;border-radius:6px;cursor:pointer;background:${isActive ? '#6c757d' : '#28a745'};color:white;font-size:14px;">${isActive ? '🙈 Скрыть' : '✅ Показать'}</button>
                         <button onclick="editProperty('${prop.id}')" style="padding:8px 16px;border:none;border-radius:6px;cursor:pointer;background:#17a2b8;color:white;font-size:14px;">✏️ Редактировать</button>
@@ -194,56 +188,33 @@ function showAddForm() {
    
     const formHtml = `<div id="propertyFormOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;display:flex;justify-content:center;align-items:flex-start;padding:20px;overflow-y:auto;">
         <div style="background:white;border-radius:12px;padding:30px;width:100%;max-width:600px;margin:20px 0;">
-            <h2 style="margin:0 0 20px 0;color:#333;">📝 Новый объект</h2>            <form id="propertyForm" onsubmit="saveProperty(event)">
+            <h2 style="margin:0 0 20px 0;color:#333;">📝 Новый объект</h2>
+            <form id="propertyForm" onsubmit="saveProperty(event)">
                 <div style="margin-bottom:15px;">
                     <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Название *</label>
                     <input type="text" name="title" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
                 </div>
-                <div style="margin-bottom:15px;">
-                    <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Адрес (улица + дом) *</label>
+                <div style="margin-bottom:15px;">                    <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Адрес (улица + дом) *</label>
                     <input type="text" name="address" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
                 </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
-                    <div style="margin-bottom:15px;">
-                        <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Цена (₽) *</label>
-                        <input type="number" name="price" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
-                    </div>
-                    <div style="margin-bottom:15px;">
-                        <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Комнат *</label>
-                        <input type="number" name="rooms" required min="1" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
-                    </div>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
-                    <div style="margin-bottom:15px;">
-                        <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Площадь (м²) *</label>
-                        <input type="number" name="area" required step="0.1" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
-                    </div>
-                    <div style="margin-bottom:15px;">
-                        <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Этаж *</label>
-                        <input type="text" name="floor" required placeholder="5/12" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
-                    </div>
-                </div>
-                <div style="margin-bottom:15px;">
-                    <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Описание</label>
-                    <textarea name="description" rows="4" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;"></textarea>
-                </div>
                 <div style="margin-bottom:20px;">
-                    <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📷 Главное фото</label>
+                    <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📷 Главное фото *</label>
                     <input type="file" id="mainPhotoInput" accept="image/*" onchange="handleMainPhotoSelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
                     <div id="mainPhotoPreview" style="margin-top:10px;"></div>
                 </div>
                 <div style="margin-bottom:20px;">
-                    <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📸 Галерея</label>
+                    <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📸 Галерея (минимум 2 фото)</label>
                     <input type="file" id="galleryInput" accept="image/*" multiple onchange="handleGallerySelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
                     <div id="galleryPreview" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;"></div>
                 </div>
                 <div style="margin-bottom:20px;">
-                    <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📐 Планы</label>
+                    <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📐 Планировки</label>
                     <input type="file" id="plansInput" accept="image/*" multiple onchange="handlePlansSelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
                     <div id="plansPreview" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;"></div>
                 </div>
                 <div style="display:flex;gap:10px;justify-content:flex-end;">
-                    <button type="button" onclick="closePropertyForm()" style="padding:12px 24px;background:#6c757d;color:white;border:none;border-radius:6px;cursor:pointer;font-size:16px;">❌ Отмена</button>                    <button type="submit" id="savePropertyBtn" style="padding:12px 24px;background:#28a745;color:white;border:none;border-radius:6px;cursor:pointer;font-size:16px;">💾 Сохранить</button>
+                    <button type="button" onclick="closePropertyForm()" style="padding:12px 24px;background:#6c757d;color:white;border:none;border-radius:6px;cursor:pointer;font-size:16px;">❌ Отмена</button>
+                    <button type="submit" id="savePropertyBtn" style="padding:12px 24px;background:#28a745;color:white;border:none;border-radius:6px;cursor:pointer;font-size:16px;">💾 Сохранить</button>
                 </div>
             </form>
         </div>
@@ -272,12 +243,7 @@ function handleMainPhotoSelect(event) {
     if (file.size > 5 * 1024 * 1024) { showError('Файл больше 5 МБ'); return; }
    
     const reader = new FileReader();
-    reader.onload = (e) => {
-        const preview = document.getElementById('mainPhotoPreview');
-        preview.innerHTML = `<div style="position:relative;display:inline-block;">
-            <img src="${e.target.result}" style="max-width:200px;border-radius:8px;">
-            <button type="button" onclick="document.getElementById('mainPhotoInput').value='';document.getElementById('mainPhotoPreview').innerHTML=''" style="position:absolute;top:5px;right:5px;width:24px;height:24px;background:#dc3545;color:white;border:none;border-radius:50%;cursor:pointer;">×</button>
-        </div>`;
+    reader.onload = (e) => {        document.getElementById('mainPhotoPreview').innerHTML = '<div style="position:relative;display:inline-block;"><img src="' + e.target.result + '" style="max-width:200px;border-radius:8px;"><button type="button" onclick="document.getElementById(\'mainPhotoInput\').value=\'\';document.getElementById(\'mainPhotoPreview\').innerHTML=\'\'" style="position:absolute;top:5px;right:5px;width:24px;height:24px;background:#dc3545;color:white;border:none;border-radius:50%;cursor:pointer;">×</button></div>';
     };
     reader.readAsDataURL(file);
     uploadedPhotos.main = file;
@@ -292,7 +258,8 @@ function handleGallerySelect(event) {
         if (file.size > 5 * 1024 * 1024) { showError('Файл ' + file.name + ' больше 5 МБ'); return false; }
         return true;
     });
-        if (validFiles.length === 0) return;
+   
+    if (validFiles.length === 0) return;
    
     const preview = document.getElementById('galleryPreview');
     validFiles.forEach((file, idx) => {
@@ -300,8 +267,7 @@ function handleGallerySelect(event) {
         reader.onload = (e) => {
             const div = document.createElement('div');
             div.style.position = 'relative';
-            div.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100px;object-fit:cover;border-radius:6px;">
-                <button type="button" onclick="this.parentElement.remove()" style="position:absolute;top:5px;right:5px;width:24px;height:24px;background:#dc3545;color:white;border:none;border-radius:50%;cursor:pointer;">×</button>`;
+            div.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100px;object-fit:cover;border-radius:6px;"><button type="button" onclick="this.parentElement.remove()" style="position:absolute;top:5px;right:5px;width:24px;height:24px;background:#dc3545;color:white;border:none;border-radius:50%;cursor:pointer;">×</button>';
             preview.appendChild(div);
         };
         reader.readAsDataURL(file);
@@ -326,10 +292,8 @@ function handlePlansSelect(event) {
     validFiles.forEach((file, idx) => {
         const reader = new FileReader();
         reader.onload = (e) => {
-            const div = document.createElement('div');
-            div.style.position = 'relative';
-            div.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100px;object-fit:cover;border-radius:6px;">
-                <button type="button" onclick="this.parentElement.remove()" style="position:absolute;top:5px;right:5px;width:24px;height:24px;background:#dc3545;color:white;border:none;border-radius:50%;cursor:pointer;">×</button>`;
+            const div = document.createElement('div');            div.style.position = 'relative';
+            div.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100px;object-fit:cover;border-radius:6px;"><button type="button" onclick="this.parentElement.remove()" style="position:absolute;top:5px;right:5px;width:24px;height:24px;background:#dc3545;color:white;border:none;border-radius:50%;cursor:pointer;">×</button>';
             preview.appendChild(div);
         };
         reader.readAsDataURL(file);
@@ -341,7 +305,8 @@ function handlePlansSelect(event) {
 // ============================================
 // СОХРАНЕНИЕ
 // ============================================
-async function saveProperty(event) {    event.preventDefault();
+async function saveProperty(event) {
+    event.preventDefault();
    
     if (!editingPropertyId && !uploadedPhotos.main) {
         showError('Загрузите главное фото');
@@ -361,11 +326,6 @@ async function saveProperty(event) {    event.preventDefault();
         const propertyData = {
             title: formData.get('title'),
             address: formData.get('address'),
-            price: parseFloat(formData.get('price')),
-            rooms: parseInt(formData.get('rooms')),
-            area: parseFloat(formData.get('area')),
-            floor: formData.get('floor'),
-            description: formData.get('description'),
             updated_at: new Date().toISOString()
         };
        
@@ -381,8 +341,7 @@ async function saveProperty(event) {    event.preventDefault();
        
         console.log('💾 Сохранение в БД...');
         let result;
-        if (editingPropertyId) {
-            result = await db.from('properties').update(propertyData).eq('id', editingPropertyId).select();
+        if (editingPropertyId) {            result = await db.from('properties').update(propertyData).eq('id', editingPropertyId).select();
         } else {
             propertyData.id = photoFolderId;
             propertyData.created_at = new Date().toISOString();
@@ -390,7 +349,8 @@ async function saveProperty(event) {    event.preventDefault();
             result = await db.from('properties').insert([propertyData]).select();
         }
        
-        if (result.error) throw result.error;       
+        if (result.error) throw result.error;
+       
         console.log('✅ Сохранено');
         closePropertyForm();
         await loadProperties();
@@ -430,8 +390,7 @@ async function uploadPhotosToGitHub(folderId) {
             console.log('✅ Главное фото загружено');
         } catch (error) {
             clearTimeout(timeoutId);
-            if (error.name === 'AbortError') throw new Error('Превышено время загрузки');
-            throw error;
+            if (error.name === 'AbortError') throw new Error('Превышено время загрузки');            throw error;
         }
     }
    
@@ -439,7 +398,8 @@ async function uploadPhotosToGitHub(folderId) {
         const file = uploadedPhotos.gallery[i];
         console.log('📤 Загрузка галереи ' + (i+1) + '/' + uploadedPhotos.gallery.length);
         const base64 = await fileToBase64(file);
-        const fileName = 'gallery_' + i + '_' + Date.now() + '.jpg';        const path = 'property-images/' + folderId + '/' + fileName;
+        const fileName = 'gallery_' + i + '_' + Date.now() + '.jpg';
+        const path = 'property-images/' + folderId + '/' + fileName;
        
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -479,8 +439,7 @@ async function uploadPhotosToGitHub(folderId) {
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
-            if (!response.ok) throw new Error('Ошибка загрузки');
-            uploadedUrls.plans.push(CDN_BASE + path);
+            if (!response.ok) throw new Error('Ошибка загрузки');            uploadedUrls.plans.push(CDN_BASE + path);
         } catch (error) {
             clearTimeout(timeoutId);
             if (error.name === 'AbortError') throw new Error('Превышено время загрузки');
@@ -488,7 +447,8 @@ async function uploadPhotosToGitHub(folderId) {
         }
     }
    
-    return uploadedUrls;}
+    return uploadedUrls;
+}
 
 // ============================================
 // РЕДАКТИРОВАНИЕ
@@ -517,76 +477,26 @@ async function editProperty(id) {
                         <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Адрес (улица + дом) *</label>
                         <input type="text" name="address" required value="${escapeHtml(property.address || '')}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
                     </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
-                        <div style="margin-bottom:15px;">
-                            <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Цена (₽) *</label>
-                            <input type="number" name="price" required value="${property.price || ''}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
-                        </div>
-                        <div style="margin-bottom:15px;">
-                            <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Комнат *</label>
-                            <input type="number" name="rooms" required min="1" value="${property.rooms || ''}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
-                        </div>
-                    </div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:15px;">
-                        <div style="margin-bottom:15px;">
-                            <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Площадь (м²) *</label>
-                            <input type="number" name="area" required step="0.1" value="${property.area || ''}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
-                        </div>
-                        <div style="margin-bottom:15px;">
-                            <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Этаж *</label>
-                            <input type="text" name="floor" required value="${property.floor || ''}" placeholder="5/12" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
-                        </div>
-                    </div>
-                    <div style="margin-bottom:15px;">                        <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Описание</label>
-                        <textarea name="description" rows="4" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">${escapeHtml(property.description || '')}</textarea>
-                    </div>
                    
-                    ${property.main_photo ? `
-                    <div style="margin-bottom:20px;">
-                        <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📷 Текущее главное фото</label>
-                        <img src="${toCdnUrl(property.main_photo)}" alt="Главное фото" style="max-width:100%;border-radius:8px;margin-bottom:10px;">
-                        <button type="button" onclick="removeCurrentMainPhoto()" style="padding:6px 12px;background:#dc3545;color:white;border:none;border-radius:4px;cursor:pointer;font-size:14px;">🗑 Удалить фото</button>
-                    </div>` : ''}
+                    ${property.main_photo ? '<div style="margin-bottom:20px;"><label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📷 Текущее главное фото</label><img src="' + toCdnUrl(property.main_photo) + '" alt="Главное фото" style="max-width:100%;border-radius:8px;margin-bottom:10px;"><button type="button" onclick="removeCurrentMainPhoto()" style="padding:6px 12px;background:#dc3545;color:white;border:none;border-radius:4px;cursor:pointer;font-size:14px;">🗑 Удалить фото</button></div>' : ''}
                    
                     <div style="margin-bottom:20px;">
-                        <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📷 ${property.main_photo ? 'Заменить главное фото' : 'Главное фото'}</label>
+                        <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📷 ${property.main_photo ? 'Заменить главное фото' : 'Главное фото *'}</label>
                         <input type="file" id="mainPhotoInput" accept="image/*" onchange="handleMainPhotoSelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
                         <div id="mainPhotoPreview" style="margin-top:10px;"></div>
                     </div>
                    
-                    ${property.gallery && property.gallery.length > 0 ? `
-                    <div style="margin-bottom:20px;">
-                        <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📸 Текущая галерея (${property.gallery.length} фото)</label>
-                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;">
-                            ${property.gallery.map((photo, idx) => `
-                                <div style="position:relative;">
-                                    <img src="${toCdnUrl(photo)}" alt="Галерея" style="width:100%;height:100px;object-fit:cover;border-radius:6px;">
-                                    <button type="button" onclick="removeCurrentGalleryPhoto(${idx})" style="position:absolute;top:5px;right:5px;width:24px;height:24px;background:#dc3545;color:white;border:none;border-radius:50%;cursor:pointer;font-size:12px;">×</button>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>` : ''}
+                    ${property.gallery && property.gallery.length > 0 ? '<div style="margin-bottom:20px;"><label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📸 Текущая галерея (' + property.gallery.length + ' фото)</label><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;">' + property.gallery.map((photo, idx) => '<div style="position:relative;"><img src="' + toCdnUrl(photo) + '" alt="Галерея" style="width:100%;height:100px;object-fit:cover;border-radius:6px;"><button type="button" onclick="removeCurrentGalleryPhoto(' + idx + ')" style="position:absolute;top:5px;right:5px;width:24px;height:24px;background:#dc3545;color:white;border:none;border-radius:50%;cursor:pointer;font-size:12px;">×</button></div>').join('') + '</div></div>' : ''}
                    
-                    <div style="margin-bottom:20px;">
-                        <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📸 ${property.gallery && property.gallery.length > 0 ? 'Добавить в галерею' : 'Галерея'}</label>
+                    <div style="margin-bottom:20px;">                        <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📸 ${property.gallery && property.gallery.length > 0 ? 'Добавить в галерею' : 'Галерея'}</label>
                         <input type="file" id="galleryInput" accept="image/*" multiple onchange="handleGallerySelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
                         <div id="galleryPreview" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;"></div>
                     </div>
                    
-                    ${property.plans && property.plans.length > 0 ? `
-                    <div style="margin-bottom:20px;">
-                        <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📐 Текущие планы (${property.plans.length} фото)</label>
-                        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;">
-                            ${property.plans.map((photo, idx) => `
-                                <div style="position:relative;">
-                                    <img src="${toCdnUrl(photo)}" alt="План" style="width:100%;height:100px;object-fit:cover;border-radius:6px;">
-                                    <button type="button" onclick="removeCurrentPlanPhoto(${idx})" style="position:absolute;top:5px;right:5px;width:24px;height:24px;background:#dc3545;color:white;border:none;border-radius:50%;cursor:pointer;font-size:12px;">×</button>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>` : ''}
+                    ${property.plans && property.plans.length > 0 ? '<div style="margin-bottom:20px;"><label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📐 Текущие планы (' + property.plans.length + ' фото)</label><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;">' + property.plans.map((photo, idx) => '<div style="position:relative;"><img src="' + toCdnUrl(photo) + '" alt="План" style="width:100%;height:100px;object-fit:cover;border-radius:6px;"><button type="button" onclick="removeCurrentPlanPhoto(' + idx + ')" style="position:absolute;top:5px;right:5px;width:24px;height:24px;background:#dc3545;color:white;border:none;border-radius:50%;cursor:pointer;font-size:12px;">×</button></div>').join('') + '</div></div>' : ''}
                    
-                    <div style="margin-bottom:20px;">                        <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📐 ${property.plans && property.plans.length > 0 ? 'Добавить план' : 'Планы'}</label>
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📐 ${property.plans && property.plans.length > 0 ? 'Добавить план' : 'Планы'}</label>
                         <input type="file" id="plansInput" accept="image/*" multiple onchange="handlePlansSelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
                         <div id="plansPreview" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;"></div>
                     </div>
@@ -604,7 +514,7 @@ async function editProperty(id) {
        
         document.body.insertAdjacentHTML('beforeend', formHtml);
        
-        console.log('✅ Форма редактирования открыта');
+        console.log('✅ Форма открыта');
     } catch (error) {
         console.error('Ошибка:', error);
         hideLoading();
@@ -613,7 +523,7 @@ async function editProperty(id) {
 }
 
 // ============================================
-// УДАЛЕНИЕ ОТДЕЛЬНЫХ ФОТО
+// УДАЛЕНИЕ ФОТО
 // ============================================
 async function removeCurrentMainPhoto() {
     if (!editingPropertyId) return;
@@ -627,8 +537,7 @@ async function removeCurrentMainPhoto() {
             await deleteFileFromGitHub(path);
         }
        
-        await db.from('properties').update({ main_photo: null }).eq('id', editingPropertyId);
-       
+        await db.from('properties').update({ main_photo: null }).eq('id', editingPropertyId);       
         showSuccess('Главное фото удалено');
         await editProperty(editingPropertyId);
     } catch (error) {
@@ -636,6 +545,7 @@ async function removeCurrentMainPhoto() {
         showError('Ошибка удаления фото');
     }
 }
+
 async function removeCurrentGalleryPhoto(index) {
     if (!editingPropertyId) return;
     if (!confirm('Удалить фото из галереи?')) return;
@@ -676,15 +586,15 @@ async function removeCurrentPlanPhoto(index) {
             await db.from('properties').update({ plans: property.plans }).eq('id', editingPropertyId);
         }
        
-        showSuccess('План удалён');
-        await editProperty(editingPropertyId);
+        showSuccess('План удалён');        await editProperty(editingPropertyId);
     } catch (error) {
         console.error('Ошибка:', error);
         showError('Ошибка удаления фото');
     }
 }
 
-async function deleteFileFromGitHub(path) {    const shaResponse = await fetch(config.supabaseUrl + '/functions/v1/get-file-info', {
+async function deleteFileFromGitHub(path) {
+    const shaResponse = await fetch(config.supabaseUrl + '/functions/v1/get-file-info', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: path })
@@ -725,15 +635,15 @@ async function deleteProperty(id) {
                 await deleteFileFromGitHub(path);
             } catch (e) {
                 console.warn('Не удалил фото:', photosToDelete[i]);
-            }
-        }
+            }        }
        
         const deleteResult = await db.from('properties').delete().eq('id', id);
         if (deleteResult.error) throw deleteResult.error;
        
         console.log('✅ Удалено');
         await loadProperties();
-        hideLoading();        showSuccess('Объект удалён');
+        hideLoading();
+        showSuccess('Объект удалён');
     } catch (error) {
         console.error('Ошибка:', error);
         hideLoading();
@@ -774,13 +684,10 @@ async function warmupDatabase() {
 
 function switchTab(tabName) {
     console.log('Вкладка:', tabName);
-    if (tabName === 'addProperty') {
-        showAddForm();
+    if (tabName === 'addProperty') {        showAddForm();
     }
 }
 
-// ============================================
-// ЗАПУСК
-// ============================================
-document.addEventListener('DOMContentLoaded', function() {    initializeApp();
+document.addEventListener('DOMContentLoaded', function() {
+    initializeApp();
 });
