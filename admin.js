@@ -1,15 +1,11 @@
-// admin.js v1.4.0 - Полный функционал + безопасность
+// admin.js v1.4.1 - Упрощённое отображение в админке
 // Telegram Mini App Realty - Admin Panel
 
-// ============================================
-// КОНФИГУРАЦИЯ
-// ============================================
 const ADMIN_USER_ID = '2038206387';
 const CDN_BASE = 'https://cdn.jsdelivr.net/gh/777ernest888-oss/demo-miniapp-realty@main/';
-const MOBILE_TIMEOUT = 30000; // 30 сек для мобильных
-const DESKTOP_TIMEOUT = 15000; // 15 сек для ПК
+const MOBILE_TIMEOUT = 30000;
+const DESKTOP_TIMEOUT = 15000;
 
-// Глобальные переменные
 let config = {};
 let db = null;
 let tg = window.Telegram.WebApp;
@@ -17,9 +13,6 @@ let currentUser = null;
 let editingPropertyId = null;
 let uploadedPhotos = { main: null, gallery: [], plans: [] };
 
-// ============================================
-// ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
-// ============================================
 function isMobile() {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
            tg.platform === 'android' || tg.platform === 'ios';
@@ -47,14 +40,14 @@ function toCdnUrl(url) {
     return url;
 }
 
-function fileToBase64(file) {    return new Promise((resolve, reject) => {
+function fileToBase64(file) {
+    return new Promise((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => resolve(reader.result);
         reader.onerror = reject;
         reader.readAsDataURL(file);
     });
 }
-
 function showLoading(message) {
     if (document.getElementById('loadingOverlay')) return;
     const overlay = document.createElement('div');
@@ -79,9 +72,6 @@ function showSuccess(message) {
     alert('✅ ' + message);
 }
 
-// ============================================
-// ИНИЦИАЛИЗАЦИЯ
-// ============================================
 async function initializeApp() {
     try {
         console.log('🚀 Инициализация админки...');
@@ -96,7 +86,8 @@ async function initializeApp() {
         };
        
         console.log('✅ Конфиг загружен');
-                if (!config.supabaseUrl || !config.supabaseAnonKey) {
+       
+        if (!config.supabaseUrl || !config.supabaseAnonKey) {
             throw new Error('Не найдены данные для подключения к Supabase');
         }
        
@@ -105,8 +96,7 @@ async function initializeApp() {
        
         db = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
         console.log('✅ Supabase клиент создан');
-       
-        try {
+                try {
             const { data: { user } } = await db.auth.getUser();
             currentUser = user;
             if (user && user.id !== ADMIN_USER_ID) {
@@ -133,9 +123,6 @@ function showAuthError() {
     document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;background:#f5f5f5;"><div style="background:white;padding:30px;border-radius:12px;text-align:center;box-shadow:0 4px 6px rgba(0,0,0,0.1);"><h2 style="color:#dc3545;margin-bottom:15px;">⛔ Доступ запрещён</h2><p style="color:#666;margin-bottom:20px;">У вас нет прав доступа</p><button onclick="window.close()" style="padding:10px 20px;background:#dc3545;color:white;border:none;border-radius:6px;cursor:pointer;">Закрыть</button></div></div>';
 }
 
-// ============================================
-// ЗАГРУЗКА ОБЪЕКТОВ
-// ============================================
 async function loadProperties() {
     showLoading('Загрузка объектов...');
     try {
@@ -145,10 +132,12 @@ async function loadProperties() {
         renderProperties(data || []);
     } catch (error) {
         console.error('Ошибка загрузки:', error);
-        hideLoading();        showError('Не удалось загрузить объекты');
+        hideLoading();
+        showError('Не удалось загрузить объекты');
     }
 }
 
+// ИСПРАВЛЕНО:只显示 название и адрес (без фото и города)
 function renderProperties(properties) {
     const container = document.getElementById('propertiesList');
     if (!container) return;
@@ -156,23 +145,18 @@ function renderProperties(properties) {
     if (properties.length === 0) {
         container.innerHTML = '<p style="text-align:center;color:#999;padding:40px;">Нет объектов. Создайте первый!</p>';
         return;
-    }
-   
+    }   
     container.innerHTML = properties.map(prop => {
-        const mainPhoto = prop.main_photo ? toCdnUrl(prop.main_photo) : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="150"%3E%3Crect fill="%23ddd" width="200" height="150"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EНет фото%3C/text%3E%3C/svg%3E';
         const isActive = prop.active !== false;
        
         return `<div class="property-card" style="background:white;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
-            <div style="display:flex;gap:15px;flex-wrap:wrap;">
-                <img src="${mainPhoto}" alt="${escapeHtml(prop.title)}" style="width:200px;height:150px;object-fit:cover;border-radius:8px;">
-                <div style="flex:1;min-width:250px;">
-                    <h3 style="margin:0 0 10px 0;color:#333;">${escapeHtml(prop.title)}</h3>
-                    <p style="margin:5px 0;color:#666;">📍 ${escapeHtml(prop.address || prop.district || '')}</p>
-                    <div style="margin-top:15px;display:flex;gap:10px;flex-wrap:wrap;">
-                        <button onclick="toggleProperty('${prop.id}',${isActive})" style="padding:8px 16px;border:none;border-radius:6px;cursor:pointer;background:${isActive ? '#6c757d' : '#28a745'};color:white;font-size:14px;">${isActive ? '🙈 Скрыть' : '✅ Показать'}</button>
-                        <button onclick="editProperty('${prop.id}')" style="padding:8px 16px;border:none;border-radius:6px;cursor:pointer;background:#17a2b8;color:white;font-size:14px;">✏️ Редактировать</button>
-                        <button onclick="deleteProperty('${prop.id}')" style="padding:8px 16px;border:none;border-radius:6px;cursor:pointer;background:#dc3545;color:white;font-size:14px;">🗑 Удалить</button>
-                    </div>
+            <div style="flex:1;">
+                <h3 style="margin:0 0 10px 0;color:#333;font-size:18px;">${escapeHtml(prop.title)}</h3>
+                <p style="margin:5px 0;color:#666;font-size:14px;">📍 ${escapeHtml(prop.address || '')}</p>
+                <div style="margin-top:15px;display:flex;gap:10px;flex-wrap:wrap;">
+                    <button onclick="toggleProperty('${prop.id}',${isActive})" style="padding:8px 16px;border:none;border-radius:6px;cursor:pointer;background:${isActive ? '#6c757d' : '#28a745'};color:white;font-size:14px;">${isActive ? '🙈 Скрыть' : '✅ Показать'}</button>
+                    <button onclick="editProperty('${prop.id}')" style="padding:8px 16px;border:none;border-radius:6px;cursor:pointer;background:#17a2b8;color:white;font-size:14px;">✏️ Редактировать</button>
+                    <button onclick="deleteProperty('${prop.id}')" style="padding:8px 16px;border:none;border-radius:6px;cursor:pointer;background:#dc3545;color:white;font-size:14px;">🗑 Удалить</button>
                 </div>
             </div>
         </div>`;
@@ -180,7 +164,7 @@ function renderProperties(properties) {
 }
 
 // ============================================
-// ФОРМА ДОБАВЛЕНИЯ
+// ФОРМА ДОБАВЛЕНИЯ (с фото для backend)
 // ============================================
 function showAddForm() {
     editingPropertyId = null;
@@ -192,10 +176,11 @@ function showAddForm() {
             <form id="propertyForm" onsubmit="saveProperty(event)">
                 <div style="margin-bottom:15px;">
                     <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Название *</label>
-                    <input type="text" name="title" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
+                    <input type="text" name="title" required placeholder="ЖК «Название»" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
                 </div>
-                <div style="margin-bottom:15px;">                    <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Адрес (улица + дом) *</label>
-                    <input type="text" name="address" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
+                <div style="margin-bottom:15px;">
+                    <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Адрес (улица + дом) *</label>
+                    <input type="text" name="address" required placeholder="ул. Примерная, д. 1" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
                 </div>
                 <div style="margin-bottom:20px;">
                     <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📷 Главное фото *</label>
@@ -209,8 +194,7 @@ function showAddForm() {
                 </div>
                 <div style="margin-bottom:20px;">
                     <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📐 Планировки</label>
-                    <input type="file" id="plansInput" accept="image/*" multiple onchange="handlePlansSelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
-                    <div id="plansPreview" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;"></div>
+                    <input type="file" id="plansInput" accept="image/*" multiple onchange="handlePlansSelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">                    <div id="plansPreview" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;"></div>
                 </div>
                 <div style="display:flex;gap:10px;justify-content:flex-end;">
                     <button type="button" onclick="closePropertyForm()" style="padding:12px 24px;background:#6c757d;color:white;border:none;border-radius:6px;cursor:pointer;font-size:16px;">❌ Отмена</button>
@@ -233,9 +217,6 @@ function closePropertyForm() {
     uploadedPhotos = { main: null, gallery: [], plans: [] };
 }
 
-// ============================================
-// ОБРАБОТКА ФОТО
-// ============================================
 function handleMainPhotoSelect(event) {
     const file = event.target.files[0];
     if (!file) return;
@@ -243,7 +224,8 @@ function handleMainPhotoSelect(event) {
     if (file.size > 5 * 1024 * 1024) { showError('Файл больше 5 МБ'); return; }
    
     const reader = new FileReader();
-    reader.onload = (e) => {        document.getElementById('mainPhotoPreview').innerHTML = '<div style="position:relative;display:inline-block;"><img src="' + e.target.result + '" style="max-width:200px;border-radius:8px;"><button type="button" onclick="document.getElementById(\'mainPhotoInput\').value=\'\';document.getElementById(\'mainPhotoPreview\').innerHTML=\'\'" style="position:absolute;top:5px;right:5px;width:24px;height:24px;background:#dc3545;color:white;border:none;border-radius:50%;cursor:pointer;">×</button></div>';
+    reader.onload = (e) => {
+        document.getElementById('mainPhotoPreview').innerHTML = '<div style="position:relative;display:inline-block;"><img src="' + e.target.result + '" style="max-width:200px;border-radius:8px;"><button type="button" onclick="document.getElementById(\'mainPhotoInput\').value=\'\';document.getElementById(\'mainPhotoPreview\').innerHTML=\'\'" style="position:absolute;top:5px;right:5px;width:24px;height:24px;background:#dc3545;color:white;border:none;border-radius:50%;cursor:pointer;">×</button></div>';
     };
     reader.readAsDataURL(file);
     uploadedPhotos.main = file;
@@ -261,8 +243,7 @@ function handleGallerySelect(event) {
    
     if (validFiles.length === 0) return;
    
-    const preview = document.getElementById('galleryPreview');
-    validFiles.forEach((file, idx) => {
+    const preview = document.getElementById('galleryPreview');    validFiles.forEach((file, idx) => {
         const reader = new FileReader();
         reader.onload = (e) => {
             const div = document.createElement('div');
@@ -292,7 +273,8 @@ function handlePlansSelect(event) {
     validFiles.forEach((file, idx) => {
         const reader = new FileReader();
         reader.onload = (e) => {
-            const div = document.createElement('div');            div.style.position = 'relative';
+            const div = document.createElement('div');
+            div.style.position = 'relative';
             div.innerHTML = '<img src="' + e.target.result + '" style="width:100%;height:100px;object-fit:cover;border-radius:6px;"><button type="button" onclick="this.parentElement.remove()" style="position:absolute;top:5px;right:5px;width:24px;height:24px;background:#dc3545;color:white;border:none;border-radius:50%;cursor:pointer;">×</button>';
             preview.appendChild(div);
         };
@@ -302,9 +284,6 @@ function handlePlansSelect(event) {
     uploadedPhotos.plans = [...uploadedPhotos.plans, ...validFiles];
 }
 
-// ============================================
-// СОХРАНЕНИЕ
-// ============================================
 async function saveProperty(event) {
     event.preventDefault();
    
@@ -313,8 +292,7 @@ async function saveProperty(event) {
         return;
     }
    
-    const saveBtn = document.getElementById('savePropertyBtn');
-    const originalBtnText = saveBtn.innerHTML;
+    const saveBtn = document.getElementById('savePropertyBtn');    const originalBtnText = saveBtn.innerHTML;
    
     try {
         saveBtn.disabled = true;
@@ -341,7 +319,8 @@ async function saveProperty(event) {
        
         console.log('💾 Сохранение в БД...');
         let result;
-        if (editingPropertyId) {            result = await db.from('properties').update(propertyData).eq('id', editingPropertyId).select();
+        if (editingPropertyId) {
+            result = await db.from('properties').update(propertyData).eq('id', editingPropertyId).select();
         } else {
             propertyData.id = photoFolderId;
             propertyData.created_at = new Date().toISOString();
@@ -363,7 +342,6 @@ async function saveProperty(event) {
         saveBtn.innerHTML = originalBtnText;
     }
 }
-
 async function uploadPhotosToGitHub(folderId) {
     const uploadedUrls = { main: null, gallery: [], plans: [] };
     const timeout = getTimeout();
@@ -390,7 +368,8 @@ async function uploadPhotosToGitHub(folderId) {
             console.log('✅ Главное фото загружено');
         } catch (error) {
             clearTimeout(timeoutId);
-            if (error.name === 'AbortError') throw new Error('Превышено время загрузки');            throw error;
+            if (error.name === 'AbortError') throw new Error('Превышено время загрузки');
+            throw error;
         }
     }
    
@@ -411,8 +390,7 @@ async function uploadPhotosToGitHub(folderId) {
                 body: JSON.stringify({ path: path, content: base64.split(',')[1] }),
                 signal: controller.signal
             });
-            clearTimeout(timeoutId);
-            if (!response.ok) throw new Error('Ошибка загрузки');
+            clearTimeout(timeoutId);            if (!response.ok) throw new Error('Ошибка загрузки');
             uploadedUrls.gallery.push(CDN_BASE + path);
         } catch (error) {
             clearTimeout(timeoutId);
@@ -439,7 +417,8 @@ async function uploadPhotosToGitHub(folderId) {
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
-            if (!response.ok) throw new Error('Ошибка загрузки');            uploadedUrls.plans.push(CDN_BASE + path);
+            if (!response.ok) throw new Error('Ошибка загрузки');
+            uploadedUrls.plans.push(CDN_BASE + path);
         } catch (error) {
             clearTimeout(timeoutId);
             if (error.name === 'AbortError') throw new Error('Превышено время загрузки');
@@ -450,9 +429,6 @@ async function uploadPhotosToGitHub(folderId) {
     return uploadedUrls;
 }
 
-// ============================================
-// РЕДАКТИРОВАНИЕ
-// ============================================
 async function editProperty(id) {
     showLoading('Загрузка...');
     try {
@@ -463,8 +439,7 @@ async function editProperty(id) {
         if (!property) { showError('Объект не найден'); return; }
        
         editingPropertyId = id;
-        uploadedPhotos = { main: null, gallery: [], plans: [] };
-       
+        uploadedPhotos = { main: null, gallery: [], plans: [] };       
         const formHtml = `<div id="propertyFormOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;display:flex;justify-content:center;align-items:flex-start;padding:20px;overflow-y:auto;">
             <div style="background:white;border-radius:12px;padding:30px;width:100%;max-width:600px;margin:20px 0;">
                 <h2 style="margin:0 0 20px 0;color:#333;">✏️ Редактирование</h2>
@@ -488,7 +463,8 @@ async function editProperty(id) {
                    
                     ${property.gallery && property.gallery.length > 0 ? '<div style="margin-bottom:20px;"><label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📸 Текущая галерея (' + property.gallery.length + ' фото)</label><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;">' + property.gallery.map((photo, idx) => '<div style="position:relative;"><img src="' + toCdnUrl(photo) + '" alt="Галерея" style="width:100%;height:100px;object-fit:cover;border-radius:6px;"><button type="button" onclick="removeCurrentGalleryPhoto(' + idx + ')" style="position:absolute;top:5px;right:5px;width:24px;height:24px;background:#dc3545;color:white;border:none;border-radius:50%;cursor:pointer;font-size:12px;">×</button></div>').join('') + '</div></div>' : ''}
                    
-                    <div style="margin-bottom:20px;">                        <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📸 ${property.gallery && property.gallery.length > 0 ? 'Добавить в галерею' : 'Галерея'}</label>
+                    <div style="margin-bottom:20px;">
+                        <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📸 ${property.gallery && property.gallery.length > 0 ? 'Добавить в галерею' : 'Галерея'}</label>
                         <input type="file" id="galleryInput" accept="image/*" multiple onchange="handleGallerySelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
                         <div id="galleryPreview" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;"></div>
                     </div>
@@ -512,8 +488,7 @@ async function editProperty(id) {
         const oldForm = document.getElementById('propertyFormOverlay');
         if (oldForm) oldForm.remove();
        
-        document.body.insertAdjacentHTML('beforeend', formHtml);
-       
+        document.body.insertAdjacentHTML('beforeend', formHtml);       
         console.log('✅ Форма открыта');
     } catch (error) {
         console.error('Ошибка:', error);
@@ -522,9 +497,6 @@ async function editProperty(id) {
     }
 }
 
-// ============================================
-// УДАЛЕНИЕ ФОТО
-// ============================================
 async function removeCurrentMainPhoto() {
     if (!editingPropertyId) return;
     if (!confirm('Удалить главное фото?')) return;
@@ -537,7 +509,8 @@ async function removeCurrentMainPhoto() {
             await deleteFileFromGitHub(path);
         }
        
-        await db.from('properties').update({ main_photo: null }).eq('id', editingPropertyId);       
+        await db.from('properties').update({ main_photo: null }).eq('id', editingPropertyId);
+       
         showSuccess('Главное фото удалено');
         await editProperty(editingPropertyId);
     } catch (error) {
@@ -564,8 +537,7 @@ async function removeCurrentGalleryPhoto(index) {
        
         showSuccess('Фото удалено');
         await editProperty(editingPropertyId);
-    } catch (error) {
-        console.error('Ошибка:', error);
+    } catch (error) {        console.error('Ошибка:', error);
         showError('Ошибка удаления фото');
     }
 }
@@ -586,7 +558,8 @@ async function removeCurrentPlanPhoto(index) {
             await db.from('properties').update({ plans: property.plans }).eq('id', editingPropertyId);
         }
        
-        showSuccess('План удалён');        await editProperty(editingPropertyId);
+        showSuccess('План удалён');
+        await editProperty(editingPropertyId);
     } catch (error) {
         console.error('Ошибка:', error);
         showError('Ошибка удаления фото');
@@ -611,13 +584,9 @@ async function deleteFileFromGitHub(path) {
     console.log('✅ Удалено:', path);
 }
 
-// ============================================
-// УДАЛЕНИЕ ОБЪЕКТА
-// ============================================
 async function deleteProperty(id) {
     if (!confirm('⚠️ Удалить объект? Все фото будут удалены!')) return;
-   
-    showLoading('Удаление...');
+        showLoading('Удаление...');
     try {
         const { data: property, error: fetchError } = await db.from('properties').select('*').eq('id', id).single();
         if (fetchError) throw fetchError;
@@ -635,7 +604,8 @@ async function deleteProperty(id) {
                 await deleteFileFromGitHub(path);
             } catch (e) {
                 console.warn('Не удалил фото:', photosToDelete[i]);
-            }        }
+            }
+        }
        
         const deleteResult = await db.from('properties').delete().eq('id', id);
         if (deleteResult.error) throw deleteResult.error;
@@ -651,9 +621,6 @@ async function deleteProperty(id) {
     }
 }
 
-// ============================================
-// ИЗМЕНЕНИЕ СТАТУСА
-// ============================================
 async function toggleProperty(id, currentStatus) {
     const newStatus = !currentStatus;
     showLoading(newStatus ? 'Публикация...' : 'Скрытие...');
@@ -668,8 +635,7 @@ async function toggleProperty(id, currentStatus) {
         showSuccess(newStatus ? 'Объект опубликован' : 'Объект скрыт');
     } catch (error) {
         console.error('Ошибка:', error);
-        hideLoading();
-        showError('Ошибка изменения статуса');
+        hideLoading();        showError('Ошибка изменения статуса');
     }
 }
 
@@ -684,7 +650,8 @@ async function warmupDatabase() {
 
 function switchTab(tabName) {
     console.log('Вкладка:', tabName);
-    if (tabName === 'addProperty') {        showAddForm();
+    if (tabName === 'addProperty') {
+        showAddForm();
     }
 }
 
