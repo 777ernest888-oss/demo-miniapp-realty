@@ -1,10 +1,10 @@
-// admin.js v1.4.2 - Исправление отображения и таймаутов
+// admin.js v1.5.0 - Правильные названия полей из Supabase
 // Telegram Mini App Realty - Admin Panel
 
 const ADMIN_USER_ID = '2038206387';
 const CDN_BASE = 'https://cdn.jsdelivr.net/gh/777ernest888-oss/demo-miniapp-realty@main/';
-const MOBILE_TIMEOUT = 60000; // 60 сек для мобильных
-const DESKTOP_TIMEOUT = 30000; // 30 сек для ПК
+const MOBILE_TIMEOUT = 60000;
+const DESKTOP_TIMEOUT = 30000;
 
 let config = {};
 let db = null;
@@ -85,7 +85,7 @@ async function initializeApp() {
             ...rawConfig
         };
        
-        console.log('✅ Конфиг загружен', config);
+        console.log('✅ Конфиг загружен');
        
         if (!config.supabaseUrl || !config.supabaseAnonKey) {
             throw new Error('Не найдены данные для подключения к Supabase');
@@ -130,9 +130,6 @@ async function loadProperties() {
         hideLoading();
         if (error) throw error;
         console.log('📦 Загружено объектов:', data ? data.length : 0);
-        if (data && data.length > 0) {
-            console.log('Первый объект:', data[0]);
-        }
         renderProperties(data || []);
     } catch (error) {
         console.error('Ошибка загрузки:', error);
@@ -141,28 +138,26 @@ async function loadProperties() {
     }
 }
 
-// ИСПРАВЛЕНО: Правильное отображение названия и адреса
+// ИСПРАВЛЕНО: Правильные поля из Supabase
 function renderProperties(properties) {
     const container = document.getElementById('propertiesList');
-    if (!container) {
-        console.error('Контейнер propertiesList не найден');        return;
-    }
+    if (!container) return;
    
     if (properties.length === 0) {
         container.innerHTML = '<p style="text-align:center;color:#999;padding:40px;">Нет объектов. Создайте первый!</p>';
-        return;
-    }
+        return;    }
    
     container.innerHTML = properties.map(prop => {
         const isActive = prop.active !== false;
-        const title = prop.title || 'Без названия';
-        const address = prop.address || prop.district || 'Адрес не указан';
        
-        console.log('Объект:', { title, address, prop });
+        // Правильные поля из базы
+        const name = prop.name || 'Без названия';
+        const district = prop.district || '';
+        const address = prop.address || district;
        
         return `<div class="property-card" style="background:white;border-radius:12px;padding:20px;margin-bottom:20px;box-shadow:0 2px 8px rgba(0,0,0,0.1);">
             <div style="flex:1;">
-                <h3 style="margin:0 0 10px 0;color:#333;font-size:18px;">${escapeHtml(title)}</h3>
+                <h3 style="margin:0 0 10px 0;color:#333;font-size:18px;">${escapeHtml(name)}</h3>
                 <p style="margin:5px 0;color:#666;font-size:14px;">📍 ${escapeHtml(address)}</p>
                 <div style="margin-top:15px;display:flex;gap:10px;flex-wrap:wrap;">
                     <button onclick="toggleProperty('${prop.id}',${isActive})" style="padding:8px 16px;border:none;border-radius:6px;cursor:pointer;background:${isActive ? '#6c757d' : '#28a745'};color:white;font-size:14px;">${isActive ? '🙈 Скрыть' : '✅ Показать'}</button>
@@ -174,6 +169,9 @@ function renderProperties(properties) {
     }).join('');
 }
 
+// ============================================
+// ФОРМА ДОБАВЛЕНИЯ (с правильными полями)
+// ============================================
 function showAddForm() {
     editingPropertyId = null;
     uploadedPhotos = { main: null, gallery: [], plans: [] };
@@ -183,8 +181,8 @@ function showAddForm() {
             <h2 style="margin:0 0 20px 0;color:#333;">📝 Новый объект</h2>
             <form id="propertyForm" onsubmit="saveProperty(event)">
                 <div style="margin-bottom:15px;">
-                    <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Название *</label>
-                    <input type="text" name="title" required placeholder="ЖК «Название»" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
+                    <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Название ЖК *</label>
+                    <input type="text" name="name" required placeholder="ЖК «Аристократ»" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
                 </div>
                 <div style="margin-bottom:15px;">
                     <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Адрес (улица + дом) *</label>
@@ -194,9 +192,9 @@ function showAddForm() {
                     <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📷 Главное фото *</label>
                     <input type="file" id="mainPhotoInput" accept="image/*" onchange="handleMainPhotoSelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
                     <div id="mainPhotoPreview" style="margin-top:10px;"></div>
-                </div>                <div style="margin-bottom:20px;">
-                    <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📸 Галерея (минимум 2 фото)</label>
-                    <input type="file" id="galleryInput" accept="image/*" multiple onchange="handleGallerySelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
+                </div>
+                <div style="margin-bottom:20px;">
+                    <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📸 Галерея (минимум 2 фото)</label>                    <input type="file" id="galleryInput" accept="image/*" multiple onchange="handleGallerySelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
                     <div id="galleryPreview" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;"></div>
                 </div>
                 <div style="margin-bottom:20px;">
@@ -243,9 +241,9 @@ function handleGallerySelect(event) {
     const files = Array.from(event.target.files);
     if (files.length === 0) return;
    
-    const validFiles = files.filter(file => {        if (!file.type.startsWith('image/')) { showError('Файл ' + file.name + ' не изображение'); return false; }
-        if (file.size > 5 * 1024 * 1024) { showError('Файл ' + file.name + ' больше 5 МБ'); return false; }
-        return true;
+    const validFiles = files.filter(file => {
+        if (!file.type.startsWith('image/')) { showError('Файл ' + file.name + ' не изображение'); return false; }
+        if (file.size > 5 * 1024 * 1024) { showError('Файл ' + file.name + ' больше 5 МБ'); return false; }        return true;
     });
    
     if (validFiles.length === 0) return;
@@ -292,9 +290,9 @@ function handlePlansSelect(event) {
     uploadedPhotos.plans = [...uploadedPhotos.plans, ...validFiles];
 }
 
-async function saveProperty(event) {    event.preventDefault();
-   
-    if (!editingPropertyId && !uploadedPhotos.main) {
+async function saveProperty(event) {
+    event.preventDefault();
+        if (!editingPropertyId && !uploadedPhotos.main) {
         showError('Загрузите главное фото');
         return;
     }
@@ -309,8 +307,9 @@ async function saveProperty(event) {    event.preventDefault();
         const form = event.target;
         const formData = new FormData(form);
        
+        // Правильные поля для Supabase
         const propertyData = {
-            title: formData.get('title'),
+            name: formData.get('name'),
             address: formData.get('address'),
             updated_at: new Date().toISOString()
         };
@@ -322,9 +321,9 @@ async function saveProperty(event) {    event.preventDefault();
         if (uploadedPhotos.main || uploadedPhotos.gallery.length > 0 || uploadedPhotos.plans.length > 0) {
             console.log('📤 Загрузка фото...');
             const uploadedUrls = await uploadPhotosToGitHub(photoFolderId);
-            if (uploadedUrls.main) propertyData.main_photo = uploadedUrls.main;
-            if (uploadedUrls.gallery && uploadedUrls.gallery.length > 0) propertyData.gallery = uploadedUrls.gallery;
-            if (uploadedUrls.plans && uploadedUrls.plans.length > 0) propertyData.plans = uploadedUrls.plans;
+            if (uploadedUrls.main) propertyData.image_main = uploadedUrls.main;
+            if (uploadedUrls.gallery && uploadedUrls.gallery.length > 0) propertyData.images_gallery = uploadedUrls.gallery;
+            if (uploadedUrls.plans && uploadedUrls.plans.length > 0) propertyData.floor_plans_images = uploadedUrls.plans;
         }
        
         console.log('💾 Сохранение в БД...');
@@ -341,8 +340,8 @@ async function saveProperty(event) {    event.preventDefault();
         if (result.error) {
             console.error('Ошибка БД:', result.error);
             throw result.error;
-        }       
-        console.log('✅ Сохранено');
+        }
+                console.log('✅ Сохранено');
         closePropertyForm();
         await loadProperties();
         showSuccess(editingPropertyId ? 'Объект обновлён' : 'Объект создан');
@@ -390,8 +389,8 @@ async function uploadPhotosToGitHub(folderId) {
             clearTimeout(timeoutId);
             if (error.name === 'AbortError') {
                 throw new Error('Превышено время загрузки (' + (timeout/1000) + ' сек). Попробуйте уменьшить размер фото.');
-            }            throw error;
-        }
+            }
+            throw error;        }
     }
    
     for (let i = 0; i < uploadedPhotos.gallery.length; i++) {
@@ -439,8 +438,8 @@ async function uploadPhotosToGitHub(folderId) {
         const timeoutId = setTimeout(() => controller.abort(), timeout);
        
         try {
-            const response = await fetch(config.supabaseUrl + '/functions/v1/upload-to-github', {                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+            const response = await fetch(config.supabaseUrl + '/functions/v1/upload-to-github', {
+                method: 'POST',                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ path: path, content: base64.split(',')[1] }),
                 signal: controller.signal
             });
@@ -483,33 +482,33 @@ async function editProperty(id) {
                 <h2 style="margin:0 0 20px 0;color:#333;">✏️ Редактирование</h2>
                 <form id="propertyForm" onsubmit="saveProperty(event)">
                     <div style="margin-bottom:15px;">
-                        <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Название *</label>
-                        <input type="text" name="title" required value="${escapeHtml(property.title || '')}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
+                        <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Название ЖК *</label>
+                        <input type="text" name="name" required value="${escapeHtml(property.name || '')}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
                     </div>
                     <div style="margin-bottom:15px;">
                         <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Адрес (улица + дом) *</label>
-                        <input type="text" name="address" required value="${escapeHtml(property.address || '')}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">                    </div>
-                   
-                    ${property.main_photo ? '<div style="margin-bottom:20px;"><label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📷 Текущее главное фото</label><img src="' + toCdnUrl(property.main_photo) + '" alt="Главное фото" style="max-width:100%;border-radius:8px;margin-bottom:10px;"><button type="button" onclick="removeCurrentMainPhoto()" style="padding:6px 12px;background:#dc3545;color:white;border:none;border-radius:4px;cursor:pointer;font-size:14px;">🗑 Удалить фото</button></div>' : ''}
+                        <input type="text" name="address" required value="${escapeHtml(property.address || '')}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
+                    </div>                   
+                    ${property.image_main ? '<div style="margin-bottom:20px;"><label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📷 Текущее главное фото</label><img src="' + toCdnUrl(property.image_main) + '" alt="Главное фото" style="max-width:100%;border-radius:8px;margin-bottom:10px;"><button type="button" onclick="removeCurrentMainPhoto()" style="padding:6px 12px;background:#dc3545;color:white;border:none;border-radius:4px;cursor:pointer;font-size:14px;">🗑 Удалить фото</button></div>' : ''}
                    
                     <div style="margin-bottom:20px;">
-                        <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📷 ${property.main_photo ? 'Заменить главное фото' : 'Главное фото *'}</label>
+                        <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📷 ${property.image_main ? 'Заменить главное фото' : 'Главное фото *'}</label>
                         <input type="file" id="mainPhotoInput" accept="image/*" onchange="handleMainPhotoSelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
                         <div id="mainPhotoPreview" style="margin-top:10px;"></div>
                     </div>
                    
-                    ${property.gallery && property.gallery.length > 0 ? '<div style="margin-bottom:20px;"><label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📸 Текущая галерея (' + property.gallery.length + ' фото)</label><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;">' + property.gallery.map((photo, idx) => '<div style="position:relative;"><img src="' + toCdnUrl(photo) + '" alt="Галерея" style="width:100%;height:100px;object-fit:cover;border-radius:6px;"><button type="button" onclick="removeCurrentGalleryPhoto(' + idx + ')" style="position:absolute;top:5px;right:5px;width:24px;height:24px;background:#dc3545;color:white;border:none;border-radius:50%;cursor:pointer;font-size:12px;">×</button></div>').join('') + '</div></div>' : ''}
+                    ${property.images_gallery && property.images_gallery.length > 0 ? '<div style="margin-bottom:20px;"><label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📸 Текущая галерея (' + property.images_gallery.length + ' фото)</label><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;">' + property.images_gallery.map((photo, idx) => '<div style="position:relative;"><img src="' + toCdnUrl(photo) + '" alt="Галерея" style="width:100%;height:100px;object-fit:cover;border-radius:6px;"><button type="button" onclick="removeCurrentGalleryPhoto(' + idx + ')" style="position:absolute;top:5px;right:5px;width:24px;height:24px;background:#dc3545;color:white;border:none;border-radius:50%;cursor:pointer;font-size:12px;">×</button></div>').join('') + '</div></div>' : ''}
                    
                     <div style="margin-bottom:20px;">
-                        <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📸 ${property.gallery && property.gallery.length > 0 ? 'Добавить в галерею' : 'Галерея'}</label>
+                        <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📸 ${property.images_gallery && property.images_gallery.length > 0 ? 'Добавить в галерею' : 'Галерея'}</label>
                         <input type="file" id="galleryInput" accept="image/*" multiple onchange="handleGallerySelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
                         <div id="galleryPreview" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;"></div>
                     </div>
                    
-                    ${property.plans && property.plans.length > 0 ? '<div style="margin-bottom:20px;"><label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📐 Текущие планы (' + property.plans.length + ' фото)</label><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;">' + property.plans.map((photo, idx) => '<div style="position:relative;"><img src="' + toCdnUrl(photo) + '" alt="План" style="width:100%;height:100px;object-fit:cover;border-radius:6px;"><button type="button" onclick="removeCurrentPlanPhoto(' + idx + ')" style="position:absolute;top:5px;right:5px;width:24px;height:24px;background:#dc3545;color:white;border:none;border-radius:50%;cursor:pointer;font-size:12px;">×</button></div>').join('') + '</div></div>' : ''}
+                    ${property.floor_plans_images && property.floor_plans_images.length > 0 ? '<div style="margin-bottom:20px;"><label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📐 Текущие планы (' + property.floor_plans_images.length + ' фото)</label><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;">' + property.floor_plans_images.map((photo, idx) => '<div style="position:relative;"><img src="' + toCdnUrl(photo) + '" alt="План" style="width:100%;height:100px;object-fit:cover;border-radius:6px;"><button type="button" onclick="removeCurrentPlanPhoto(' + idx + ')" style="position:absolute;top:5px;right:5px;width:24px;height:24px;background:#dc3545;color:white;border:none;border-radius:50%;cursor:pointer;font-size:12px;">×</button></div>').join('') + '</div></div>' : ''}
                    
                     <div style="margin-bottom:20px;">
-                        <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📐 ${property.plans && property.plans.length > 0 ? 'Добавить план' : 'Планы'}</label>
+                        <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📐 ${property.floor_plans_images && property.floor_plans_images.length > 0 ? 'Добавить план' : 'Планы'}</label>
                         <input type="file" id="plansInput" accept="image/*" multiple onchange="handlePlansSelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
                         <div id="plansPreview" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;"></div>
                     </div>
@@ -537,16 +536,16 @@ async function editProperty(id) {
 
 async function removeCurrentMainPhoto() {
     if (!editingPropertyId) return;
-    if (!confirm('Удалить главное фото?')) return;   
-    try {
-        const { data: property } = await db.from('properties').select('main_photo').eq('id', editingPropertyId).single();
+    if (!confirm('Удалить главное фото?')) return;
+        try {
+        const { data: property } = await db.from('properties').select('image_main').eq('id', editingPropertyId).single();
        
-        if (property && property.main_photo) {
-            const path = property.main_photo.replace(CDN_BASE, '');
+        if (property && property.image_main) {
+            const path = property.image_main.replace(CDN_BASE, '');
             await deleteFileFromGitHub(path);
         }
        
-        await db.from('properties').update({ main_photo: null }).eq('id', editingPropertyId);
+        await db.from('properties').update({ image_main: null }).eq('id', editingPropertyId);
        
         showSuccess('Главное фото удалено');
         await editProperty(editingPropertyId);
@@ -561,15 +560,15 @@ async function removeCurrentGalleryPhoto(index) {
     if (!confirm('Удалить фото из галереи?')) return;
    
     try {
-        const { data: property } = await db.from('properties').select('gallery').eq('id', editingPropertyId).single();
+        const { data: property } = await db.from('properties').select('images_gallery').eq('id', editingPropertyId).single();
        
-        if (property && property.gallery && property.gallery[index]) {
-            const path = property.gallery[index].replace(CDN_BASE, '');
+        if (property && property.images_gallery && property.images_gallery[index]) {
+            const path = property.images_gallery[index].replace(CDN_BASE, '');
             await deleteFileFromGitHub(path);
            
-            property.gallery.splice(index, 1);
+            property.images_gallery.splice(index, 1);
            
-            await db.from('properties').update({ gallery: property.gallery }).eq('id', editingPropertyId);
+            await db.from('properties').update({ images_gallery: property.images_gallery }).eq('id', editingPropertyId);
         }
        
         showSuccess('Фото удалено');
@@ -585,14 +584,14 @@ async function removeCurrentPlanPhoto(index) {
     if (!confirm('Удалить план?')) return;
    
     try {
-        const { data: property } = await db.from('properties').select('plans').eq('id', editingPropertyId).single();
-                if (property && property.plans && property.plans[index]) {
-            const path = property.plans[index].replace(CDN_BASE, '');
+        const { data: property } = await db.from('properties').select('floor_plans_images').eq('id', editingPropertyId).single();
+       
+        if (property && property.floor_plans_images && property.floor_plans_images[index]) {            const path = property.floor_plans_images[index].replace(CDN_BASE, '');
             await deleteFileFromGitHub(path);
            
-            property.plans.splice(index, 1);
+            property.floor_plans_images.splice(index, 1);
            
-            await db.from('properties').update({ plans: property.plans }).eq('id', editingPropertyId);
+            await db.from('properties').update({ floor_plans_images: property.floor_plans_images }).eq('id', editingPropertyId);
         }
        
         showSuccess('План удалён');
@@ -631,12 +630,12 @@ async function deleteProperty(id) {
         if (!property) throw new Error('Объект не найден');
        
         const photosToDelete = [];
-        if (property.main_photo) photosToDelete.push(property.main_photo);
-        if (property.gallery) photosToDelete.push(...property.gallery);
-        if (property.plans) photosToDelete.push(...property.plans);
+        if (property.image_main) photosToDelete.push(property.image_main);
+        if (property.images_gallery) photosToDelete.push(...property.images_gallery);
+        if (property.floor_plans_images) photosToDelete.push(...property.floor_plans_images);
        
-        console.log('🗑 Удаление ' + photosToDelete.length + ' фото...');        for (let i = 0; i < photosToDelete.length; i++) {
-            try {
+        console.log('🗑 Удаление ' + photosToDelete.length + ' фото...');
+        for (let i = 0; i < photosToDelete.length; i++) {            try {
                 const path = photosToDelete[i].replace(CDN_BASE, '');
                 await deleteFileFromGitHub(path);
             } catch (e) {
