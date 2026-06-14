@@ -11,10 +11,8 @@ const CDN_BASE = 'https://cdn.jsdelivr.net/gh/777ernest888-oss/demo-miniapp-real
 const MOBILE_TIMEOUT = 25000; // 25 секунд для мобильных
 const DESKTOP_TIMEOUT = 15000; // 15 секунд для ПК
 
-// ============================================
-// ИНИЦИАЛИЗАЦИЯ
-// ============================================
-let tg = window.Telegram.WebApp;
+// Глобальная переменная для config
+let config = {};
 let supabase;
 let currentUser = null;
 let editingPropertyId = null;
@@ -23,6 +21,9 @@ let uploadedPhotos = {
     gallery: [],
     plans: []
 };
+
+// Telegram WebApp
+let tg = window.Telegram.WebApp;
 
 // Проверка на мобильное устройство
 function isMobile() {
@@ -35,19 +36,22 @@ function getTimeout() {
     return isMobile() ? MOBILE_TIMEOUT : DESKTOP_TIMEOUT;
 }
 
-// Инициализация при загрузке
+// ============================================
+// ИНИЦИАЛИЗАЦИЯ
+// ============================================
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         console.log('🚀 Инициализация админки...');
        
-        // Настройка Telegram WebApp
-        tg.expand();
+        // Загрузка конфига
+        const configResponse = await fetch('client-config.json');
+        config = await configResponse.json();
+       
+        // Настройка Telegram WebApp        tg.expand();
         tg.ready();
        
         // Инициализация Supabase
-        const configResponse = await fetch('client-config.json');
-        const config = await configResponse.json();
-                supabase = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+        supabase = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
         console.log('✅ Supabase инициализирован');
        
         // Проверка авторизации
@@ -92,11 +96,11 @@ function showAuthError() {
         </div>
     `;
 }
-
 // ============================================
 // ЗАГРУЗКА ОБЪЕКТОВ
 // ============================================
-async function loadProperties() {    showLoading('Загрузка объектов...');
+async function loadProperties() {
+    showLoading('Загрузка объектов...');
    
     try {
         const { data, error } = await supabase
@@ -141,11 +145,11 @@ function renderProperties(properties) {
                         <p style="margin: 5px 0; color: #666;">🏠 ${prop.rooms || '—'} комн.</p>
                         <p style="margin: 5px 0; color: #666;">📐 ${prop.area || '—'} м²</p>
                         <p style="margin: 5px 0; color: #666;">🏢 ${prop.floor || '—'}/${prop.total_floors || '—'} этаж</p>
-                        <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
-                            <button onclick="toggleProperty('${prop.id}', ${isActive})"
+                        <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">                            <button onclick="toggleProperty('${prop.id}', ${isActive})"
                                     style="padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; background: ${isActive ? '#6c757d' : '#28a745'}; color: white; font-size: 14px;">
                                 ${isActive ? '🙈 Скрыть' : '✅ Показать'}
-                            </button>                            <button onclick="editProperty('${prop.id}')"
+                            </button>
+                            <button onclick="editProperty('${prop.id}')"
                                     style="padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; background: #17a2b8; color: white; font-size: 14px;">
                                 ✏️ Редактировать
                             </button>
@@ -190,11 +194,11 @@ function showAddForm() {
                         <div style="margin-bottom: 15px;">
                             <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Цена (₽) *</label>
                             <input type="number" name="price" required
-                                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; box-sizing: border-box;">
-                        </div>
+                                   style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; box-sizing: border-box;">                        </div>
                        
                         <div style="margin-bottom: 15px;">
-                            <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Комнат *</label>                            <input type="number" name="rooms" required min="1"
+                            <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Комнат *</label>
+                            <input type="number" name="rooms" required min="1"
                                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; box-sizing: border-box;">
                         </div>
                     </div>
@@ -239,11 +243,11 @@ function showAddForm() {
                                style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
                         <div id="plansPreview" style="margin-top: 10px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;"></div>
                     </div>
-                   
-                    <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                                        <div style="display: flex; gap: 10px; justify-content: flex-end;">
                         <button type="button" onclick="closePropertyForm()"
                                 style="padding: 12px 24px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
-                            ❌ Отмена                        </button>
+                            ❌ Отмена
+                        </button>
                         <button type="submit" id="savePropertyBtn"
                                 style="padding: 12px 24px; background: #28a745; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 16px;">
                             💾 Сохранить
@@ -254,11 +258,9 @@ function showAddForm() {
         </div>
     `;
    
-    // Удаляем старую форму если есть
     const oldForm = document.getElementById('propertyFormOverlay');
     if (oldForm) oldForm.remove();
    
-    // Добавляем новую форму
     document.body.insertAdjacentHTML('beforeend', formHtml);
 }
 
@@ -290,8 +292,6 @@ async function editProperty(id) {
         }
        
         editingPropertyId = id;
-       
-        // Сбрасываем загруженные фото
         uploadedPhotos = { main: null, gallery: [], plans: [] };       
         const formHtml = `
             <div id="propertyFormOverlay" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; display: flex; justify-content: center; align-items: flex-start; padding: 20px; overflow-y: auto;">
@@ -301,13 +301,13 @@ async function editProperty(id) {
                     <form id="propertyForm" onsubmit="saveProperty(event)">
                         <div style="margin-bottom: 15px;">
                             <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Название *</label>
-                            <input type="text" name="title" required value="${property.title || ''}"
+                            <input type="text" name="title" required value="${escapeHtml(property.title || '')}"
                                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; box-sizing: border-box;">
                         </div>
                        
                         <div style="margin-bottom: 15px;">
                             <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Адрес (улица + дом) *</label>
-                            <input type="text" name="address" required value="${property.address || ''}"
+                            <input type="text" name="address" required value="${escapeHtml(property.address || '')}"
                                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; box-sizing: border-box;">
                         </div>
                        
@@ -341,7 +341,7 @@ async function editProperty(id) {
                        
                         <div style="margin-bottom: 15px;">
                             <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Описание</label>
-                            <textarea name="description" rows="4"                                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; box-sizing: border-box;">${property.description || ''}</textarea>
+                            <textarea name="description" rows="4"                                       style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px; box-sizing: border-box;">${escapeHtml(property.description || '')}</textarea>
                         </div>
                        
                         ${property.main_photo ? `
@@ -420,11 +420,9 @@ async function editProperty(id) {
             </div>
         `;
        
-        // Удаляем старую форму если есть
         const oldForm = document.getElementById('propertyFormOverlay');
         if (oldForm) oldForm.remove();
        
-        // Добавляем новую форму
         document.body.insertAdjacentHTML('beforeend', formHtml);
        
         console.log('✅ Форма редактирования открыта');
@@ -439,10 +437,9 @@ async function editProperty(id) {
 // ============================================
 // РАБОТА С ФОТО
 // ============================================
-function handleMainPhotoSelect(event) {    const file = event.target.files[0];
-    if (!file) return;
-   
-    // Валидация
+function handleMainPhotoSelect(event) {
+    const file = event.target.files[0];
+    if (!file) return;   
     if (!file.type.startsWith('image/')) {
         showError('Пожалуйста, выберите изображение');
         return;
@@ -453,7 +450,6 @@ function handleMainPhotoSelect(event) {    const file = event.target.files[0];
         return;
     }
    
-    // Предпросмотр
     const reader = new FileReader();
     reader.onload = (e) => {
         const preview = document.getElementById('mainPhotoPreview');
@@ -467,7 +463,6 @@ function handleMainPhotoSelect(event) {    const file = event.target.files[0];
     };
     reader.readAsDataURL(file);
    
-    // Сохраняем файл
     uploadedPhotos.main = file;
 }
 
@@ -475,7 +470,6 @@ function handleGallerySelect(event) {
     const files = Array.from(event.target.files);
     if (files.length === 0) return;
    
-    // Валидация
     const validFiles = files.filter(file => {
         if (!file.type.startsWith('image/')) {
             showError(`Файл "${file.name}" не является изображением`);
@@ -488,9 +482,45 @@ function handleGallerySelect(event) {
         return true;
     });
    
-    if (validFiles.length === 0) return;   
-    // Предпросмотр
+    if (validFiles.length === 0) return;
+   
     const preview = document.getElementById('galleryPreview');
+    validFiles.forEach((file, idx) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const div = document.createElement('div');            div.style.position = 'relative';
+            div.innerHTML = `
+                <img src="${e.target.result}" alt="Preview" style="width: 100%; height: 100px; object-fit: cover; border-radius: 6px;">
+                <button type="button" onclick="this.parentElement.remove()"
+                        style="position: absolute; top: 5px; right: 5px; width: 24px; height: 24px; background: #dc3545; color: white; border: none; border-radius: 50%; cursor: pointer;">×</button>
+            `;
+            preview.appendChild(div);
+        };
+        reader.readAsDataURL(file);
+    });
+   
+    uploadedPhotos.gallery = [...uploadedPhotos.gallery, ...validFiles];
+}
+
+function handlePlansSelect(event) {
+    const files = Array.from(event.target.files);
+    if (files.length === 0) return;
+   
+    const validFiles = files.filter(file => {
+        if (!file.type.startsWith('image/')) {
+            showError(`Файл "${file.name}" не является изображением`);
+            return false;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            showError(`Файл "${file.name}" превышает 5 МБ`);
+            return false;
+        }
+        return true;
+    });
+   
+    if (validFiles.length === 0) return;
+   
+    const preview = document.getElementById('plansPreview');
     validFiles.forEach((file, idx) => {
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -506,49 +536,8 @@ function handleGallerySelect(event) {
         reader.readAsDataURL(file);
     });
    
-    // Добавляем к загруженным
-    uploadedPhotos.gallery = [...uploadedPhotos.gallery, ...validFiles];
-}
-
-function handlePlansSelect(event) {
-    const files = Array.from(event.target.files);
-    if (files.length === 0) return;
-   
-    // Валидация
-    const validFiles = files.filter(file => {
-        if (!file.type.startsWith('image/')) {
-            showError(`Файл "${file.name}" не является изображением`);
-            return false;
-        }
-        if (file.size > 5 * 1024 * 1024) {
-            showError(`Файл "${file.name}" превышает 5 МБ`);
-            return false;
-        }
-        return true;
-    });
-   
-    if (validFiles.length === 0) return;
-   
-    // Предпросмотр
-    const preview = document.getElementById('plansPreview');
-    validFiles.forEach((file, idx) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const div = document.createElement('div');
-            div.style.position = 'relative';
-            div.innerHTML = `
-                <img src="${e.target.result}" alt="Preview" style="width: 100%; height: 100px; object-fit: cover; border-radius: 6px;">                <button type="button" onclick="this.parentElement.remove()"
-                        style="position: absolute; top: 5px; right: 5px; width: 24px; height: 24px; background: #dc3545; color: white; border: none; border-radius: 50%; cursor: pointer;">×</button>
-            `;
-            preview.appendChild(div);
-        };
-        reader.readAsDataURL(file);
-    });
-   
-    // Добавляем к загруженным
     uploadedPhotos.plans = [...uploadedPhotos.plans, ...validFiles];
 }
-
 // ============================================
 // СОХРАНЕНИЕ ОБЪЕКТА
 // ============================================
@@ -558,7 +547,6 @@ async function saveProperty(event) {
     const form = event.target;
     const formData = new FormData(form);
    
-    // Проверка главного фото для нового объекта
     if (!editingPropertyId && !uploadedPhotos.main) {
         showError('Пожалуйста, загрузите главное фото');
         return;
@@ -568,7 +556,6 @@ async function saveProperty(event) {
     const originalBtnText = saveBtn.innerHTML;
    
     try {
-        // Блокируем кнопку
         saveBtn.disabled = true;
         saveBtn.innerHTML = '⏳ Сохранение...';
        
@@ -583,10 +570,9 @@ async function saveProperty(event) {
             updated_at: new Date().toISOString()
         };
        
-        // Генерируем ID для папки с фото
         const photoFolderId = editingPropertyId || `spb-${Date.now()}`;
        
-        // Загрузка фото        if (uploadedPhotos.main || uploadedPhotos.gallery.length > 0 || uploadedPhotos.plans.length > 0) {
+        if (uploadedPhotos.main || uploadedPhotos.gallery.length > 0 || uploadedPhotos.plans.length > 0) {
             console.log('📤 Загрузка фото...');
            
             const uploadedUrls = await uploadPhotosToGitHub(photoFolderId);
@@ -600,21 +586,17 @@ async function saveProperty(event) {
             if (uploadedUrls.plans && uploadedUrls.plans.length > 0) {
                 propertyData.plans = uploadedUrls.plans;
             }
-        }
-       
-        // Сохранение в БД
+        }       
         console.log('💾 Сохранение в базу данных...');
        
         let result;
         if (editingPropertyId) {
-            // Обновление существующего
             result = await supabase
                 .from('properties')
                 .update(propertyData)
                 .eq('id', editingPropertyId)
                 .select();
         } else {
-            // Создание нового
             propertyData.id = photoFolderId;
             propertyData.created_at = new Date().toISOString();
             propertyData.active = true;
@@ -629,13 +611,11 @@ async function saveProperty(event) {
        
         console.log('✅ Объект сохранён');
        
-        // Закрываем форму
         closePropertyForm();
        
-        // Перезагружаем список
         await loadProperties();
        
-        // Показываем успех        showSuccess(editingPropertyId ? 'Объект обновлён' : 'Объект создан');
+        showSuccess(editingPropertyId ? 'Объект обновлён' : 'Объект создан');
        
     } catch (error) {
         console.error('Ошибка сохранения:', error);
@@ -655,8 +635,7 @@ async function uploadPhotosToGitHub(folderId) {
    
     const timeout = getTimeout();
    
-    // Главное фото
-    if (uploadedPhotos.main) {
+    // Главное фото    if (uploadedPhotos.main) {
         console.log('📤 Загрузка главного фото...');
         const base64 = await fileToBase64(uploadedPhotos.main);
         const fileName = `main_${Date.now()}.jpg`;
@@ -683,8 +662,10 @@ async function uploadPhotosToGitHub(folderId) {
             uploadedUrls.main = CDN_BASE + path;
             console.log('✅ Главное фото загружено:', uploadedUrls.main);
         } catch (error) {
+            clearTimeout(timeoutId);
             if (error.name === 'AbortError') {
-                throw new Error('Превышено время загрузки фото. Проверьте соединение.');            }
+                throw new Error('Превышено время загрузки фото. Проверьте соединение.');
+            }
             throw error;
         }
     }
@@ -703,8 +684,7 @@ async function uploadPhotosToGitHub(folderId) {
        
         try {
             const response = await fetch(`${config.supabaseUrl}/functions/v1/upload-to-github`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                method: 'POST',                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     path: path,
                     content: base64.split(',')[1]
@@ -719,6 +699,7 @@ async function uploadPhotosToGitHub(folderId) {
             uploadedUrls.gallery.push(CDN_BASE + path);
             console.log(`✅ Фото галереи ${i + 1} загружено`);
         } catch (error) {
+            clearTimeout(timeoutId);
             if (error.name === 'AbortError') {
                 throw new Error('Превышено время загрузки фото. Проверьте соединение.');
             }
@@ -733,7 +714,8 @@ async function uploadPhotosToGitHub(folderId) {
        
         const base64 = await fileToBase64(file);
         const fileName = `plan_${i}_${Date.now()}.jpg`;
-        const path = `property-images/${folderId}/${fileName}`;       
+        const path = `property-images/${folderId}/${fileName}`;
+       
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
        
@@ -751,10 +733,10 @@ async function uploadPhotosToGitHub(folderId) {
             clearTimeout(timeoutId);
            
             if (!response.ok) throw new Error(`Ошибка загрузки плана ${i + 1}`);
-           
-            uploadedUrls.plans.push(CDN_BASE + path);
+                        uploadedUrls.plans.push(CDN_BASE + path);
             console.log(`✅ План ${i + 1} загружен`);
         } catch (error) {
+            clearTimeout(timeoutId);
             if (error.name === 'AbortError') {
                 throw new Error('Превышено время загрузки фото. Проверьте соединение.');
             }
@@ -766,7 +748,7 @@ async function uploadPhotosToGitHub(folderId) {
 }
 
 // ============================================
-// УДАЛЕНИЕ ФОТО (для существующих объектов)
+// УДАЛЕНИЕ ФОТО
 // ============================================
 async function removeCurrentMainPhoto() {
     if (!editingPropertyId) return;
@@ -781,18 +763,17 @@ async function removeCurrentMainPhoto() {
             .single();
        
         if (property && property.main_photo) {
-            // Удаляем из GitHub
-            const path = property.main_photo.replace(CDN_BASE, '');            await deleteFileFromGitHub(path);
+            const path = property.main_photo.replace(CDN_BASE, '');
+            await deleteFileFromGitHub(path);
         }
        
-        // Обновляем в БД
         await supabase
             .from('properties')
             .update({ main_photo: null })
             .eq('id', editingPropertyId);
        
         showSuccess('Главное фото удалено');
-        await editProperty(editingPropertyId); // Перезагружаем форму
+        await editProperty(editingPropertyId);
        
     } catch (error) {
         console.error('Ошибка удаления:', error);
@@ -801,8 +782,7 @@ async function removeCurrentMainPhoto() {
 }
 
 async function removeCurrentGalleryPhoto(index) {
-    if (!editingPropertyId) return;
-   
+    if (!editingPropertyId) return;   
     if (!confirm('Удалить это фото из галереи?')) return;
    
     try {
@@ -813,14 +793,11 @@ async function removeCurrentGalleryPhoto(index) {
             .single();
        
         if (property && property.gallery && property.gallery[index]) {
-            // Удаляем из GitHub
             const path = property.gallery[index].replace(CDN_BASE, '');
             await deleteFileFromGitHub(path);
            
-            // Удаляем из массива
             property.gallery.splice(index, 1);
            
-            // Обновляем в БД
             await supabase
                 .from('properties')
                 .update({ gallery: property.gallery })
@@ -828,10 +805,11 @@ async function removeCurrentGalleryPhoto(index) {
         }
        
         showSuccess('Фото удалено из галереи');
-        await editProperty(editingPropertyId); // Перезагружаем форму
+        await editProperty(editingPropertyId);
        
     } catch (error) {
-        console.error('Ошибка удаления:', error);        showError('Ошибка удаления фото');
+        console.error('Ошибка удаления:', error);
+        showError('Ошибка удаления фото');
     }
 }
 
@@ -848,22 +826,18 @@ async function removeCurrentPlanPhoto(index) {
             .single();
        
         if (property && property.plans && property.plans[index]) {
-            // Удаляем из GitHub
             const path = property.plans[index].replace(CDN_BASE, '');
             await deleteFileFromGitHub(path);
            
-            // Удаляем из массива
             property.plans.splice(index, 1);
            
-            // Обновляем в БД
-            await supabase
-                .from('properties')
+            await supabase                .from('properties')
                 .update({ plans: property.plans })
                 .eq('id', editingPropertyId);
         }
        
         showSuccess('План удалён');
-        await editProperty(editingPropertyId); // Перезагружаем форму
+        await editProperty(editingPropertyId);
        
     } catch (error) {
         console.error('Ошибка удаления:', error);
@@ -873,17 +847,16 @@ async function removeCurrentPlanPhoto(index) {
 
 async function deleteFileFromGitHub(path) {
     try {
-        // Получаем SHA файла
         const shaResponse = await fetch(`${config.supabaseUrl}/functions/v1/get-file-info`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ path: path })
         });
        
-        if (!shaResponse.ok) throw new Error('Не удалось получить информацию о файле');       
+        if (!shaResponse.ok) throw new Error('Не удалось получить информацию о файле');
+       
         const shaData = await shaResponse.json();
        
-        // Удаляем файл
         const deleteResponse = await fetch(`${config.supabaseUrl}/functions/v1/delete-from-github`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -907,14 +880,12 @@ async function deleteFileFromGitHub(path) {
 // УДАЛЕНИЕ ОБЪЕКТА
 // ============================================
 async function deleteProperty(id) {
-    if (!confirm('⚠️ Вы уверены, что хотите удалить этот объект?\n\nВсе фото будут удалены безвозвратно!')) {
-        return;
+    if (!confirm('⚠️ Вы уверены, что хотите удалить этот объект?\n\nВсе фото будут удалены безвозвратно!')) {        return;
     }
    
     showLoading('Удаление объекта...');
    
     try {
-        // Получаем объект
         const { data: property, error: fetchError } = await supabase
             .from('properties')
             .select('*')
@@ -924,12 +895,12 @@ async function deleteProperty(id) {
         if (fetchError) throw fetchError;
         if (!property) throw new Error('Объект не найден');
        
-        // Удаляем все фото из GitHub
         const photosToDelete = [];
         if (property.main_photo) photosToDelete.push(property.main_photo);
         if (property.gallery) photosToDelete.push(...property.gallery);
         if (property.plans) photosToDelete.push(...property.plans);
-                console.log('🗑 Удаление фото...', photosToDelete.length);
+       
+        console.log('🗑 Удаление фото...', photosToDelete.length);
        
         for (const photoUrl of photosToDelete) {
             try {
@@ -937,11 +908,9 @@ async function deleteProperty(id) {
                 await deleteFileFromGitHub(path);
             } catch (error) {
                 console.warn('Не удалось удалить фото:', photoUrl, error);
-                // Продолжаем удаление даже если одно фото не удалилось
             }
         }
        
-        // Удаляем из БД
         const { error: deleteError } = await supabase
             .from('properties')
             .delete()
@@ -951,7 +920,6 @@ async function deleteProperty(id) {
        
         console.log('✅ Объект удалён');
        
-        // Перезагружаем список
         await loadProperties();
        
         hideLoading();
@@ -961,11 +929,10 @@ async function deleteProperty(id) {
         console.error('Ошибка удаления:', error);
         hideLoading();
         showError('Ошибка удаления объекта: ' + error.message);
-    }
-}
+    }}
 
 // ============================================
-// ИЗМЕНЕНИЕ СТАТУСА (скрыть/показать)
+// ИЗМЕНЕНИЕ СТАТУСА
 // ============================================
 async function toggleProperty(id, currentStatus) {
     const newStatus = !currentStatus;
@@ -978,13 +945,13 @@ async function toggleProperty(id, currentStatus) {
             .update({
                 active: newStatus,
                 updated_at: new Date().toISOString()
-            })            .eq('id', id);
+            })
+            .eq('id', id);
        
         if (error) throw error;
        
         console.log(`✅ Объект ${newStatus ? 'опубликован' : 'скрыт'}`);
        
-        // Перезагружаем список
         await loadProperties();
        
         hideLoading();
@@ -1011,13 +978,10 @@ function fileToBase64(file) {
 
 function toCdnUrl(url) {
     if (!url) return '';
-   
-    // Если уже CDN URL
-    if (url.startsWith('https://cdn.jsdelivr.net/gh/')) {
+        if (url.startsWith('https://cdn.jsdelivr.net/gh/')) {
         return url;
     }
    
-    // Если raw GitHub URL
     if (url.startsWith('https://raw.githubusercontent.com/')) {
         const parts = url.split('/');
         const user = parts[3];
@@ -1027,11 +991,17 @@ function toCdnUrl(url) {
         return `https://cdn.jsdelivr.net/gh/${user}/${repo}@${branch}/${path}`;
     }
    
-    // Если относительный путь    if (url.startsWith('property-images/')) {
+    if (url.startsWith('property-images/')) {
         return CDN_BASE + url;
     }
    
     return url;
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 function showLoading(message = 'Загрузка...') {
@@ -1057,8 +1027,7 @@ function showLoading(message = 'Загрузка...') {
         <div style="color: white; font-size: 18px; font-weight: 600;">${message}</div>
         <style>
             @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
+                0% { transform: rotate(0deg); }                100% { transform: rotate(360deg); }
             }
         </style>
     `;
@@ -1077,6 +1046,7 @@ function showError(message) {
     tg.showAlert(message);
     console.error('❌', message);
 }
+
 function showSuccess(message) {
     tg.showPopup({
         title: '✅ Успешно',
@@ -1095,15 +1065,8 @@ async function warmupDatabase() {
     }
 }
 
-// Глобальная переменная для config (нужна для uploadPhotosToGitHub)
-let config = {};
-
-// Инициализация config при загрузке
-document.addEventListener('DOMContentLoaded', async () => {
-    try {
-        const configResponse = await fetch('client-config.json');
-        config = await configResponse.json();
-    } catch (error) {
-        console.error('Ошибка загрузки конфига:', error);
-    }
-});
+// Функция переключения вкладок (если нужна в admin.html)
+function switchTab(tabName) {
+    console.log('Переключение на вкладку:', tabName);
+    // Реализация зависит от структуры admin.html
+}
