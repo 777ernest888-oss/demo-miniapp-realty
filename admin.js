@@ -1,4 +1,4 @@
-// admin.js v1.2.0 - Полная версия
+// admin.js v1.2.1 - Исправлен конфликт имён с библиотекой Supabase
 // Telegram Mini App Realty - Admin Panel
 
 // ============================================
@@ -11,7 +11,7 @@ const DESKTOP_TIMEOUT = 15000;
 
 // Глобальные переменные
 let config = {};
-let supabase = null;
+let db = null; // Переименовано с 'supabase' чтобы не конфликтовать с библиотекой
 let tg = window.Telegram.WebApp;
 let currentUser = null;
 let editingPropertyId = null;
@@ -95,10 +95,10 @@ async function initializeApp() {
         tg.expand();
         tg.ready();
        
-        supabase = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
-        console.log('✅ Supabase инициализирован');       
+        db = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+        console.log('✅ Supabase клиент создан');       
         try {
-            const { data: { user } } = await supabase.auth.getUser();
+            const { data: { user } } = await db.auth.getUser();
             currentUser = user;
             if (user && user.id !== ADMIN_USER_ID) {
                 showAuthError();
@@ -128,7 +128,7 @@ function showAuthError() {
 async function loadProperties() {
     showLoading('Загрузка объектов...');
     try {
-        const { data, error } = await supabase.from('properties').select('*').order('created_at', { ascending: false });
+        const { data, error } = await db.from('properties').select('*').order('created_at', { ascending: false });
         hideLoading();
         if (error) throw error;
         renderProperties(data || []);
@@ -368,12 +368,12 @@ async function saveProperty(event) {
         console.log('💾 Сохранение в БД...');
         let result;
         if (editingPropertyId) {
-            result = await supabase.from('properties').update(propertyData).eq('id', editingPropertyId).select();
+            result = await db.from('properties').update(propertyData).eq('id', editingPropertyId).select();
         } else {
             propertyData.id = photoFolderId;
             propertyData.created_at = new Date().toISOString();
             propertyData.active = true;
-            result = await supabase.from('properties').insert([propertyData]).select();
+            result = await db.from('properties').insert([propertyData]).select();
         }
        
         if (result.error) throw result.error;
@@ -394,7 +394,6 @@ async function uploadPhotosToGitHub(folderId) {
     const uploadedUrls = { main: null, gallery: [], plans: [] };
     const timeout = getTimeout();
    
-    // Главное фото
     if (uploadedPhotos.main) {
         console.log('📤 Загрузка главного фото...');
         const base64 = await fileToBase64(uploadedPhotos.main);
@@ -422,7 +421,6 @@ async function uploadPhotosToGitHub(folderId) {
         }
     }
    
-    // Галерея
     for (let i = 0; i < uploadedPhotos.gallery.length; i++) {
         const file = uploadedPhotos.gallery[i];
         console.log('📤 Загрузка галереи ' + (i+1) + '/' + uploadedPhotos.gallery.length);
@@ -439,9 +437,9 @@ async function uploadPhotosToGitHub(folderId) {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ path: path, content: base64.split(',')[1] }),
                 signal: controller.signal
-            });            clearTimeout(timeoutId);
-            if (!response.ok) throw new Error('Ошибка загрузки');
-            uploadedUrls.gallery.push(CDN_BASE + path);
+            });
+            clearTimeout(timeoutId);
+            if (!response.ok) throw new Error('Ошибка загрузки');            uploadedUrls.gallery.push(CDN_BASE + path);
         } catch (error) {
             clearTimeout(timeoutId);
             if (error.name === 'AbortError') throw new Error('Превышено время загрузки');
@@ -449,7 +447,6 @@ async function uploadPhotosToGitHub(folderId) {
         }
     }
    
-    // Планы
     for (let i = 0; i < uploadedPhotos.plans.length; i++) {
         const file = uploadedPhotos.plans[i];
         console.log('📤 Загрузка плана ' + (i+1) + '/' + uploadedPhotos.plans.length);
@@ -486,15 +483,14 @@ async function uploadPhotosToGitHub(folderId) {
 async function editProperty(id) {
     showLoading('Загрузка...');
     try {
-        const { data: property, error } = await supabase.from('properties').select('*').eq('id', id).single();
+        const { data: property, error } = await db.from('properties').select('*').eq('id', id).single();
         hideLoading();
-                if (error) throw error;
-        if (!property) { showError('Объект не найден'); return; }
        
-        editingPropertyId = id;
+        if (error) throw error;
+        if (!property) { showError('Объект не найден'); return; }
+                editingPropertyId = id;
         uploadedPhotos = { main: null, gallery: [], plans: [] };
        
-        // Создаем форму редактирования с текущими данными
         const formHtml = `<div id="propertyFormOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;display:flex;justify-content:center;align-items:flex-start;padding:20px;overflow-y:auto;">
             <div style="background:white;border-radius:12px;padding:30px;width:100%;max-width:600px;margin:20px 0;">
                 <h2 style="margin:0 0 20px 0;color:#333;">✏️ Редактирование</h2>
@@ -537,11 +533,11 @@ async function editProperty(id) {
                         <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📷 Текущее главное фото</label>
                         <img src="${toCdnUrl(property.main_photo)}" alt="Главное фото" style="max-width:100%;border-radius:8px;margin-bottom:10px;">
                         <button type="button" onclick="removeCurrentMainPhoto()" style="padding:6px 12px;background:#dc3545;color:white;border:none;border-radius:4px;cursor:pointer;font-size:14px;">🗑 Удалить фото</button>
-                    </div>` : ''}                   
+                    </div>` : ''}
+                   
                     <div style="margin-bottom:20px;">
                         <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📷 ${property.main_photo ? 'Заменить главное фото' : 'Главное фото'}</label>
-                        <input type="file" id="mainPhotoInput" accept="image/*" onchange="handleMainPhotoSelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
-                        <div id="mainPhotoPreview" style="margin-top:10px;"></div>
+                        <input type="file" id="mainPhotoInput" accept="image/*" onchange="handleMainPhotoSelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">                        <div id="mainPhotoPreview" style="margin-top:10px;"></div>
                     </div>
                    
                     ${property.gallery && property.gallery.length > 0 ? `
@@ -586,11 +582,11 @@ async function editProperty(id) {
                         <button type="button" onclick="closePropertyForm()" style="padding:12px 24px;background:#6c757d;color:white;border:none;border-radius:6px;cursor:pointer;font-size:16px;">❌ Отмена</button>
                         <button type="submit" id="savePropertyBtn" style="padding:12px 24px;background:#28a745;color:white;border:none;border-radius:6px;cursor:pointer;font-size:16px;">💾 Обновить</button>
                     </div>
-                </form>            </div>
+                </form>
+            </div>
         </div>`;
        
-        const oldForm = document.getElementById('propertyFormOverlay');
-        if (oldForm) oldForm.remove();
+        const oldForm = document.getElementById('propertyFormOverlay');        if (oldForm) oldForm.remove();
        
         document.body.insertAdjacentHTML('beforeend', formHtml);
        
@@ -610,14 +606,14 @@ async function removeCurrentMainPhoto() {
     if (!confirm('Удалить главное фото?')) return;
    
     try {
-        const { data: property } = await supabase.from('properties').select('main_photo').eq('id', editingPropertyId).single();
+        const { data: property } = await db.from('properties').select('main_photo').eq('id', editingPropertyId).single();
        
         if (property && property.main_photo) {
             const path = property.main_photo.replace(CDN_BASE, '');
             await deleteFileFromGitHub(path);
         }
        
-        await supabase.from('properties').update({ main_photo: null }).eq('id', editingPropertyId);
+        await db.from('properties').update({ main_photo: null }).eq('id', editingPropertyId);
        
         showSuccess('Главное фото удалено');
         await editProperty(editingPropertyId);
@@ -632,14 +628,14 @@ async function removeCurrentGalleryPhoto(index) {
     if (!confirm('Удалить фото из галереи?')) return;
    
     try {
-        const { data: property } = await supabase.from('properties').select('gallery').eq('id', editingPropertyId).single();
+        const { data: property } = await db.from('properties').select('gallery').eq('id', editingPropertyId).single();
        
         if (property && property.gallery && property.gallery[index]) {
-            const path = property.gallery[index].replace(CDN_BASE, '');            await deleteFileFromGitHub(path);
+            const path = property.gallery[index].replace(CDN_BASE, '');
+            await deleteFileFromGitHub(path);
            
             property.gallery.splice(index, 1);
-           
-            await supabase.from('properties').update({ gallery: property.gallery }).eq('id', editingPropertyId);
+                        await db.from('properties').update({ gallery: property.gallery }).eq('id', editingPropertyId);
         }
        
         showSuccess('Фото удалено');
@@ -655,7 +651,7 @@ async function removeCurrentPlanPhoto(index) {
     if (!confirm('Удалить план?')) return;
    
     try {
-        const { data: property } = await supabase.from('properties').select('plans').eq('id', editingPropertyId).single();
+        const { data: property } = await db.from('properties').select('plans').eq('id', editingPropertyId).single();
        
         if (property && property.plans && property.plans[index]) {
             const path = property.plans[index].replace(CDN_BASE, '');
@@ -663,7 +659,7 @@ async function removeCurrentPlanPhoto(index) {
            
             property.plans.splice(index, 1);
            
-            await supabase.from('properties').update({ plans: property.plans }).eq('id', editingPropertyId);
+            await db.from('properties').update({ plans: property.plans }).eq('id', editingPropertyId);
         }
        
         showSuccess('План удалён');
@@ -684,11 +680,11 @@ async function deleteFileFromGitHub(path) {
     const shaData = await shaResponse.json();
    
     const deleteResponse = await fetch(config.supabaseUrl + '/functions/v1/delete-from-github', {
-        method: 'POST',        headers: { 'Content-Type': 'application/json' },
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: path, sha: shaData.sha })
     });
-    if (!deleteResponse.ok) throw new Error('Ошибка удаления');
-    console.log('✅ Удалено:', path);
+    if (!deleteResponse.ok) throw new Error('Ошибка удаления');    console.log('✅ Удалено:', path);
 }
 
 // ============================================
@@ -699,7 +695,7 @@ async function deleteProperty(id) {
    
     showLoading('Удаление...');
     try {
-        const { data: property, error: fetchError } = await supabase.from('properties').select('*').eq('id', id).single();
+        const { data: property, error: fetchError } = await db.from('properties').select('*').eq('id', id).single();
         if (fetchError) throw fetchError;
         if (!property) throw new Error('Объект не найден');
        
@@ -718,7 +714,7 @@ async function deleteProperty(id) {
             }
         }
        
-        const deleteResult = await supabase.from('properties').delete().eq('id', id);
+        const deleteResult = await db.from('properties').delete().eq('id', id);
         if (deleteResult.error) throw deleteResult.error;
        
         console.log('✅ Удалено');
@@ -733,13 +729,13 @@ async function deleteProperty(id) {
 }
 
 // ============================================
-// ИЗМЕНЕНИЕ СТАТУСА// ============================================
+// ИЗМЕНЕНИЕ СТАТУСА
+// ============================================
 async function toggleProperty(id, currentStatus) {
     const newStatus = !currentStatus;
-    showLoading(newStatus ? 'Публикация...' : 'Скрытие...');
-   
+    showLoading(newStatus ? 'Публикация...' : 'Скрытие...');   
     try {
-        const result = await supabase.from('properties').update({ active: newStatus, updated_at: new Date().toISOString() }).eq('id', id);
+        const result = await db.from('properties').update({ active: newStatus, updated_at: new Date().toISOString() }).eq('id', id);
         if (result.error) throw result.error;
        
         console.log('✅ Статус изменён');
@@ -755,7 +751,7 @@ async function toggleProperty(id, currentStatus) {
 
 async function warmupDatabase() {
     try {
-        await supabase.from('properties').select('id').limit(1);
+        await db.from('properties').select('id').limit(1);
         console.log('✅ БД прогрета');
     } catch (error) {
         console.error('Прогрев БД:', error);
@@ -764,6 +760,9 @@ async function warmupDatabase() {
 
 function switchTab(tabName) {
     console.log('Вкладка:', tabName);
+    if (tabName === 'addProperty') {
+        showAddForm();
+    }
 }
 
 // ============================================
