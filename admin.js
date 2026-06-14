@@ -1,4 +1,4 @@
-// admin.js v1.2.1 - Исправлен конфликт имён с библиотекой Supabase
+// admin.js v1.2.2 - Исправлено чтение вложенной структуры config
 // Telegram Mini App Realty - Admin Panel
 
 // ============================================
@@ -11,7 +11,7 @@ const DESKTOP_TIMEOUT = 15000;
 
 // Глобальные переменные
 let config = {};
-let db = null; // Переименовано с 'supabase' чтобы не конфликтовать с библиотекой
+let db = null;
 let tg = window.Telegram.WebApp;
 let currentUser = null;
 let editingPropertyId = null;
@@ -71,14 +71,16 @@ function hideLoading() {
 
 function showError(message) {
     console.error('❌', message);
-    if (tg && tg.showAlert) tg.showAlert(message);
-    else alert(message);
+    if (tg && tg.showAlert) {
+        tg.showAlert(message);
+    } else {
+        alert(message);
+    }
 }
 
 function showSuccess(message) {
     console.log('✅', message);
-    if (tg && tg.showPopup) tg.showPopup({ title: '✅ Успешно', message: message, buttons: [{ type: 'ok' }] });
-    else alert('✅ ' + message);
+    alert('✅ ' + message);
 }
 
 // ============================================
@@ -89,14 +91,26 @@ async function initializeApp() {
         console.log('🚀 Инициализация админки...');
        
         const configResponse = await fetch('client-config.json');
-        config = await configResponse.json();
-        console.log('✅ Конфиг загружен');
+        const rawConfig = await configResponse.json();
+       
+        // Правильно читаем вложенную структуру
+        config = {
+            supabaseUrl: rawConfig.supabase?.url || rawConfig.supabaseUrl,
+            supabaseAnonKey: rawConfig.supabase?.anonKey || rawConfig.supabaseAnonKey,            ...rawConfig
+        };
+       
+        console.log('✅ Конфиг загружен', config);
+       
+        if (!config.supabaseUrl || !config.supabaseAnonKey) {
+            throw new Error('Не найдены данные для подключения к Supabase');
+        }
        
         tg.expand();
         tg.ready();
        
         db = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
-        console.log('✅ Supabase клиент создан');       
+        console.log('✅ Supabase клиент создан');
+       
         try {
             const { data: { user } } = await db.auth.getUser();
             currentUser = user;
@@ -131,8 +145,7 @@ async function loadProperties() {
         const { data, error } = await db.from('properties').select('*').order('created_at', { ascending: false });
         hideLoading();
         if (error) throw error;
-        renderProperties(data || []);
-    } catch (error) {
+        renderProperties(data || []);    } catch (error) {
         console.error('Ошибка загрузки:', error);
         hideLoading();
         showError('Не удалось загрузить объекты');
@@ -145,7 +158,8 @@ function renderProperties(properties) {
    
     if (properties.length === 0) {
         container.innerHTML = '<p style="text-align:center;color:#999;padding:40px;">Нет объектов. Создайте первый!</p>';
-        return;    }
+        return;
+    }
    
     container.innerHTML = properties.map(prop => {
         const mainPhoto = prop.main_photo ? toCdnUrl(prop.main_photo) : 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="200" height="150"%3E%3Crect fill="%23ddd" width="200" height="150"/%3E%3Ctext fill="%23999" x="50%25" y="50%25" text-anchor="middle" dy=".3em"%3EНет фото%3C/text%3E%3C/svg%3E';
@@ -180,8 +194,7 @@ function showAddForm() {
    
     const formHtml = `<div id="propertyFormOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;display:flex;justify-content:center;align-items:flex-start;padding:20px;overflow-y:auto;">
         <div style="background:white;border-radius:12px;padding:30px;width:100%;max-width:600px;margin:20px 0;">
-            <h2 style="margin:0 0 20px 0;color:#333;">📝 Новый объект</h2>
-            <form id="propertyForm" onsubmit="saveProperty(event)">
+            <h2 style="margin:0 0 20px 0;color:#333;">📝 Новый объект</h2>            <form id="propertyForm" onsubmit="saveProperty(event)">
                 <div style="margin-bottom:15px;">
                     <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Название *</label>
                     <input type="text" name="title" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
@@ -194,7 +207,8 @@ function showAddForm() {
                     <div style="margin-bottom:15px;">
                         <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Цена (₽) *</label>
                         <input type="number" name="price" required style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
-                    </div>                    <div style="margin-bottom:15px;">
+                    </div>
+                    <div style="margin-bottom:15px;">
                         <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Комнат *</label>
                         <input type="number" name="rooms" required min="1" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
                     </div>
@@ -229,8 +243,7 @@ function showAddForm() {
                     <div id="plansPreview" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;"></div>
                 </div>
                 <div style="display:flex;gap:10px;justify-content:flex-end;">
-                    <button type="button" onclick="closePropertyForm()" style="padding:12px 24px;background:#6c757d;color:white;border:none;border-radius:6px;cursor:pointer;font-size:16px;">❌ Отмена</button>
-                    <button type="submit" id="savePropertyBtn" style="padding:12px 24px;background:#28a745;color:white;border:none;border-radius:6px;cursor:pointer;font-size:16px;">💾 Сохранить</button>
+                    <button type="button" onclick="closePropertyForm()" style="padding:12px 24px;background:#6c757d;color:white;border:none;border-radius:6px;cursor:pointer;font-size:16px;">❌ Отмена</button>                    <button type="submit" id="savePropertyBtn" style="padding:12px 24px;background:#28a745;color:white;border:none;border-radius:6px;cursor:pointer;font-size:16px;">💾 Сохранить</button>
                 </div>
             </form>
         </div>
@@ -243,7 +256,8 @@ function showAddForm() {
 }
 
 function closePropertyForm() {
-    const form = document.getElementById('propertyFormOverlay');    if (form) form.remove();
+    const form = document.getElementById('propertyFormOverlay');
+    if (form) form.remove();
     editingPropertyId = null;
     uploadedPhotos = { main: null, gallery: [], plans: [] };
 }
@@ -278,8 +292,7 @@ function handleGallerySelect(event) {
         if (file.size > 5 * 1024 * 1024) { showError('Файл ' + file.name + ' больше 5 МБ'); return false; }
         return true;
     });
-   
-    if (validFiles.length === 0) return;
+        if (validFiles.length === 0) return;
    
     const preview = document.getElementById('galleryPreview');
     validFiles.forEach((file, idx) => {
@@ -292,7 +305,8 @@ function handleGallerySelect(event) {
             preview.appendChild(div);
         };
         reader.readAsDataURL(file);
-    });   
+    });
+   
     uploadedPhotos.gallery = [...uploadedPhotos.gallery, ...validFiles];
 }
 
@@ -327,8 +341,7 @@ function handlePlansSelect(event) {
 // ============================================
 // СОХРАНЕНИЕ
 // ============================================
-async function saveProperty(event) {
-    event.preventDefault();
+async function saveProperty(event) {    event.preventDefault();
    
     if (!editingPropertyId && !uploadedPhotos.main) {
         showError('Загрузите главное фото');
@@ -341,7 +354,8 @@ async function saveProperty(event) {
     try {
         saveBtn.disabled = true;
         saveBtn.innerHTML = '⏳ Сохранение...';
-                const form = event.target;
+       
+        const form = event.target;
         const formData = new FormData(form);
        
         const propertyData = {
@@ -376,8 +390,7 @@ async function saveProperty(event) {
             result = await db.from('properties').insert([propertyData]).select();
         }
        
-        if (result.error) throw result.error;
-       
+        if (result.error) throw result.error;       
         console.log('✅ Сохранено');
         closePropertyForm();
         await loadProperties();
@@ -390,6 +403,7 @@ async function saveProperty(event) {
         saveBtn.innerHTML = originalBtnText;
     }
 }
+
 async function uploadPhotosToGitHub(folderId) {
     const uploadedUrls = { main: null, gallery: [], plans: [] };
     const timeout = getTimeout();
@@ -425,8 +439,7 @@ async function uploadPhotosToGitHub(folderId) {
         const file = uploadedPhotos.gallery[i];
         console.log('📤 Загрузка галереи ' + (i+1) + '/' + uploadedPhotos.gallery.length);
         const base64 = await fileToBase64(file);
-        const fileName = 'gallery_' + i + '_' + Date.now() + '.jpg';
-        const path = 'property-images/' + folderId + '/' + fileName;
+        const fileName = 'gallery_' + i + '_' + Date.now() + '.jpg';        const path = 'property-images/' + folderId + '/' + fileName;
        
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), timeout);
@@ -439,7 +452,8 @@ async function uploadPhotosToGitHub(folderId) {
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
-            if (!response.ok) throw new Error('Ошибка загрузки');            uploadedUrls.gallery.push(CDN_BASE + path);
+            if (!response.ok) throw new Error('Ошибка загрузки');
+            uploadedUrls.gallery.push(CDN_BASE + path);
         } catch (error) {
             clearTimeout(timeoutId);
             if (error.name === 'AbortError') throw new Error('Превышено время загрузки');
@@ -474,8 +488,7 @@ async function uploadPhotosToGitHub(folderId) {
         }
     }
    
-    return uploadedUrls;
-}
+    return uploadedUrls;}
 
 // ============================================
 // РЕДАКТИРОВАНИЕ
@@ -488,7 +501,8 @@ async function editProperty(id) {
        
         if (error) throw error;
         if (!property) { showError('Объект не найден'); return; }
-                editingPropertyId = id;
+       
+        editingPropertyId = id;
         uploadedPhotos = { main: null, gallery: [], plans: [] };
        
         const formHtml = `<div id="propertyFormOverlay" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:1000;display:flex;justify-content:center;align-items:flex-start;padding:20px;overflow-y:auto;">
@@ -523,8 +537,7 @@ async function editProperty(id) {
                             <input type="text" name="floor" required value="${property.floor || ''}" placeholder="5/12" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
                         </div>
                     </div>
-                    <div style="margin-bottom:15px;">
-                        <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Описание</label>
+                    <div style="margin-bottom:15px;">                        <label style="display:block;margin-bottom:5px;font-weight:600;color:#333;">Описание</label>
                         <textarea name="description" rows="4" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">${escapeHtml(property.description || '')}</textarea>
                     </div>
                    
@@ -537,7 +550,8 @@ async function editProperty(id) {
                    
                     <div style="margin-bottom:20px;">
                         <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📷 ${property.main_photo ? 'Заменить главное фото' : 'Главное фото'}</label>
-                        <input type="file" id="mainPhotoInput" accept="image/*" onchange="handleMainPhotoSelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">                        <div id="mainPhotoPreview" style="margin-top:10px;"></div>
+                        <input type="file" id="mainPhotoInput" accept="image/*" onchange="handleMainPhotoSelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
+                        <div id="mainPhotoPreview" style="margin-top:10px;"></div>
                     </div>
                    
                     ${property.gallery && property.gallery.length > 0 ? `
@@ -572,8 +586,7 @@ async function editProperty(id) {
                         </div>
                     </div>` : ''}
                    
-                    <div style="margin-bottom:20px;">
-                        <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📐 ${property.plans && property.plans.length > 0 ? 'Добавить план' : 'Планы'}</label>
+                    <div style="margin-bottom:20px;">                        <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📐 ${property.plans && property.plans.length > 0 ? 'Добавить план' : 'Планы'}</label>
                         <input type="file" id="plansInput" accept="image/*" multiple onchange="handlePlansSelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
                         <div id="plansPreview" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;"></div>
                     </div>
@@ -586,7 +599,8 @@ async function editProperty(id) {
             </div>
         </div>`;
        
-        const oldForm = document.getElementById('propertyFormOverlay');        if (oldForm) oldForm.remove();
+        const oldForm = document.getElementById('propertyFormOverlay');
+        if (oldForm) oldForm.remove();
        
         document.body.insertAdjacentHTML('beforeend', formHtml);
        
@@ -622,7 +636,6 @@ async function removeCurrentMainPhoto() {
         showError('Ошибка удаления фото');
     }
 }
-
 async function removeCurrentGalleryPhoto(index) {
     if (!editingPropertyId) return;
     if (!confirm('Удалить фото из галереи?')) return;
@@ -635,7 +648,8 @@ async function removeCurrentGalleryPhoto(index) {
             await deleteFileFromGitHub(path);
            
             property.gallery.splice(index, 1);
-                        await db.from('properties').update({ gallery: property.gallery }).eq('id', editingPropertyId);
+           
+            await db.from('properties').update({ gallery: property.gallery }).eq('id', editingPropertyId);
         }
        
         showSuccess('Фото удалено');
@@ -670,8 +684,7 @@ async function removeCurrentPlanPhoto(index) {
     }
 }
 
-async function deleteFileFromGitHub(path) {
-    const shaResponse = await fetch(config.supabaseUrl + '/functions/v1/get-file-info', {
+async function deleteFileFromGitHub(path) {    const shaResponse = await fetch(config.supabaseUrl + '/functions/v1/get-file-info', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: path })
@@ -684,7 +697,8 @@ async function deleteFileFromGitHub(path) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: path, sha: shaData.sha })
     });
-    if (!deleteResponse.ok) throw new Error('Ошибка удаления');    console.log('✅ Удалено:', path);
+    if (!deleteResponse.ok) throw new Error('Ошибка удаления');
+    console.log('✅ Удалено:', path);
 }
 
 // ============================================
@@ -719,8 +733,7 @@ async function deleteProperty(id) {
        
         console.log('✅ Удалено');
         await loadProperties();
-        hideLoading();
-        showSuccess('Объект удалён');
+        hideLoading();        showSuccess('Объект удалён');
     } catch (error) {
         console.error('Ошибка:', error);
         hideLoading();
@@ -733,7 +746,8 @@ async function deleteProperty(id) {
 // ============================================
 async function toggleProperty(id, currentStatus) {
     const newStatus = !currentStatus;
-    showLoading(newStatus ? 'Публикация...' : 'Скрытие...');   
+    showLoading(newStatus ? 'Публикация...' : 'Скрытие...');
+   
     try {
         const result = await db.from('properties').update({ active: newStatus, updated_at: new Date().toISOString() }).eq('id', id);
         if (result.error) throw result.error;
@@ -768,6 +782,5 @@ function switchTab(tabName) {
 // ============================================
 // ЗАПУСК
 // ============================================
-document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
+document.addEventListener('DOMContentLoaded', function() {    initializeApp();
 });
