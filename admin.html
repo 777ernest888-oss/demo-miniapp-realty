@@ -477,7 +477,7 @@
             const user = tg.initDataUnsafe?.user;
             const ADMIN_USER_ID = 2038206387;
           
-            if (!user || user.id !== ADMIN_USER_ID) {
+            if (user && user.id !== ADMIN_USER_ID) {
                 document.body.innerHTML = `
                     <div style="display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
                         <div style="background:white;border-radius:20px;padding:40px;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,0.2);max-width:400px;">
@@ -733,5 +733,5 @@
         </div>
     </div>
 
-    <script src="admin.js?v=1.0.6"></script></body>
+    <script src="admin.js?v=1.0.8"></script></body>
 </html>
