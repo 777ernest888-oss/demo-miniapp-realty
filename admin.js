@@ -1,8 +1,8 @@
-// admin.js v1.5.1 - С авторизацией Edge Functions + правильные поля Supabase
-// Telegram Mini App Realty - Admin Panel
-
+// admin.js v1.6.0 - Cloudflare Workers вместо Edge Functions
 const ADMIN_USER_ID = '2038206387';
 const CDN_BASE = 'https://cdn.jsdelivr.net/gh/777ernest888-oss/demo-miniapp-realty@main/';
+// URL вашего Cloudflare Worker
+const WORKER_URL = 'https://upload-to-github.777ernest888.workers.dev';
 const MOBILE_TIMEOUT = 60000;
 const DESKTOP_TIMEOUT = 30000;
 
@@ -63,7 +63,7 @@ function hideLoading() {
 }
 
 function showError(message) {
-    console.error('❌', message);
+    console.error('', message);
     alert(message || 'Произошла ошибка');
 }
 
@@ -129,7 +129,7 @@ async function loadProperties() {
         const { data, error } = await db.from('properties').select('*').order('created_at', { ascending: false });
         hideLoading();
         if (error) throw error;
-        console.log('📦 Загружено объектов:', data ? data.length : 0);
+        console.log(' Загружено объектов:', data ? data.length : 0);
         renderProperties(data || []);
     } catch (error) {
         console.error('Ошибка загрузки:', error);
@@ -156,7 +156,7 @@ function renderProperties(properties) {
                 <h3 style="margin:0 0 10px 0;color:#333;font-size:18px;">${escapeHtml(name)}</h3>
                 <p style="margin:5px 0;color:#666;font-size:14px;">📍 ${escapeHtml(address)}</p>
                 <div style="margin-top:15px;display:flex;gap:10px;flex-wrap:wrap;">
-                    <button onclick="toggleProperty('${prop.id}',${isActive})" style="padding:8px 16px;border:none;border-radius:6px;cursor:pointer;background:${isActive ? '#6c757d' : '#28a745'};color:white;font-size:14px;">${isActive ? '🙈 Скрыть' : '✅ Показать'}</button>
+                    <button onclick="toggleProperty('${prop.id}',${isActive})" style="padding:8px 16px;border:none;border-radius:6px;cursor:pointer;background:${isActive ? '#6c757d' : '#28a745'};color:white;font-size:14px;">${isActive ? ' Скрыть' : '✅ Показать'}</button>
                     <button onclick="editProperty('${prop.id}')" style="padding:8px 16px;border:none;border-radius:6px;cursor:pointer;background:#17a2b8;color:white;font-size:14px;">✏️ Редактировать</button>
                     <button onclick="deleteProperty('${prop.id}')" style="padding:8px 16px;border:none;border-radius:6px;cursor:pointer;background:#dc3545;color:white;font-size:14px;">🗑 Удалить</button>
                 </div>
@@ -182,12 +182,12 @@ function showAddForm() {
                     <input type="text" name="address" required placeholder="ул. Примерная, д. 1" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
                 </div>
                 <div style="margin-bottom:20px;">
-                    <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;"> Главное фото *</label>
+                    <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📷 Главное фото *</label>
                     <input type="file" id="mainPhotoInput" accept="image/*" onchange="handleMainPhotoSelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
                     <div id="mainPhotoPreview" style="margin-top:10px;"></div>
                 </div>
                 <div style="margin-bottom:20px;">
-                    <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📸 Галерея (минимум 2 фото)</label>
+                    <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;"> Галерея (минимум 2 фото)</label>
                     <input type="file" id="galleryInput" accept="image/*" multiple onchange="handleGallerySelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
                     <div id="galleryPreview" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;"></div>
                 </div>
@@ -346,17 +346,13 @@ async function saveProperty(event) {
     }
 }
 
+// НОВЫЙ КОД: загрузка через Cloudflare Worker
 async function uploadPhotosToGitHub(folderId) {
     const uploadedUrls = { main: null, gallery: [], plans: [] };
     const timeout = getTimeout();
    
-    console.log(' Таймаут загрузки:', timeout / 1000, 'сек');
-   
-    // Заголовок авторизации для Edge Functions
-    const authHeaders = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + config.supabaseAnonKey
-    };
+    console.log('⏱ Таймаут загрузки:', timeout / 1000, 'сек');
+    console.log('🔗 Worker URL:', WORKER_URL);
    
     if (uploadedPhotos.main) {
         console.log('📤 Загрузка главного фото...');
@@ -368,10 +364,10 @@ async function uploadPhotosToGitHub(folderId) {
         const timeoutId = setTimeout(() => controller.abort(), timeout);
        
         try {
-            const response = await fetch(config.supabaseUrl + '/functions/v1/upload-to-github', {
+            const response = await fetch(WORKER_URL, {
                 method: 'POST',
-                headers: authHeaders,
-                body: JSON.stringify({ path: path, content: base64.split(',')[1] }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'upload', path: path, content: base64.split(',')[1] }),
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
@@ -381,8 +377,9 @@ async function uploadPhotosToGitHub(folderId) {
                 throw new Error('Ошибка загрузки: ' + response.status + ' ' + errorText);
             }
            
+            const data = await response.json();
             uploadedUrls.main = CDN_BASE + path;
-            console.log('✅ Главное фото загружено');
+            console.log('✅ Главное фото загружено:', uploadedUrls.main);
         } catch (error) {
             clearTimeout(timeoutId);
             if (error.name === 'AbortError') {
@@ -390,10 +387,10 @@ async function uploadPhotosToGitHub(folderId) {
             }
             throw error;
         }
-    }   
+    }
+   
     for (let i = 0; i < uploadedPhotos.gallery.length; i++) {
-        const file = uploadedPhotos.gallery[i];
-        console.log('📤 Загрузка галереи ' + (i+1) + '/' + uploadedPhotos.gallery.length);
+        const file = uploadedPhotos.gallery[i];        console.log('📤 Загрузка галереи ' + (i+1) + '/' + uploadedPhotos.gallery.length);
         const base64 = await fileToBase64(file);
         const fileName = 'gallery_' + i + '_' + Date.now() + '.jpg';
         const path = 'property-images/' + folderId + '/' + fileName;
@@ -402,10 +399,10 @@ async function uploadPhotosToGitHub(folderId) {
         const timeoutId = setTimeout(() => controller.abort(), timeout);
        
         try {
-            const response = await fetch(config.supabaseUrl + '/functions/v1/upload-to-github', {
+            const response = await fetch(WORKER_URL, {
                 method: 'POST',
-                headers: authHeaders,
-                body: JSON.stringify({ path: path, content: base64.split(',')[1] }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'upload', path: path, content: base64.split(',')[1] }),
                 signal: controller.signal
             });
             clearTimeout(timeoutId);
@@ -416,6 +413,7 @@ async function uploadPhotosToGitHub(folderId) {
             }
            
             uploadedUrls.gallery.push(CDN_BASE + path);
+            console.log('✅ Фото галереи ' + (i+1) + ' загружено');
         } catch (error) {
             clearTimeout(timeoutId);
             if (error.name === 'AbortError') {
@@ -436,12 +434,12 @@ async function uploadPhotosToGitHub(folderId) {
         const timeoutId = setTimeout(() => controller.abort(), timeout);
        
         try {
-            const response = await fetch(config.supabaseUrl + '/functions/v1/upload-to-github', {
+            const response = await fetch(WORKER_URL, {
                 method: 'POST',
-                headers: authHeaders,
-                body: JSON.stringify({ path: path, content: base64.split(',')[1] }),                signal: controller.signal
-            });
-            clearTimeout(timeoutId);
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'upload', path: path, content: base64.split(',')[1] }),
+                signal: controller.signal
+            });            clearTimeout(timeoutId);
            
             if (!response.ok) {
                 const errorText = await response.text();
@@ -449,6 +447,7 @@ async function uploadPhotosToGitHub(folderId) {
             }
            
             uploadedUrls.plans.push(CDN_BASE + path);
+            console.log('✅ План ' + (i+1) + ' загружен');
         } catch (error) {
             clearTimeout(timeoutId);
             if (error.name === 'AbortError') {
@@ -488,8 +487,8 @@ async function editProperty(id) {
                         <input type="text" name="address" required value="${escapeHtml(property.address || '')}" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;font-size:16px;box-sizing:border-box;">
                     </div>
                    
-                    ${property.image_main ? '<div style="margin-bottom:20px;"><label style="display:block;margin-bottom:10px;font-weight:600;color:#333;"> Текущее главное фото</label><img src="' + toCdnUrl(property.image_main) + '" alt="Главное фото" style="max-width:100%;border-radius:8px;margin-bottom:10px;"><button type="button" onclick="removeCurrentMainPhoto()" style="padding:6px 12px;background:#dc3545;color:white;border:none;border-radius:4px;cursor:pointer;font-size:14px;">🗑 Удалить фото</button></div>' : ''}                   
-                    <div style="margin-bottom:20px;">
+                    ${property.image_main ? '<div style="margin-bottom:20px;"><label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📷 Текущее главное фото</label><img src="' + toCdnUrl(property.image_main) + '" alt="Главное фото" style="max-width:100%;border-radius:8px;margin-bottom:10px;"><button type="button" onclick="removeCurrentMainPhoto()" style="padding:6px 12px;background:#dc3545;color:white;border:none;border-radius:4px;cursor:pointer;font-size:14px;">🗑 Удалить фото</button></div>' : ''}
+                                        <div style="margin-bottom:20px;">
                         <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📷 ${property.image_main ? 'Заменить главное фото' : 'Главное фото *'}</label>
                         <input type="file" id="mainPhotoInput" accept="image/*" onchange="handleMainPhotoSelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
                         <div id="mainPhotoPreview" style="margin-top:10px;"></div>
@@ -498,7 +497,7 @@ async function editProperty(id) {
                     ${property.images_gallery && property.images_gallery.length > 0 ? '<div style="margin-bottom:20px;"><label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📸 Текущая галерея (' + property.images_gallery.length + ' фото)</label><div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px;">' + property.images_gallery.map((photo, idx) => '<div style="position:relative;"><img src="' + toCdnUrl(photo) + '" alt="Галерея" style="width:100%;height:100px;object-fit:cover;border-radius:6px;"><button type="button" onclick="removeCurrentGalleryPhoto(' + idx + ')" style="position:absolute;top:5px;right:5px;width:24px;height:24px;background:#dc3545;color:white;border:none;border-radius:50%;cursor:pointer;font-size:12px;">×</button></div>').join('') + '</div></div>' : ''}
                    
                     <div style="margin-bottom:20px;">
-                        <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;">📸 ${property.images_gallery && property.images_gallery.length > 0 ? 'Добавить в галерею' : 'Галерея'}</label>
+                        <label style="display:block;margin-bottom:10px;font-weight:600;color:#333;"> ${property.images_gallery && property.images_gallery.length > 0 ? 'Добавить в галерею' : 'Галерея'}</label>
                         <input type="file" id="galleryInput" accept="image/*" multiple onchange="handleGallerySelect(event)" style="width:100%;padding:10px;border:1px solid #ddd;border-radius:6px;">
                         <div id="galleryPreview" style="margin-top:10px;display:grid;grid-template-columns:repeat(3,1fr);gap:10px;"></div>
                     </div>
@@ -537,8 +536,8 @@ async function removeCurrentMainPhoto() {
     if (!confirm('Удалить главное фото?')) return;
    
     try {
-        const { data: property } = await db.from('properties').select('image_main').eq('id', editingPropertyId).single();       
-        if (property && property.image_main) {
+        const { data: property } = await db.from('properties').select('image_main').eq('id', editingPropertyId).single();
+                if (property && property.image_main) {
             const path = property.image_main.replace(CDN_BASE, '');
             await deleteFileFromGitHub(path);
         }
@@ -586,8 +585,8 @@ async function removeCurrentPlanPhoto(index) {
        
         if (property && property.floor_plans_images && property.floor_plans_images[index]) {
             const path = property.floor_plans_images[index].replace(CDN_BASE, '');
-            await deleteFileFromGitHub(path);           
-            property.floor_plans_images.splice(index, 1);
+            await deleteFileFromGitHub(path);
+                        property.floor_plans_images.splice(index, 1);
            
             await db.from('properties').update({ floor_plans_images: property.floor_plans_images }).eq('id', editingPropertyId);
         }
@@ -600,42 +599,47 @@ async function removeCurrentPlanPhoto(index) {
     }
 }
 
+// НОВЫЙ КОД: удаление через Cloudflare Worker
 async function deleteFileFromGitHub(path) {
-    // Заголовок авторизации для Edge Functions
-    const authHeaders = {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + config.supabaseAnonKey
-    };
-   
-    const shaResponse = await fetch(config.supabaseUrl + '/functions/v1/get-file-info', {
+    // Сначала получаем SHA файла
+    const getInfoResponse = await fetch(WORKER_URL, {
         method: 'POST',
-        headers: authHeaders,
-        body: JSON.stringify({ path: path })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'get-info', path: path })
     });
-    if (!shaResponse.ok) throw new Error('Не получил SHA');
-    const shaData = await shaResponse.json();
    
-    const deleteResponse = await fetch(config.supabaseUrl + '/functions/v1/delete-from-github', {
+    if (!getInfoResponse.ok) {
+        throw new Error('Файл не найден');
+    }
+   
+    const infoData = await getInfoResponse.json();
+   
+    // Теперь удаляем
+    const deleteResponse = await fetch(WORKER_URL, {
         method: 'POST',
-        headers: authHeaders,
-        body: JSON.stringify({ path: path, sha: shaData.sha })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'delete', path: path, sha: infoData.sha })
     });
-    if (!deleteResponse.ok) throw new Error('Ошибка удаления');
+   
+    if (!deleteResponse.ok) {
+        throw new Error('Ошибка удаления');
+    }
+   
     console.log('✅ Удалено:', path);
 }
 
 async function deleteProperty(id) {
-    if (!confirm('⚠️ Удалить объект? Все фото будут удалены!')) return;
+    if (!confirm('️ Удалить объект? Все фото будут удалены!')) return;
    
     showLoading('Удаление...');
     try {
         const { data: property, error: fetchError } = await db.from('properties').select('*').eq('id', id).single();
         if (fetchError) throw fetchError;
-        if (!property) throw new Error('Объект не найден');
-       
+        if (!property) throw new Error('Объект не найден');       
         const photosToDelete = [];
         if (property.image_main) photosToDelete.push(property.image_main);
-        if (property.images_gallery) photosToDelete.push(...property.images_gallery);        if (property.floor_plans_images) photosToDelete.push(...property.floor_plans_images);
+        if (property.images_gallery) photosToDelete.push(...property.images_gallery);
+        if (property.floor_plans_images) photosToDelete.push(...property.floor_plans_images);
        
         console.log('🗑 Удаление ' + photosToDelete.length + ' фото...');
         for (let i = 0; i < photosToDelete.length; i++) {
@@ -680,11 +684,11 @@ async function toggleProperty(id, currentStatus) {
     }
 }
 
-async function warmupDatabase() {
-    try {
+async function warmupDatabase() {    try {
         await db.from('properties').select('id').limit(1);
         console.log('✅ БД прогрета');
-    } catch (error) {        console.error('Прогрев БД:', error);
+    } catch (error) {
+        console.error('Прогрев БД:', error);
     }
 }
 
