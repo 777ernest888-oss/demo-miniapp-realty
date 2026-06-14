@@ -488,9 +488,14 @@
                         </div>
                     </div>
                 `;
-                throw new Error('Unauthorized');            }
-          
-            console.log('✅ Admin authenticated:', user.id);
+                throw new Error('Unauthorized');
+        }
+       
+        if (user) {
+            console.log('✓ Admin authenticated:', user.id);
+        } else {
+            console.log(' Открыто вне Telegram (тестовый режим)');
+        }
         })();
     </script>
 
