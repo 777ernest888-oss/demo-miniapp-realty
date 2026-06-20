@@ -11,17 +11,17 @@ let supabaseClient = null;
 
 function getImageUrl(sourceUrl) {
     if (!sourceUrl) return '';
-   
+  
     // Если уже полный URL — возвращаем как есть
     if (sourceUrl.startsWith('http://') || sourceUrl.startsWith('https://')) {
         return sourceUrl;
     }
-   
+  
     // Если относительный путь — добавляем CDN URL
     if (sourceUrl.startsWith('property-images/')) {
         return 'https://cdn.jsdelivr.net/gh/777ernest888-oss/demo-miniapp-realty@main/' + sourceUrl;
     }
-   
+  
     return sourceUrl;
 }
 
@@ -47,8 +47,7 @@ try {
             initDataUnsafe: { user: {} },
             close: function() { window.close(); },
             openTelegramLink: function(url) { window.open(url); }
-        };    }
-} catch (e) { console.error(e); }
+        };    }} catch (e) { console.error(e); }
 
 async function loadClientConfig() {
     try {
@@ -97,8 +96,7 @@ async function loadPropertiesFromSupabase() {
     try {
         const result = await supabaseClient
             .from('properties')            .select('*')
-            .eq('active', true)
-            .order('created_at', { ascending: false });
+            .eq('active', true)            .order('created_at', { ascending: false });
         if (result.error) throw result.error;
         return result.data;
     } catch (e) {
@@ -107,12 +105,47 @@ async function loadPropertiesFromSupabase() {
     }
 }
 
+async function loadPropertiesFromScript() {
+  if (!config.client || !config.client.scriptUrl) return null;
+ 
+  try {
+    const response = await fetch(config.client.scriptUrl);
+    if (!response.ok) throw new Error('Network error');
+   
+    const data = await response.json();
+   
+    // Если ошибка в ответе
+    if (data.error) {
+      console.error('Script error:', data.error);
+      return null;
+    }
+   
+    // Если это массив (данные из Google Sheets)
+    if (Array.isArray(data) && data.length > 1) {
+      const headers = data[0];
+      const rows = data.slice(1);
+     
+      return rows.map(function(row) {
+        const obj = {};
+        headers.forEach(function(header, i) {
+          obj[header] = row[i];
+        });
+        return obj;
+      });
+    }
+   
+    return data;
+  } catch (e) {
+    console.error('Script load error:', e);
+    return null;
+  }
+}
+
 function parseCSV(csv) {
     const lines = csv.trim().split('\n');
     if (lines.length < 2) return [];
     const headers = parseCSVLine(lines[0]).map(function(h) { return h.trim(); });
-    const result = [];
-    for (let i = 1; i < lines.length; i++) {
+    const result = [];    for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
         const values = parseCSVLine(lines[i]);
         const obj = {};
@@ -161,8 +194,7 @@ function appBack() {
 
 function startApp() {
     document.getElementById('welcomeScreen').classList.add('hidden');
-    document.getElementById('mainContent').classList.remove('hidden');
-    window.scrollTo(0, 0);
+    document.getElementById('mainContent').classList.remove('hidden');    window.scrollTo(0, 0);
     hideBack();
 }
 
@@ -211,8 +243,7 @@ function showPage(pageId) {
             } else {
                 document.getElementById('mainContent').classList.remove('hidden');
                 hideBack();
-            }
-        }
+            }        }
     }
     window.scrollTo(0, 0);
 }
@@ -261,8 +292,7 @@ function openDirectChat() {
     if (username) {
         tg.openTelegramLink ? tg.openTelegramLink('https://t.me/' + username) : window.open('https://t.me/' + username);
     } else {
-        tg.showAlert('❌ Telegram не указан');
-    }
+        tg.showAlert('❌ Telegram не указан');    }
 }
 
 function callAgent() {
@@ -304,7 +334,14 @@ async function init() {
         applyBranding();
         await loadAgentData();
         await loadPagesData();
-        let propertiesData = await loadPropertiesFromSupabase();
+       
+        // Пробуем загрузить из Google Apps Script, если нет — из Supabase
+        let propertiesData = await loadPropertiesFromScript();
+       
+        if (!propertiesData || propertiesData.length === 0) {
+          console.log('No data from script, trying Supabase...');
+          propertiesData = await loadPropertiesFromSupabase();
+        }       
         if (!propertiesData || propertiesData.length === 0) {
             propertiesData = [];
         }
@@ -353,8 +390,7 @@ function applyBranding() {
 
 function renderWelcome() {
     if (!config.features || !config.features.showWelcomeScreen) {
-        document.getElementById('welcomeScreen').classList.add('hidden');
-        document.getElementById('mainContent').classList.remove('hidden');
+        document.getElementById('welcomeScreen').classList.add('hidden');        document.getElementById('mainContent').classList.remove('hidden');
     }
 }
 
@@ -403,8 +439,7 @@ function renderFilters() {
             else {
                 document.querySelectorAll('.price-btn').forEach(function(b) { b.classList.remove('active'); });
                 this.classList.add('active');
-            }
-            filterListings();
+            }            filterListings();
         });
     });
     document.querySelectorAll('.filter-checkbox').forEach(function(cb) { cb.addEventListener('change', filterListings); });
@@ -453,8 +488,7 @@ function renderListings(data) {
         let priceDisplay = '?';
         if (typeof item.price_from === 'number') {
             priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) + ' млн ₽' : (item.price_from / 1000000).toFixed(1) + ' млн ₽';
-        }
-        const priceTo = typeof item.price_to === 'number' ? item.price_to.toFixed(1) : '';
+        }        const priceTo = typeof item.price_to === 'number' ? item.price_to.toFixed(1) : '';
         const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
         const area = (typeof item.area_min === 'number' && typeof item.area_max === 'number') ? item.area_min + '–' + item.area_max + ' м²' : '';
         const statusKey = (item.status || 'other').toString().replace(/\s+/g, '-');
@@ -503,8 +537,7 @@ function updateMapMarkers(filteredItems) {
         }
         const marker = L.marker([item.lat, item.lng]).addTo(map);
         const popupContent = '<div class="map-popup" data-id="' + item.id + '" style="cursor:pointer;"><b>' + item.name + '</b><br>от ' + priceDisplay + ' млн ₽</div>';
-        marker.bindPopup(popupContent);
-        marker.on('popupopen', function() {
+        marker.bindPopup(popupContent);        marker.on('popupopen', function() {
             const popupEl = document.querySelector('.map-popup[data-id="' + item.id + '"]');
             if (popupEl) popupEl.addEventListener('click', function() { openDetails(item.id); });
         });
@@ -553,8 +586,7 @@ function openDetails(id) {
             track.appendChild(slide);
             const dot = document.createElement('div');
             dot.className = 'dot ' + (index === 0 ? 'active' : '');
-            dot.onclick = function() { track.scrollTo({ left: slide.offsetLeft, behavior: 'smooth' }); };
-            dotsContainer.appendChild(dot);
+            dot.onclick = function() { track.scrollTo({ left: slide.offsetLeft, behavior: 'smooth' }); };            dotsContainer.appendChild(dot);
         });
         galleryContainer.appendChild(track);
         galleryContainer.appendChild(dotsContainer);
@@ -603,8 +635,7 @@ function openDetails(id) {
         btn.style.marginTop = '20px';
         btn.style.marginBottom = '40px';
         modalContent.appendChild(btn);
-    }
-    btn.textContent = ' Получить консультацию';
+    }    btn.textContent = ' Получить консультацию';
     btn.onclick = function() { openConsultForm(id); };
     document.getElementById('detailsModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
@@ -653,8 +684,7 @@ function initPhoneMask() {
     input.addEventListener('input', function(e) {
         let x = e.target.value.replace(/\D/g, '').match(/(\d{0,1})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
         e.target.value = !x[2] ? '+7 (' : '+7 (' + x[2] + (x[3] ? ') ' + x[3] : '') + (x[4] ? '-' + x[4] : '') + (x[5] ? '-' + x[5] : '');
-    });
-    input.addEventListener('focus', function(e) { if (e.target.value === '') e.target.value = '+7 ('; });
+    });    input.addEventListener('focus', function(e) { if (e.target.value === '') e.target.value = '+7 ('; });
 }
 
 function initTelegramMask() {
@@ -703,8 +733,7 @@ function submitConsultForm(event) {
         const supabasePayload = {
             secret: config.client.secretKey,
             projectid: config.client.projectId,
-            title: item.name,
-            leadname: name,
+            title: item.name,            leadname: name,
             leadphone: phone,
             leadtelegram: telegram || 'Не указан'
         };
@@ -753,8 +782,7 @@ function submitConsultForm(event) {
 
 async function submitLeadToSupabase(payload) {
     if (!supabaseClient) return null;
-    try {
-        const result = await supabaseClient.from('leads').insert([payload]);
+    try {        const result = await supabaseClient.from('leads').insert([payload]);
         if (result.error) throw result.error;
         return { success: true };
     } catch (e) {
