@@ -106,46 +106,63 @@ async function loadPropertiesFromSupabase() {
 }
 
 async function loadPropertiesFromScript() {
-  if (!config.client || !config.client.scriptUrl) return null;
- 
-  try {
-    const response = await fetch(config.client.scriptUrl);
-    if (!response.ok) throw new Error('Network error');
-   
-    const data = await response.json();
-   
-    // Если ошибка в ответе
-    if (data.error) {
-      console.error('Script error:', data.error);
-      return null;
+    if (!config.client || !config.client.scriptUrl) {
+        console.log('No scriptUrl in config');
+        return null;
     }
    
-    // Если это массив (данные из Google Sheets)
-    if (Array.isArray(data) && data.length > 1) {
-      const headers = data[0];
-      const rows = data.slice(1);
-     
-      return rows.map(function(row) {
-        const obj = {};
-        headers.forEach(function(header, i) {
-          obj[header] = row[i];
-        });
-        return obj;
-      });
-    }
+    console.log('Trying to load from script:', config.client.scriptUrl);
    
-    return data;
-  } catch (e) {
-    console.error('Script load error:', e);
-    return null;
-  }
+    try {
+        // Пробуем обычный fetch (Google Apps Script поддерживает CORS для GET)
+        const response = await fetch(config.client.scriptUrl);
+       
+        console.log('Script response status:', response.status);
+       
+        if (!response.ok) {
+            console.error('Script returned error status:', response.status);
+            return null;
+        }
+       
+        const data = await response.json();
+        console.log('Script data received:', Array.isArray(data) ? data.length + ' rows' : typeof data);
+       
+        // Если ошибка в ответе
+        if (data.error) {
+            console.error('Script error:', data.error);
+            return null;
+        }
+       
+        // Если это массив (данные из Google Sheets)
+        if (Array.isArray(data) && data.length > 1) {
+            const headers = data[0];
+            const rows = data.slice(1);
+            console.log('Headers:', headers);
+           
+            const result = rows.map(function(row) {
+                const obj = {};
+                headers.forEach(function(header, i) {
+                    obj[header] = row[i];
+                });
+                return obj;
+            });           
+            console.log('Loaded', result.length, 'properties from script');
+            return result;
+        }
+       
+        return data;
+    } catch (e) {
+        console.error('Script load error:', e);
+        return null;
+    }
 }
 
 function parseCSV(csv) {
     const lines = csv.trim().split('\n');
     if (lines.length < 2) return [];
     const headers = parseCSVLine(lines[0]).map(function(h) { return h.trim(); });
-    const result = [];    for (let i = 1; i < lines.length; i++) {
+    const result = [];
+    for (let i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
         const values = parseCSVLine(lines[i]);
         const obj = {};
@@ -177,8 +194,7 @@ function parseCSVLine(line) {
 
 function showBack() {
     const btn = document.getElementById('headerBackBtn');
-    if (btn) btn.classList.remove('hidden');
-}
+    if (btn) btn.classList.remove('hidden');}
 function hideBack() {
     const btn = document.getElementById('headerBackBtn');
     if (btn) btn.classList.add('hidden');
@@ -194,7 +210,8 @@ function appBack() {
 
 function startApp() {
     document.getElementById('welcomeScreen').classList.add('hidden');
-    document.getElementById('mainContent').classList.remove('hidden');    window.scrollTo(0, 0);
+    document.getElementById('mainContent').classList.remove('hidden');
+    window.scrollTo(0, 0);
     hideBack();
 }
 
@@ -226,8 +243,7 @@ function showPage(pageId) {
                     const contentDiv = targetPage.querySelector('.page-content');
                     const img = document.createElement('img');
                     const yandexSrc = getImageUrl(imageSrc);
-                    img.src = yandexSrc;                    img.className = 'about-agent-photo';
-                    img.alt = 'Фото';
+                    img.src = yandexSrc;                    img.className = 'about-agent-photo';                    img.alt = 'Фото';
                     img.onerror = onImgError;
                     contentDiv.insertBefore(img, contentDiv.firstChild);
                 }
@@ -243,7 +259,8 @@ function showPage(pageId) {
             } else {
                 document.getElementById('mainContent').classList.remove('hidden');
                 hideBack();
-            }        }
+            }
+        }
     }
     window.scrollTo(0, 0);
 }
@@ -276,7 +293,6 @@ function renderContactsPage() {
     document.getElementById('agencyBlock').style.display = hasAgency ? 'block' : 'none';
     document.getElementById('agencyName').textContent = data.agencyName || '';    document.getElementById('agencyAddress').textContent = data.agencyAddress ? '📍 ' + data.agencyAddress : '';
 }
-
 function openMenu() {
     document.getElementById('menuOverlay').classList.remove('hidden');
     document.getElementById('sideMenu').classList.remove('hidden');
@@ -292,7 +308,8 @@ function openDirectChat() {
     if (username) {
         tg.openTelegramLink ? tg.openTelegramLink('https://t.me/' + username) : window.open('https://t.me/' + username);
     } else {
-        tg.showAlert('❌ Telegram не указан');    }
+        tg.showAlert('❌ Telegram не указан');
+    }
 }
 
 function callAgent() {
@@ -308,7 +325,7 @@ function toggleFilters() {
     const block = document.getElementById('filtersBlock');
     const btn = document.querySelector('.filters-toggle-btn');
     block.classList.toggle('hidden');
-    btn.textContent = block.classList.contains('hidden') ? '🔽 Фильтры' : '🔼 Скрыть фильтры';
+    btn.textContent = block.classList.contains('hidden') ? ' Фильтры' : '🔼 Скрыть фильтры';
 }
 
 function switchView(view) {
@@ -324,8 +341,7 @@ function switchView(view) {
         listBtn.classList.remove('active'); mapBtn.classList.add('active');
         listContainer.classList.add('hidden'); mapContainer.classList.remove('hidden');        showBack();
         setTimeout(function() { initMap(); }, 100);
-    }
-}
+    }}
 
 async function init() {
     try {
@@ -339,9 +355,10 @@ async function init() {
         let propertiesData = await loadPropertiesFromScript();
        
         if (!propertiesData || propertiesData.length === 0) {
-          console.log('No data from script, trying Supabase...');
-          propertiesData = await loadPropertiesFromSupabase();
-        }       
+            console.log('No data from script, trying Supabase...');
+            propertiesData = await loadPropertiesFromSupabase();
+        }
+       
         if (!propertiesData || propertiesData.length === 0) {
             propertiesData = [];
         }
@@ -373,8 +390,7 @@ function applyBranding() {
     if (companyEl && config.branding.name) companyEl.textContent = config.branding.name;
     const titleEl = document.getElementById('welcomeTitle');
     if (titleEl && config.branding.welcomeTitle) titleEl.textContent = config.branding.welcomeTitle;
-    const taglineEl = document.getElementById('welcomeTagline');
-    if (taglineEl && config.branding.tagline) taglineEl.textContent = config.branding.tagline;
+    const taglineEl = document.getElementById('welcomeTagline');    if (taglineEl && config.branding.tagline) taglineEl.textContent = config.branding.tagline;
     const btnEl = document.getElementById('welcomeButton');
     if (btnEl && config.branding.buttonText) btnEl.textContent = config.branding.buttonText;
     const headerTitle = document.getElementById('headerTitle');
@@ -390,7 +406,8 @@ function applyBranding() {
 
 function renderWelcome() {
     if (!config.features || !config.features.showWelcomeScreen) {
-        document.getElementById('welcomeScreen').classList.add('hidden');        document.getElementById('mainContent').classList.remove('hidden');
+        document.getElementById('welcomeScreen').classList.add('hidden');
+        document.getElementById('mainContent').classList.remove('hidden');
     }
 }
 
@@ -422,8 +439,7 @@ function renderFilters() {
         const allRooms = [];
         listings.forEach(function(l) {
             if (l.rooms) {
-                String(l.rooms).split(',').map(function(r) { return r.trim(); }).forEach(function(r) { if (r && allRooms.indexOf(r) === -1) allRooms.push(r); });
-            }
+                String(l.rooms).split(',').map(function(r) { return r.trim(); }).forEach(function(r) { if (r && allRooms.indexOf(r) === -1) allRooms.push(r); });            }
         });
         allRooms.sort();
         roomsContainer.innerHTML = '';        allRooms.forEach(function(r) {
@@ -439,7 +455,8 @@ function renderFilters() {
             else {
                 document.querySelectorAll('.price-btn').forEach(function(b) { b.classList.remove('active'); });
                 this.classList.add('active');
-            }            filterListings();
+            }
+            filterListings();
         });
     });
     document.querySelectorAll('.filter-checkbox').forEach(function(cb) { cb.addEventListener('change', filterListings); });
@@ -472,7 +489,6 @@ function resetFilters() {
     document.querySelectorAll('.filter-checkbox').forEach(function(cb) { cb.checked = false; });
     renderListings(listings.filter(function(l) { return l.active; }));
 }
-
 function renderListings(data) {
     const container = document.getElementById('listingsContainer');    if (!container) return;
     container.innerHTML = '';
@@ -481,14 +497,15 @@ function renderListings(data) {
         return;
     }
     if (!data || data.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><h3>Ничего не найдено</h3><p>Попробуйте изменить параметры поиска.</p><button class="btn-reset-filters" onclick="resetFilters()">Сбросить фильтры</button></div>';
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon"></div><h3>Ничего не найдено</h3><p>Попробуйте изменить параметры поиска.</p><button class="btn-reset-filters" onclick="resetFilters()">Сбросить фильтры</button></div>';
         return;
     }
     data.forEach(function(item) {
         let priceDisplay = '?';
         if (typeof item.price_from === 'number') {
             priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) + ' млн ₽' : (item.price_from / 1000000).toFixed(1) + ' млн ₽';
-        }        const priceTo = typeof item.price_to === 'number' ? item.price_to.toFixed(1) : '';
+        }
+        const priceTo = typeof item.price_to === 'number' ? item.price_to.toFixed(1) : '';
         const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
         const area = (typeof item.area_min === 'number' && typeof item.area_max === 'number') ? item.area_min + '–' + item.area_max + ' м²' : '';
         const statusKey = (item.status || 'other').toString().replace(/\s+/g, '-');
@@ -520,8 +537,7 @@ function initMap() {
     if (!mapContainer) return;
     if (!map) {
         map = L.map('mapContainer').setView([59.9343, 30.3351], 11);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
-    }
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);    }
     filterListings();    setTimeout(function() { map.invalidateSize(); }, 150);
 }
 
@@ -537,7 +553,8 @@ function updateMapMarkers(filteredItems) {
         }
         const marker = L.marker([item.lat, item.lng]).addTo(map);
         const popupContent = '<div class="map-popup" data-id="' + item.id + '" style="cursor:pointer;"><b>' + item.name + '</b><br>от ' + priceDisplay + ' млн ₽</div>';
-        marker.bindPopup(popupContent);        marker.on('popupopen', function() {
+        marker.bindPopup(popupContent);
+        marker.on('popupopen', function() {
             const popupEl = document.querySelector('.map-popup[data-id="' + item.id + '"]');
             if (popupEl) popupEl.addEventListener('click', function() { openDetails(item.id); });
         });
@@ -569,8 +586,7 @@ function openDetails(id) {
     if (item.image_main) allImages.push(item.image_main);
     if (item.images_gallery) {
         allImages = allImages.concat(item.images_gallery.split(',').map(function(u) { return u.trim(); }).filter(function(u) { return u; }));
-    }
-    if (allImages.length > 0) {        const track = document.createElement('div');
+    }    if (allImages.length > 0) {        const track = document.createElement('div');
         track.className = 'carousel-track';
         const dotsContainer = document.createElement('div');
         dotsContainer.className = 'carousel-dots';
@@ -586,7 +602,8 @@ function openDetails(id) {
             track.appendChild(slide);
             const dot = document.createElement('div');
             dot.className = 'dot ' + (index === 0 ? 'active' : '');
-            dot.onclick = function() { track.scrollTo({ left: slide.offsetLeft, behavior: 'smooth' }); };            dotsContainer.appendChild(dot);
+            dot.onclick = function() { track.scrollTo({ left: slide.offsetLeft, behavior: 'smooth' }); };
+            dotsContainer.appendChild(dot);
         });
         galleryContainer.appendChild(track);
         galleryContainer.appendChild(dotsContainer);
@@ -618,8 +635,7 @@ function openDetails(id) {
             const yandexUrl = getImageUrl(url);
             img.src = yandexUrl;
             img.style.height = '200px';
-            img.onclick = function() { window.open(yandexUrl, '_blank'); };            img.onerror = onImgError;
-            slide.appendChild(img);
+            img.onclick = function() { window.open(yandexUrl, '_blank'); };            img.onerror = onImgError;            slide.appendChild(img);
             plansTrack.appendChild(slide);
         });
         plansContainer.appendChild(plansTrack);
@@ -635,7 +651,8 @@ function openDetails(id) {
         btn.style.marginTop = '20px';
         btn.style.marginBottom = '40px';
         modalContent.appendChild(btn);
-    }    btn.textContent = ' Получить консультацию';
+    }
+    btn.textContent = ' Получить консультацию';
     btn.onclick = function() { openConsultForm(id); };
     document.getElementById('detailsModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
@@ -667,8 +684,7 @@ function openConsultForm(id, event) {
         showBack();
     }
 }
-function closeConsultModal() {
-    document.getElementById('consultModal').classList.add('hidden');
+function closeConsultModal() {    document.getElementById('consultModal').classList.add('hidden');
     document.getElementById('consultForm').reset();
     const submitBtn = document.querySelector('#consultForm button[type="submit"]');
     if (submitBtn) {
@@ -684,7 +700,8 @@ function initPhoneMask() {
     input.addEventListener('input', function(e) {
         let x = e.target.value.replace(/\D/g, '').match(/(\d{0,1})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
         e.target.value = !x[2] ? '+7 (' : '+7 (' + x[2] + (x[3] ? ') ' + x[3] : '') + (x[4] ? '-' + x[4] : '') + (x[5] ? '-' + x[5] : '');
-    });    input.addEventListener('focus', function(e) { if (e.target.value === '') e.target.value = '+7 ('; });
+    });
+    input.addEventListener('focus', function(e) { if (e.target.value === '') e.target.value = '+7 ('; });
 }
 
 function initTelegramMask() {
@@ -710,14 +727,13 @@ function submitConsultForm(event) {
         const phone = document.getElementById('consultPhone').value.trim();
         let telegram = document.getElementById('consultTelegram').value.trim() || '';
         if (!name || name.length < 2) {
-            tg.showAlert('❌ Введите имя');
+            tg.showAlert(' Введите имя');
             return;
         }
         if (phone.replace(/\D/g, '').length < 10) {
             tg.showAlert('❌ Введите корректный телефон');            return;
         }
-        if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) {
-            tg.showAlert('❌ Telegram только латиницей');
+        if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) {            tg.showAlert('❌ Telegram только латиницей');
             return;
         }
         const submitBtn = event.target.querySelector('button[type="submit"]');
@@ -733,7 +749,8 @@ function submitConsultForm(event) {
         const supabasePayload = {
             secret: config.client.secretKey,
             projectid: config.client.projectId,
-            title: item.name,            leadname: name,
+            title: item.name,
+            leadname: name,
             leadphone: phone,
             leadtelegram: telegram || 'Не указан'
         };
@@ -765,8 +782,7 @@ function submitConsultForm(event) {
                 }                submitBtn.textContent = 'Отправить заявку';
                 submitBtn.disabled = false;
                 document.getElementById('consultForm').reset();
-                closeConsultModal();
-                setTimeout(function() {
+                closeConsultModal();                setTimeout(function() {
                     tg.showAlert('✅ Заявка отправлена!');
                 }, 100);
             })
@@ -782,7 +798,8 @@ function submitConsultForm(event) {
 
 async function submitLeadToSupabase(payload) {
     if (!supabaseClient) return null;
-    try {        const result = await supabaseClient.from('leads').insert([payload]);
+    try {
+        const result = await supabaseClient.from('leads').insert([payload]);
         if (result.error) throw result.error;
         return { success: true };
     } catch (e) {
