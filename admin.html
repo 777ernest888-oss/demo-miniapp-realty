@@ -267,7 +267,7 @@
             <div class="modal-header">
                 <button class="back-btn" onclick="closeModal()">← Назад</button>
                 <h2 id="modalTitle">Новый объект</h2>
-                <button class="close-btn" onclick="closeModal()">✕</button>
+                <button class="close-btn" onclick="closeModal()"></button>
             </div>
 
             <div class="status-toggle" id="statusToggle" style="display:none;">
@@ -389,7 +389,7 @@
                     <label class="form-label">Галерея</label>
                     <div class="photo-preview-area" id="galleryPreview"></div>
                     <label class="upload-btn">
-                        ️ Добавить фото
+                        🖼️ Добавить фото
                         <input type="file" accept="image/*" multiple onchange="uploadPhoto('gallery', this)">                    </label>
                     <input type="hidden" id="fieldImagesGallery">
                 </div>
@@ -602,6 +602,13 @@
             document.getElementById('fieldFloorPlansImages').value = '';
 
             document.getElementById('objectModal').classList.add('active');
+           
+            // Прокрутка модального окна вверх при открытии
+            var modalContent = document.querySelector('.modal-content');
+            if (modalContent) {
+                modalContent.scrollTop = 0;
+            }
+           
             console.log('[MODAL] Create modal opened');
         }
 
@@ -628,14 +635,14 @@
             document.getElementById('fieldPriceTo').value = obj.price_to || '';
             document.getElementById('fieldPriceSqm').value = obj.price_per_sqm || '';
             document.getElementById('fieldAreaMin').value = obj.area_min || '';
-            document.getElementById('fieldAreaMax').value = obj.area_max || '';
-            document.getElementById('fieldRooms').value = obj.rooms || '';
+            document.getElementById('fieldAreaMax').value = obj.area_max || '';            document.getElementById('fieldRooms').value = obj.rooms || '';
             document.getElementById('fieldClass').value = obj.class || '';
             document.getElementById('fieldCompletionSoonest').value = obj.completion_soonest || '';
             document.getElementById('fieldCompletionAll').value = obj.completion_all || '';
             document.getElementById('fieldFinishing').value = obj.finishing || '';
             document.getElementById('fieldStatus').value = obj.status || '';
-            document.getElementById('fieldDescription').value = obj.description || '';            document.getElementById('fieldFeatures').value = obj.features || '';
+            document.getElementById('fieldDescription').value = obj.description || '';
+            document.getElementById('fieldFeatures').value = obj.features || '';
             document.getElementById('fieldLat').value = obj.lat || '';
             document.getElementById('fieldLng').value = obj.lng || '';
 
@@ -658,6 +665,13 @@
             renderPhotoPreview('plans', photoStore.plans);
 
             document.getElementById('objectModal').classList.add('active');
+           
+            // Прокрутка модального окна вверх при открытии
+            var modalContent = document.querySelector('.modal-content');
+            if (modalContent) {
+                modalContent.scrollTop = 0;
+            }
+           
             console.log('[MODAL] Edit modal opened');
         }
 
@@ -670,8 +684,7 @@
         function setStatus(value) {
             currentStatus = value;
             document.querySelectorAll('.toggle-option').forEach(function(el) {
-                el.classList.toggle('selected', el.dataset.value === value);
-            });
+                el.classList.toggle('selected', el.dataset.value === value);            });
             console.log('[STATUS] Set to:', value);
         }
 
@@ -684,7 +697,16 @@
             btn.disabled = true;
             btn.textContent = 'Сохранение...';
 
-            try {                var params = {
+            try {
+                // ИСПРАВЛЕНО: Клиентская проверка обязательного главного фото при создании
+                if (!currentEditId && !photoStore.main) {
+                    showToast('⚠️ Загрузите главное фото');
+                    btn.disabled = false;
+                    btn.textContent = originalText;
+                    return;
+                }
+
+                var params = {
                     name: document.getElementById('fieldName').value.trim(),
                     address: document.getElementById('fieldAddress').value.trim(),
                     district: document.getElementById('fieldDistrict').value.trim(),
@@ -711,7 +733,6 @@
                 };
 
                 console.log('[SAVE] Params:', JSON.stringify(params, null, 2).substring(0, 500) + '...');
-
                 if (currentEditId) {
                     params.id = currentEditId;
                     console.log('[SAVE] Updating object ID:', currentEditId);
@@ -733,7 +754,8 @@
             } catch (e) {
                 console.error('[SAVE] Error:', e);
                 showToast('❌ Ошибка сохранения');
-            } finally {                btn.disabled = false;
+            } finally {
+                btn.disabled = false;
                 btn.textContent = originalText;
             }
         }
@@ -760,7 +782,6 @@
                 btn.textContent = 'Удалить объект';
             }
         }
-
         async function uploadPhoto(type, input) {
             console.log('[UPLOAD] Starting upload for type:', type);
            
@@ -782,7 +803,8 @@
 
             try {
                 for (var i = 0; i < files.length; i++) {
-                    var file = files[i];                    console.log('[UPLOAD] Processing file:', file.name, 'Size:', file.size, 'Type:', file.type);
+                    var file = files[i];
+                    console.log('[UPLOAD] Processing file:', file.name, 'Size:', file.size, 'Type:', file.type);
                    
                     var base64 = await fileToBase64(file);
                     console.log('[UPLOAD] Base64 length:', base64.length);
@@ -809,8 +831,7 @@
                     }
                 }
                 showToast('✅ Фото загружено');
-            } catch (e) {
-                console.error('[UPLOAD] Error:', e);
+            } catch (e) {                console.error('[UPLOAD] Error:', e);
                 showToast(' Ошибка загрузки фото. Попробуйте ещё раз.');
             } finally {
                 btn.innerHTML = originalText;
@@ -831,7 +852,8 @@
                 };
                 console.log('[BASE64] Starting conversion...');
                 reader.readAsDataURL(file);
-            });        }
+            });
+        }
 
         function addPhotoToField(type, url) {
             console.log('[PHOTO] Adding photo to', type, ':', url);
@@ -858,8 +880,7 @@
 
         function removePhoto(type, index) {
             console.log('[PHOTO] Removing photo from', type, 'at index', index);
-            if (type === 'main') {
-                photoStore.main = '';
+            if (type === 'main') {                photoStore.main = '';
                 document.getElementById('fieldImageMain').value = '';
                 renderPhotoPreview('main', []);
             } else if (type === 'gallery') {
@@ -880,7 +901,8 @@
             container.innerHTML = '';
 
             urls.forEach(function(url, index) {
-                if (!url) return;               
+                if (!url) return;
+               
                 var displayUrl = url;
                 if (url.indexOf('lh3.googleusercontent.com/d/') !== -1) {
                     var fileId = url.split('/d/')[1];
@@ -907,9 +929,8 @@
                     console.log('[PREVIEW] Image loaded successfully');
                 };
                
-                var removeBtn = document.createElement('button');
-                removeBtn.className = 'photo-remove';
-                removeBtn.textContent = '✕';
+                var removeBtn = document.createElement('button');                removeBtn.className = 'photo-remove';
+                removeBtn.textContent = '';
                 removeBtn.onclick = function(e) { e.stopPropagation(); removePhoto(type, index); };
 
                 wrapper.appendChild(img);
@@ -929,7 +950,8 @@
 
         function showToast(message) {
             console.log('[TOAST]', message);
-            var toast = document.getElementById('toast');            toast.textContent = message;
+            var toast = document.getElementById('toast');
+            toast.textContent = message;
             toast.classList.remove('show');
             void toast.offsetWidth;
             toast.classList.add('show');
