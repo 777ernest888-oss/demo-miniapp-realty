@@ -6,485 +6,947 @@
     <title>Админка | Новостройки</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root { --primary: #3D5266; --accent: #3498DB; --bg: #F5F7FA; --card-bg: #FFFFFF; --text: #2C3E50; --text-secondary: #7F8C8D; --border: #E0E6ED; --danger: #E74C3C; --success: #27AE60; --warning: #F39C12; --radius: 12px; --shadow: 0 2px 8px rgba(0,0,0,0.08); }
+        :root {
+            --primary: #3D5266;
+            --accent: #3498DB;
+            --bg: #F5F7FA;
+            --card-bg: #FFFFFF;
+            --text: #2C3E50;
+            --text-secondary: #7F8C8D;
+            --border: #E0E6ED;
+            --danger: #E74C3C;
+            --success: #27AE60;
+            --warning: #F39C12;
+            --radius: 12px;
+            --shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
+       
         body { background: var(--bg); color: var(--text); padding-bottom: 80px; min-height: 100vh; }
-        .header { background: var(--primary); color: white; padding: 16px; position: sticky; top: 0; z-index: 100; display: flex; align-items: center; justify-content: space-between; box-shadow: var(--shadow); }
+       
+        .header {
+            background: var(--primary);
+            color: white;
+            padding: 16px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow);
+        }
         .header h1 { font-size: 18px; font-weight: 600; }
         .header-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 4px 8px; }
-        .tabs { display: flex; background: var(--card-bg); border-bottom: 1px solid var(--border); position: sticky; top: 56px; z-index: 99; }
-        .tab { flex: 1; padding: 12px 8px; background: none; border: none; border-bottom: 3px solid transparent; font-size: 14px; font-weight: 500; color: var(--text-secondary); cursor: pointer; transition: all 0.2s; }
-        .tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
-        .tab-content { display: none; padding: 16px; max-width: 600px; margin: 0 auto; }
-        .tab-content.active { display: block; }
-        .object-card { background: var(--card-bg); border-radius: var(--radius); padding: 12px; margin-bottom: 12px; box-shadow: var(--shadow); display: flex; gap: 12px; align-items: center; cursor: pointer; }
+
+        .container { padding: 16px; max-width: 600px; margin: 0 auto; }
+
+        .object-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 12px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow);            display: flex;
+            gap: 12px;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
+        .object-card:active { transform: scale(0.98); }
         .object-card.hidden-object { opacity: 0.5; }
-        .card-thumb { width: 70px; height: 70px; border-radius: 8px; object-fit: cover; background: var(--border); flex-shrink: 0; }
+       
+        .card-thumb {
+            width: 70px;
+            height: 70px;
+            border-radius: 8px;
+            object-fit: cover;
+            background: var(--border);
+            flex-shrink: 0;
+        }
+       
         .card-info { flex: 1; min-width: 0; }
         .card-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .card-address { font-size: 13px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .card-status { font-size: 11px; padding: 2px 8px; border-radius: 10px; display: inline-block; margin-top: 4px; }
+        .card-status {
+            font-size: 11px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            display: inline-block;
+            margin-top: 4px;
+        }
         .status-active { background: #E8F8F0; color: var(--success); }
         .status-hidden { background: #FEF5E7; color: var(--warning); }
-        .fab { position: fixed; bottom: 24px; right: 24px; width: 56px; height: 56px; background: var(--accent); color: white; border: none; border-radius: 50%; font-size: 28px; box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4); cursor: pointer; z-index: 90; display: flex; align-items: center; justify-content: center; }
-        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 200; display: none; align-items: flex-end; }
+
+        .fab {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 56px;
+            height: 56px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 28px;
+            box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
+            cursor: pointer;
+            z-index: 90;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 200;
+            display: none;
+            align-items: flex-end;
+        }
         .modal-overlay.active { display: flex; }
-        .modal-content { background: var(--bg); width: 100%; max-height: 90vh; border-radius: 16px 16px 0 0; overflow-y: auto; padding: 20px; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 12px; }
+       
+        .modal-content {
+            background: var(--bg);
+            width: 100%;
+            max-height: 90vh;
+            border-radius: 16px 16px 0 0;
+            overflow-y: auto;
+            padding: 20px;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            gap: 12px;
+        }
         .modal-header h2 { font-size: 20px; flex: 1; text-align: center; }
         .close-btn { background: none; border: none; font-size: 24px; color: var(--text-secondary); cursor: pointer; }
-        .back-btn { background: none; border: none; color: var(--accent); font-size: 16px; font-weight: 600; cursor: pointer; padding: 4px 8px; }
+       
+        .back-btn {
+            background: none;
+            border: none;
+            color: var(--accent);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 4px 8px;
+            white-space: nowrap;
+        }
+        .back-btn:active { opacity: 0.7; }
+
         .form-group { margin-bottom: 16px; }
         .form-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary); }
-        .form-input, .form-select, .form-textarea { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; background: var(--card-bg); outline: none; }
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: 8px;            font-size: 15px;
+            background: var(--card-bg);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
         .form-textarea { resize: vertical; min-height: 80px; }
         .form-row { display: flex; gap: 12px; }
         .form-row .form-group { flex: 1; }
+
         .photo-section { margin-bottom: 16px; }
-        .photo-preview-area { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
-        .photo-thumb { width: 80px; height: 80px; border-radius: 8px; object-fit: cover; position: relative; border: 1px solid var(--border); }
-        .photo-remove { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; background: var(--danger); color: white; border: none; border-radius: 50%; font-size: 12px; cursor: pointer; }
-        .upload-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; background: var(--card-bg); border: 1px dashed var(--accent); border-radius: 8px; color: var(--accent); font-size: 14px; cursor: pointer; margin-top: 8px; }
+        .photo-preview-area {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px;
+        }
+        .photo-thumb {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            object-fit: cover;
+            position: relative;
+            border: 1px solid var(--border);
+        }
+        .photo-remove {
+            position: absolute;
+            top: -6px;
+            right: -6px;
+            width: 20px;
+            height: 20px;
+            background: var(--danger);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .upload-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 10px 16px;
+            background: var(--card-bg);
+            border: 1px dashed var(--accent);
+            border-radius: 8px;
+            color: var(--accent);            font-size: 14px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
         .upload-btn input { display: none; }
-        .btn { width: 100%; padding: 14px; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 8px; }
-        .btn-primary { background: var(--accent); color: white; }        .btn-danger { background: var(--danger); color: white; margin-top: 16px; }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-danger { background: var(--danger); color: white; margin-top: 16px; }
         .btn:disabled { opacity: 0.6; cursor: not-allowed; }
+
         .status-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
-        .toggle-option { flex: 1; padding: 10px; text-align: center; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; cursor: pointer; background: var(--card-bg); }
+        .toggle-option {
+            flex: 1;
+            padding: 10px;
+            text-align: center;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            background: var(--card-bg);
+        }
         .toggle-option.selected { border-color: var(--accent); background: #EBF5FB; color: var(--accent); font-weight: 600; }
+
         .empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
+        .empty-icon { font-size: 48px; margin-bottom: 16px; }
+
         .loading { text-align: center; padding: 40px; color: var(--text-secondary); }
-        .toast { position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.8); color: white; padding: 10px 20px; border-radius: 20px; font-size: 14px; z-index: 300; display: none; }
+
+        .toast {
+            position: fixed;
+            bottom: 90px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            z-index: 300;
+            display: none;        }
         .toast.show { display: block; animation: fadeInOut 3s ease; }
         @keyframes fadeInOut { 0% { opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
-        .profile-photo-preview { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid var(--border); margin: 0 auto 16px; display: block; background: var(--border); }
-        .profile-photo-container { text-align: center; margin-bottom: 20px; }
-        .lead-card { background: var(--card-bg); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; box-shadow: var(--shadow); border-left: 4px solid var(--accent); }
-        .lead-card.status-new { border-left-color: var(--accent); }
-        .lead-card.status-progress { border-left-color: var(--warning); }
-        .lead-card.status-closed { border-left-color: var(--success); opacity: 0.7; }
-        .lead-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .lead-object { font-weight: 600; font-size: 15px; }
-        .lead-date { font-size: 12px; color: var(--text-secondary); }
-        .lead-body { font-size: 14px; line-height: 1.6; }
-        .lead-body div { margin-bottom: 4px; }
-        .lead-actions { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
-        .lead-status-btn { flex: 1; min-width: 80px; padding: 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--card-bg); font-size: 12px; cursor: pointer; text-align: center; }
-        .lead-status-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
-        .leads-filter { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-        .filter-btn { padding: 8px 14px; border: 1px solid var(--border); border-radius: 20px; background: var(--card-bg); font-size: 13px; cursor: pointer; }
-        .filter-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
     </style>
 </head>
 <body>
+
     <div class="header">
-        <h1>️ Админка</h1>
-        <button class="header-btn" onclick="refreshCurrentTab()">↻</button>
+        <h1>🏗️ Новостройки</h1>
+        <button class="header-btn" onclick="loadObjects()">↻</button>
     </div>
-    <nav class="tabs">
-        <button class="tab active" data-tab="objects" onclick="switchTab('objects')">📋 Объекты</button>
-        <button class="tab" data-tab="profile" onclick="switchTab('profile')">👤 Профиль</button>
-        <button class="tab" data-tab="leads" onclick="switchTab('leads')"> Заявки</button>
-    </nav>
-    <div id="tab-objects" class="tab-content active">
-        <div class="loading" id="objectsLoading">Загрузка объектов...</div>
+
+    <div class="container" id="mainContainer">
+        <div class="loading" id="loadingState">Загрузка объектов...</div>
         <div id="objectsList"></div>
     </div>
-    <div id="tab-profile" class="tab-content">
-        <div class="loading" id="profileLoading">Загрузка профиля...</div>
-        <form id="profileForm" style="display:none;">
-            <div class="profile-photo-container">
-                <img id="profilePhotoPreview" class="profile-photo-preview" src="" alt="Фото">
-                <label class="upload-btn"> Изменить фото<input type="file" accept="image/*" onchange="uploadAgentPhoto(this)"></label>
-                <input type="hidden" id="profilePhotoUrl">            </div>
-            <div class="form-group"><label class="form-label">Имя *</label><input type="text" class="form-input" id="profileName" placeholder="Эрнест Гареев" required></div>
-            <div class="form-group"><label class="form-label">Роль</label><input type="text" class="form-input" id="profileRole" placeholder="Эксперт"></div>
-            <div class="form-row">
-                <div class="form-group"><label class="form-label">Телефон</label><input type="tel" class="form-input" id="profilePhone" placeholder="+7"></div>
-                <div class="form-group"><label class="form-label">Telegram</label><input type="text" class="form-input" id="profileTelegram" placeholder="username"></div>
-            </div>
-            <div class="form-group"><label class="form-label">Агентство</label><input type="text" class="form-input" id="profileAgency" placeholder="Название"></div>
-            <div class="form-group"><label class="form-label">Адрес</label><input type="text" class="form-input" id="profileAgencyAddress" placeholder="Адрес"></div>
-            <hr style="margin: 24px 0; border: none; border-top: 1px solid var(--border);">
-            <h3 style="margin-bottom: 16px;"> Страница "Обо мне"</h3>
-            <div class="form-group"><label class="form-label">Заголовок</label><input type="text" class="form-input" id="pageAboutTitle" placeholder="Обо мне"></div>
-            <div class="form-group"><label class="form-label">Содержание (HTML)</label><textarea class="form-textarea" id="pageAboutContent" rows="10"></textarea></div>
-            <button type="button" class="btn btn-primary" onclick="saveProfile()">💾 Сохранить</button>
-        </form>
-    </div>
-    <div id="tab-leads" class="tab-content">
-        <div class="loading" id="leadsLoading">Загрузка...</div>
-        <div id="leadsFilterContainer" class="leads-filter" style="display:none;">
-            <button class="filter-btn active" data-filter="all" onclick="filterLeads('all')">Все</button>
-            <button class="filter-btn" data-filter="new" onclick="filterLeads('new')">🔵 Новые</button>
-            <button class="filter-btn" data-filter="progress" onclick="filterLeads('progress')">🟡 В работе</button>
-            <button class="filter-btn" data-filter="closed" onclick="filterLeads('closed')">🟢 Закрыты</button>
-        </div>
-        <div id="leadsList"></div>
-    </div>
-    <button class="fab" id="fabAdd" onclick="openCreateModal()">+</button>
+
+    <button class="fab" onclick="openCreateModal()">+</button>
+
     <div class="modal-overlay" id="objectModal">
         <div class="modal-content">
             <div class="modal-header">
                 <button class="back-btn" onclick="closeModal()">← Назад</button>
                 <h2 id="modalTitle">Новый объект</h2>
-                <button class="close-btn" onclick="closeModal()"></button>
+                <button class="close-btn" onclick="closeModal()">✕</button>
             </div>
+
             <div class="status-toggle" id="statusToggle" style="display:none;">
                 <div class="toggle-option selected" data-value="true" onclick="setStatus('true')">✅ Активен</div>
                 <div class="toggle-option" data-value="false" onclick="setStatus('false')">👁️ Скрыт</div>
             </div>
+
             <form id="objectForm" onsubmit="saveObject(event)">
                 <input type="hidden" id="objectId">
-                <div class="form-group"><label class="form-label">Название *</label><input type="text" class="form-input" id="fieldName" required></div>
-                <div class="form-group"><label class="form-label">Адрес *</label><input type="text" class="form-input" id="fieldAddress" required></div>
-                <div class="form-row">
-                    <div class="form-group"><label class="form-label">Район</label><input type="text" class="form-input" id="fieldDistrict"></div>
-                    <div class="form-group"><label class="form-label">Метро</label><input type="text" class="form-input" id="fieldMetro"></div>
+               
+                <div class="form-group">
+                    <label class="form-label">Название *</label>
+                    <input type="text" class="form-input" id="fieldName" placeholder="Например: ЖК Агасфера" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Адрес *</label>
+                    <input type="text" class="form-input" id="fieldAddress" placeholder="Введите адрес объекта" required>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label class="form-label">Цена от</label><input type="number" step="0.1" class="form-input" id="fieldPriceFrom"></div>
-                    <div class="form-group"><label class="form-label">Цена до</label><input type="number" step="0.1" class="form-input" id="fieldPriceTo"></div>
-                </div>                <div class="form-group"><label class="form-label">Главное фото *</label><div class="photo-preview-area" id="mainPhotoPreview"></div><label class="upload-btn"> Фото<input type="file" accept="image/*" onchange="uploadPhoto('main', this)"></label><input type="hidden" id="fieldImageMain"></div>
-                <button type="submit" class="btn btn-primary" id="saveBtn">Сохранить</button>
-                <button type="button" class="btn btn-danger" id="deleteBtn" style="display:none;" onclick="deleteObject()">Удалить</button>
+                    <div class="form-group">
+                        <label class="form-label">Район</label>
+                        <input type="text" class="form-input" id="fieldDistrict" placeholder="Введите район">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Метро</label>                        <input type="text" class="form-input" id="fieldMetro" placeholder="Станция метро">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Цена от (млн ₽)</label>
+                        <input type="number" step="0.1" class="form-input" id="fieldPriceFrom" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Цена до (млн ₽)</label>
+                        <input type="number" step="0.1" class="form-input" id="fieldPriceTo" placeholder="0">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Площадь от (м²)</label>
+                        <input type="number" step="0.1" class="form-input" id="fieldAreaMin" placeholder="0">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Площадь до (м²)</label>
+                        <input type="number" step="0.1" class="form-input" id="fieldAreaMax" placeholder="0">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Цена за м² (₽)</label>
+                    <input type="number" class="form-input" id="fieldPriceSqm" placeholder="Рассчитается автоматически или введите вручную">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Комнатность</label>
+                        <input type="text" class="form-input" id="fieldRooms" placeholder="Студия, 1, 2, 3...">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Класс</label>
+                        <select class="form-select" id="fieldClass">
+                            <option value="">Выберите класс</option>
+                            <option value="Эконом">Эконом</option>
+                            <option value="Комфорт">Комфорт</option>
+                            <option value="Бизнес">Бизнес</option>
+                            <option value="Премиум">Премиум</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Срок сдачи (начало)</label>
+                        <input type="text" class="form-input" id="fieldCompletionSoonest" placeholder="IV кв. 2026">
+                    </div>                    <div class="form-group">
+                        <label class="form-label">Срок сдачи (конец)</label>
+                        <input type="text" class="form-input" id="fieldCompletionAll" placeholder="II кв. 2027">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Отделка</label>
+                    <select class="form-select" id="fieldFinishing">
+                        <option value="">Выберите отделку</option>
+                        <option value="Черновая">Черновая</option>
+                        <option value="Предчистовая">Предчистовая</option>
+                        <option value="Чистовая">Чистовая</option>
+                        <option value="Под ключ">Под ключ</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Статус стройки</label>
+                    <select class="form-select" id="fieldStatus">
+                        <option value="">Выберите статус</option>
+                        <option value="Строится">Строится</option>
+                        <option value="Сдан">Сдан</option>
+                        <option value="Частично сдан">Частично сдан</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">Описание</label>
+                    <textarea class="form-textarea" id="fieldDescription" placeholder="Расскажите о проекте"></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Преимущества (через запятую)</label>
+                    <input type="text" class="form-input" id="fieldFeatures" placeholder="Паркинг, охрана, двор без машин">
+                </div>
+
+                <div class="photo-section">
+                    <label class="form-label">Главное фото *</label>
+                    <div class="photo-preview-area" id="mainPhotoPreview"></div>
+                    <label class="upload-btn">
+                        📷 Выбрать фото
+                        <input type="file" accept="image/*" onchange="uploadPhoto('main', this)">
+                    </label>
+                    <input type="hidden" id="fieldImageMain">
+                </div>
+
+                <div class="photo-section">
+                    <label class="form-label">Галерея</label>
+                    <div class="photo-preview-area" id="galleryPreview"></div>
+                    <label class="upload-btn">
+                        ️ Добавить фото
+                        <input type="file" accept="image/*" multiple onchange="uploadPhoto('gallery', this)">                    </label>
+                    <input type="hidden" id="fieldImagesGallery">
+                </div>
+
+                <div class="photo-section">
+                    <label class="form-label">Планировки</label>
+                    <div class="photo-preview-area" id="plansPreview"></div>
+                    <label class="upload-btn">
+                        📐 Добавить планировку
+                        <input type="file" accept="image/*" multiple onchange="uploadPhoto('plans', this)">
+                    </label>
+                    <input type="hidden" id="fieldFloorPlansImages">
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Широта</label>
+                        <input type="number" step="any" class="form-input" id="fieldLat" placeholder="59.9343">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Долгота</label>
+                        <input type="number" step="any" class="form-input" id="fieldLng" placeholder="30.3351">
+                    </div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="saveBtn">Сохранить объект</button>
+                <button type="button" class="btn btn-danger" id="deleteBtn" style="display:none;" onclick="deleteObject()">Удалить объект</button>
             </form>
         </div>
     </div>
+
     <div class="toast" id="toast"></div>
+
     <script>
         var config = { scriptUrl: '', pin: '' };
-        var objects = [], leads = [], currentLeadFilter = 'all', currentEditId = null;
+        var objects = [];
+        var currentEditId = null;
         var photoStore = { main: '', gallery: [], plans: [] };
-        var currentStatus = 'true', currentTab = 'objects';
+        var currentStatus = 'true';
         var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-        if (tg) { tg.ready(); tg.expand(); }
 
-        function switchTab(tabName) {
-            currentTab = tabName;
-            document.querySelectorAll('.tab').forEach(function(btn) { btn.classList.toggle('active', btn.dataset.tab === tabName); });
-            document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
-            document.getElementById('tab-' + tabName).classList.add('active');
-            document.getElementById('fabAdd').style.display = tabName === 'objects' ? 'flex' : 'none';
-            if (tabName === 'objects') loadObjects();
-            else if (tabName === 'profile') loadProfile();
-            else if (tabName === 'leads') loadLeads();
+        if (tg) {
+            console.log('[ADMIN] Telegram WebApp detected');
+            tg.ready();
+            tg.expand();
+        } else {
+            console.log('[ADMIN] Running outside Telegram');
         }
 
-        function refreshCurrentTab() {
-            if (currentTab === 'objects') loadObjects();
-            else if (currentTab === 'profile') loadProfile();
-            else if (currentTab === 'leads') loadLeads();
-        }
-
-        async function loadConfig() {
+        async function loadConfig() {            console.log('[CONFIG] Loading client-config.json...');
             try {
                 var response = await fetch('client-config.json');
+                console.log('[CONFIG] Response status:', response.status);
                 var data = await response.json();
                 config.scriptUrl = data.client.scriptUrl;
                 config.pin = data.client.secretKey || '123456';
-            } catch (e) { console.error('Config error:', e); }
+                console.log('[CONFIG] Loaded:', {
+                    scriptUrl: config.scriptUrl.substring(0, 50) + '...',
+                    pin: config.pin
+                });
+            } catch (e) {
+                console.error('[CONFIG] Error:', e);
+                showToast('❌ Ошибка конфигурации');
+            }
         }
 
-        // ПРАВИЛЬНЫЙ apiCall: no-cors + application/json
         async function apiCall(action, params) {
-            if (!config.scriptUrl) throw new Error('No script URL');
-            var payload = Object.assign({}, params, { action: action, pin: config.pin, type: 'listing' });
-            await fetch(config.scriptUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-            return { success: true };
-        }
+            console.log('[API] Calling:', action, params);
+            if (!config.scriptUrl) {
+                console.error('[API] Script URL not configured');
+                throw new Error('Script URL не настроен');
+            }
 
-        async function apiGet(action) {            var url = config.scriptUrl + '?action=' + action;
-            var response = await fetch(url);
-            if (!response.ok) throw new Error('Network error');
-            return await response.json();
+            var payload = Object.assign({}, params, {
+                action: action,
+                pin: config.pin,
+                type: 'listing'
+            });
+
+            console.log('[API] Sending payload:', JSON.stringify(payload).substring(0, 200) + '...');
+
+            try {
+                var fetchResult = await fetch(config.scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+               
+                console.log('[API] Fetch completed. Status:', fetchResult.status, 'Type:', fetchResult.type);
+                return { success: true };
+            } catch (e) {
+                console.error('[API] Fetch error:', e);
+                throw e;
+            }
         }
 
         async function fetchData() {
-            var url = config.scriptUrl + '?type=listings&includeHidden=true';
-            var response = await fetch(url);
-            if (!response.ok) throw new Error('Network error');
-            var data = await response.json();
-            if (Array.isArray(data) && data.length > 1) {
-                var headers = data[0], rows = data.slice(1);
-                return rows.map(function(row) {
-                    var obj = {};
-                    headers.forEach(function(h, i) { obj[h] = row[i]; });
-                    return obj;
-                });
+            console.log('[FETCH] Getting data from script...');            if (!config.scriptUrl) {
+                console.error('[FETCH] Script URL not configured');
+                return [];
             }
-            return [];
+            try {
+                var url = config.scriptUrl + '?type=listings&includeHidden=true';
+                console.log('[FETCH] URL:', url.substring(0, 100) + '...');
+                var response = await fetch(url);
+                console.log('[FETCH] Response status:', response.status);
+               
+                if (!response.ok) throw new Error('Network error: ' + response.status);
+               
+                var data = await response.json();
+                console.log('[FETCH] Data type:', typeof data, 'Is array:', Array.isArray(data));
+               
+                if (Array.isArray(data) && data.length > 1) {
+                    var headers = data[0];
+                    var rows = data.slice(1);
+                    console.log('[FETCH] Headers:', headers);
+                    console.log('[FETCH] Rows count:', rows.length);
+                   
+                    return rows.map(function(row) {
+                        var obj = {};
+                        headers.forEach(function(header, i) {
+                            obj[header] = row[i];
+                        });
+                        return obj;
+                    });
+                }
+                console.log('[FETCH] No data or invalid format');
+                return [];
+            } catch (e) {
+                console.error('[FETCH] Error:', e);
+                return [];
+            }
         }
 
         async function loadObjects() {
-            document.getElementById('objectsLoading').style.display = 'block';
-            document.getElementById('objectsList').innerHTML = '';
-            if (!config.scriptUrl) await loadConfig();
+            console.log('[LOAD] Starting loadObjects...');
+            var listEl = document.getElementById('objectsList');
+            var loadingEl = document.getElementById('loadingState');
+           
+            loadingEl.style.display = 'block';
+            listEl.innerHTML = '';
+
+            if (!config.scriptUrl) {
+                console.log('[LOAD] Config not loaded, loading now...');
+                await loadConfig();
+            }
+            console.log('[LOAD] Fetching objects...');
             objects = await fetchData();
-            document.getElementById('objectsLoading').style.display = 'none';
+            console.log('[LOAD] Objects loaded:', objects.length);
+           
+            loadingEl.style.display = 'none';
+
             if (objects.length === 0) {
-                document.getElementById('objectsList').innerHTML = '<div class="empty-state"><h3>Нет объектов</h3></div>';
+                console.log('[LOAD] No objects, showing empty state');
+                listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">🏗️</div><h3>Нет объектов</h3><p>Нажмите + чтобы добавить первый ЖК</p></div>';
                 return;
             }
-            objects.forEach(function(obj) {
+
+            objects.forEach(function(obj, index) {
                 var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
                 var thumbUrl = obj.image_main || '';
+                var displayThumb = thumbUrl;
                 if (thumbUrl.indexOf('lh3.googleusercontent.com/d/') !== -1) {
                     var fileId = thumbUrl.split('/d/')[1];
-                    if (fileId) thumbUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
+                    if (fileId) displayThumb = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
                 }
+
+                var statusClass = isActive ? 'status-active' : 'status-hidden';
+                var statusText = isActive ? 'Активен' : 'Скрыт';
+                var cardClass = 'object-card' + (isActive ? '' : ' hidden-object');
+
                 var card = document.createElement('div');
-                card.className = 'object-card' + (isActive ? '' : ' hidden-object');
-                card.onclick = function() { openEditModal(obj.id); };
-                card.innerHTML = '<img src="' + escapeHtml(thumbUrl) + '" class="card-thumb"><div class="card-info"><div class="card-title">' + escapeHtml(obj.name || 'Без названия') + '</div><div class="card-address"> ' + escapeHtml(obj.address || '') + '</div><span class="card-status ' + (isActive ? 'status-active' : 'status-hidden') + '">' + (isActive ? 'Активен' : 'Скрыт') + '</span></div>';
-                document.getElementById('objectsList').appendChild(card);
+                card.className = cardClass;
+                card.onclick = function() {
+                    console.log('[UI] Opening edit modal for ID:', obj.id);
+                    openEditModal(obj.id);
+                };
+                card.innerHTML =
+                    '<img src="' + escapeHtml(displayThumb) + '" class="card-thumb" onerror="this.onerror=null;this.style.background=\'#E0E6ED\';this.src=\'\';">' +
+                    '<div class="card-info">' +
+                        '<div class="card-title">' + escapeHtml(obj.name || 'Без названия') + '</div>' +
+                        '<div class="card-address">📍 ' + escapeHtml(obj.address || 'Адрес не указан') + '</div>' +
+                        '<span class="card-status ' + statusClass + '">' + statusText + '</span>' +
+                    '</div>';
+                listEl.appendChild(card);
             });
+           
+            console.log('[LOAD] Rendered', objects.length, 'cards');
         }
 
         function openCreateModal() {
+            console.log('[MODAL] Opening create modal');
             currentEditId = null;
-            document.getElementById('modalTitle').textContent = 'Новый ЖК';            document.getElementById('objectForm').reset();
-            document.getElementById('objectId').value = '';
-            document.getElementById('statusToggle').style.display = 'none';
+            document.getElementById('modalTitle').textContent = 'Новый ЖК';
+            document.getElementById('objectForm').reset();
+            document.getElementById('objectId').value = '';            document.getElementById('statusToggle').style.display = 'none';
             document.getElementById('deleteBtn').style.display = 'none';
-            document.getElementById('saveBtn').textContent = 'Создать';
-            photoStore = { main: '', gallery: [], plans: [] };
+            document.getElementById('saveBtn').textContent = 'Создать объект';
+           
+            photoStore.main = '';
+            photoStore.gallery = [];
+            photoStore.plans = [];
+           
             document.getElementById('mainPhotoPreview').innerHTML = '';
+            document.getElementById('galleryPreview').innerHTML = '';
+            document.getElementById('plansPreview').innerHTML = '';
             document.getElementById('fieldImageMain').value = '';
+            document.getElementById('fieldImagesGallery').value = '';
+            document.getElementById('fieldFloorPlansImages').value = '';
+
             document.getElementById('objectModal').classList.add('active');
+            console.log('[MODAL] Create modal opened');
         }
 
         function openEditModal(id) {
+            console.log('[MODAL] Opening edit modal for ID:', id);
             var obj = objects.find(function(o) { return o.id === id; });
-            if (!obj) return;
+            if (!obj) {
+                console.error('[MODAL] Object not found:', id);
+                return;
+            }
+
             currentEditId = id;
-            document.getElementById('modalTitle').textContent = 'Редактировать';
+            document.getElementById('modalTitle').textContent = 'Редактировать ЖК';
             document.getElementById('objectId').value = id;
             document.getElementById('statusToggle').style.display = 'flex';
             document.getElementById('deleteBtn').style.display = 'block';
-            document.getElementById('saveBtn').textContent = 'Сохранить';
+            document.getElementById('saveBtn').textContent = 'Сохранить изменения';
+
             document.getElementById('fieldName').value = obj.name || '';
             document.getElementById('fieldAddress').value = obj.address || '';
             document.getElementById('fieldDistrict').value = obj.district || '';
             document.getElementById('fieldMetro').value = obj.metro || '';
             document.getElementById('fieldPriceFrom').value = obj.price_from || '';
             document.getElementById('fieldPriceTo').value = obj.price_to || '';
-            photoStore.main = obj.image_main || '';
-            document.getElementById('fieldImageMain').value = photoStore.main;
-            var thumbUrl = photoStore.main;
-            if (thumbUrl && thumbUrl.indexOf('lh3.googleusercontent.com/d/') !== -1) {
-                var fileId = thumbUrl.split('/d/')[1];
-                if (fileId) thumbUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
-            }
-            document.getElementById('mainPhotoPreview').innerHTML = thumbUrl ? '<div style="position:relative;display:inline-block;"><img src="' + escapeHtml(thumbUrl) + '" class="photo-thumb"><button class="photo-remove" onclick="removePhoto(\'main\',0)">✕</button></div>' : '';
+            document.getElementById('fieldPriceSqm').value = obj.price_per_sqm || '';
+            document.getElementById('fieldAreaMin').value = obj.area_min || '';
+            document.getElementById('fieldAreaMax').value = obj.area_max || '';
+            document.getElementById('fieldRooms').value = obj.rooms || '';
+            document.getElementById('fieldClass').value = obj.class || '';
+            document.getElementById('fieldCompletionSoonest').value = obj.completion_soonest || '';
+            document.getElementById('fieldCompletionAll').value = obj.completion_all || '';
+            document.getElementById('fieldFinishing').value = obj.finishing || '';
+            document.getElementById('fieldStatus').value = obj.status || '';
+            document.getElementById('fieldDescription').value = obj.description || '';            document.getElementById('fieldFeatures').value = obj.features || '';
+            document.getElementById('fieldLat').value = obj.lat || '';
+            document.getElementById('fieldLng').value = obj.lng || '';
+
             var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
             setStatus(isActive ? 'true' : 'false');
+
+            photoStore.main = obj.image_main || '';
+            document.getElementById('fieldImageMain').value = photoStore.main;
+            console.log('[MODAL] Main photo URL:', photoStore.main);
+            renderPhotoPreview('main', photoStore.main ? [photoStore.main] : []);
+
+            photoStore.gallery = obj.images_gallery ? String(obj.images_gallery).split(',').map(function(u){return u.trim();}).filter(Boolean) : [];
+            document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(',');
+            console.log('[MODAL] Gallery count:', photoStore.gallery.length);
+            renderPhotoPreview('gallery', photoStore.gallery);
+
+            photoStore.plans = obj.floor_plans_images ? String(obj.floor_plans_images).split(',').map(function(u){return u.trim();}).filter(Boolean) : [];
+            document.getElementById('fieldFloorPlansImages').value = photoStore.plans.join(',');
+            console.log('[MODAL] Plans count:', photoStore.plans.length);
+            renderPhotoPreview('plans', photoStore.plans);
+
             document.getElementById('objectModal').classList.add('active');
+            console.log('[MODAL] Edit modal opened');
         }
 
-        function closeModal() { document.getElementById('objectModal').classList.remove('active'); currentEditId = null; }
-        function setStatus(value) { currentStatus = value; document.querySelectorAll('.toggle-option').forEach(function(el) { el.classList.toggle('selected', el.dataset.value === value); }); }
+        function closeModal() {
+            console.log('[MODAL] Closing modal');
+            document.getElementById('objectModal').classList.remove('active');
+            currentEditId = null;
+        }
+
+        function setStatus(value) {
+            currentStatus = value;
+            document.querySelectorAll('.toggle-option').forEach(function(el) {
+                el.classList.toggle('selected', el.dataset.value === value);
+            });
+            console.log('[STATUS] Set to:', value);
+        }
 
         async function saveObject(event) {
+            console.log('[SAVE] Starting save...');
             event.preventDefault();
+           
             var btn = document.getElementById('saveBtn');
-            btn.disabled = true; btn.textContent = 'Сохранение...';
-            try {
-                if (!currentEditId && !photoStore.main) { showToast('️ Загрузите фото'); btn.disabled = false; btn.textContent = 'Сохранить'; return; }
-                var params = {
-                    name: document.getElementById('fieldName').value.trim(),                    address: document.getElementById('fieldAddress').value.trim(),
+            var originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Сохранение...';
+
+            try {                var params = {
+                    name: document.getElementById('fieldName').value.trim(),
+                    address: document.getElementById('fieldAddress').value.trim(),
                     district: document.getElementById('fieldDistrict').value.trim(),
                     metro: document.getElementById('fieldMetro').value.trim(),
                     price_from: parseFloat(document.getElementById('fieldPriceFrom').value) || '',
                     price_to: parseFloat(document.getElementById('fieldPriceTo').value) || '',
+                    price_per_sqm: parseFloat(document.getElementById('fieldPriceSqm').value) || '',
+                    area_min: parseFloat(document.getElementById('fieldAreaMin').value) || '',
+                    area_max: parseFloat(document.getElementById('fieldAreaMax').value) || '',
+                    rooms: document.getElementById('fieldRooms').value.trim(),
+                    class: document.getElementById('fieldClass').value,
+                    completion_soonest: document.getElementById('fieldCompletionSoonest').value.trim(),
+                    completion_all: document.getElementById('fieldCompletionAll').value.trim(),
+                    finishing: document.getElementById('fieldFinishing').value,
+                    status: document.getElementById('fieldStatus').value,
+                    description: document.getElementById('fieldDescription').value.trim(),
+                    features: document.getElementById('fieldFeatures').value.trim(),
                     image_main: photoStore.main,
+                    images_gallery: photoStore.gallery.join(','),
+                    floor_plans_images: photoStore.plans.join(','),
+                    lat: parseFloat(document.getElementById('fieldLat').value) || '',
+                    lng: parseFloat(document.getElementById('fieldLng').value) || '',
                     active: currentStatus === 'true'
                 };
-                if (currentEditId) { params.id = currentEditId; await apiCall('update', params); showToast('✅ Обновлён'); }
-                else { await apiCall('create', params); showToast('✅ Создан'); }
+
+                console.log('[SAVE] Params:', JSON.stringify(params, null, 2).substring(0, 500) + '...');
+
+                if (currentEditId) {
+                    params.id = currentEditId;
+                    console.log('[SAVE] Updating object ID:', currentEditId);
+                    await apiCall('update', params);
+                    showToast('✅ Объект обновлён');
+                } else {
+                    console.log('[SAVE] Creating new object');
+                    await apiCall('create', params);
+                    showToast('✅ Объект создан');
+                }
+
                 closeModal();
-                setTimeout(function() { loadObjects(); }, 2000);
-            } catch (e) { showToast('❌ Ошибка: ' + e.message); }
-            finally { btn.disabled = false; btn.textContent = 'Сохранить'; }
+                console.log('[SAVE] Waiting 2 seconds for server...');
+                setTimeout(function() {
+                    console.log('[SAVE] Reloading objects...');
+                    loadObjects();
+                }, 2000);
+
+            } catch (e) {
+                console.error('[SAVE] Error:', e);
+                showToast('❌ Ошибка сохранения');
+            } finally {                btn.disabled = false;
+                btn.textContent = originalText;
+            }
         }
 
         async function deleteObject() {
-            if (!currentEditId || !confirm('Удалить?')) return;
-            try { await apiCall('delete', { id: currentEditId }); showToast('✅ Удалён'); closeModal(); setTimeout(function() { loadObjects(); }, 2000); }
-            catch (e) { showToast('❌ Ошибка'); }
+            console.log('[DELETE] Starting delete for ID:', currentEditId);
+            if (!currentEditId) return;
+            if (!confirm('Удалить этот объект? Фотографии также будут удалены.')) return;
+
+            var btn = document.getElementById('deleteBtn');
+            btn.disabled = true;
+            btn.textContent = 'Удаление...';
+
+            try {
+                await apiCall('delete', { id: currentEditId });
+                showToast('✅ Объект удалён');
+                closeModal();
+                setTimeout(function() { loadObjects(); }, 2000);
+            } catch (e) {
+                console.error('[DELETE] Error:', e);
+                showToast('❌ Ошибка удаления');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Удалить объект';
+            }
         }
 
         async function uploadPhoto(type, input) {
-            if (!input.files || input.files.length === 0) return;
-            var file = input.files[0];
+            console.log('[UPLOAD] Starting upload for type:', type);
+           
+            if (!input.files || input.files.length === 0) {
+                console.log('[UPLOAD] No files selected, waiting 100ms...');
+                await new Promise(r => setTimeout(r, 100));
+                if (!input.files || input.files.length === 0) {
+                    console.log('[UPLOAD] Still no files, aborting');
+                    return;
+                }
+            }
+
+            var files = Array.from(input.files);
+            console.log('[UPLOAD] Files count:', files.length);
+           
             var btn = input.parentElement;
             var originalText = btn.innerHTML;
-            btn.innerHTML = '⏳...';
-            try {
-                var reader = new FileReader();
-                reader.onload = async function(e) {
-                    try {
-                        await apiCall('upload_image', { image: e.target.result, fileName: file.name });
-                        await new Promise(r => setTimeout(r, 2000));
-                        var urlResponse = await fetch(config.scriptUrl + '?action=get_last_file_url');
-                        var urlData = await urlResponse.json();
-                        if (urlData && urlData.url) {
-                            photoStore.main = urlData.url;
-                            document.getElementById('fieldImageMain').value = urlData.url;
-                            document.getElementById('mainPhotoPreview').innerHTML = '<div style="position:relative;display:inline-block;"><img src="' + escapeHtml(urlData.url) + '" class="photo-thumb"><button class="photo-remove" onclick="removePhoto(\'main\',0)">✕</button></div>';
-                            showToast('✅ Фото загружено');
-                        }
-                    } catch (err) { showToast('❌ Ошибка'); }
-                    finally { btn.innerHTML = originalText; input.value = ''; }
-                };
-                reader.readAsDataURL(file);
-            } catch (e) { showToast('❌ Ошибка'); btn.innerHTML = originalText; }
-        }
+            btn.innerHTML = '⏳ Загрузка...';
 
-        function removePhoto(type, index) {            if (type === 'main') { photoStore.main = ''; document.getElementById('fieldImageMain').value = ''; document.getElementById('mainPhotoPreview').innerHTML = ''; }
-        }
-
-        async function loadProfile() {
-            document.getElementById('profileLoading').style.display = 'block';
-            document.getElementById('profileForm').style.display = 'none';
-            if (!config.scriptUrl) await loadConfig();
             try {
-                var agentResult = await apiGet('get_agent_profile');
-                var pagesResult = await apiGet('get_pages');
-                if (agentResult && agentResult.success && agentResult.data) {
-                    var data = agentResult.data;
-                    document.getElementById('profileName').value = data.name || '';
-                    document.getElementById('profileRole').value = data.role || '';
-                    document.getElementById('profilePhone').value = data.phone || '';
-                    document.getElementById('profileTelegram').value = data.telegramUsername || '';
-                    document.getElementById('profileAgency').value = data.agencyName || '';
-                    document.getElementById('profileAgencyAddress').value = data.agencyAddress || '';
-                    var photoUrl = data.photoUrl || '';
-                    document.getElementById('profilePhotoUrl').value = photoUrl;
-                    document.getElementById('profilePhotoPreview').src = photoUrl || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><rect width="120" height="120" fill="%23E0E6ED"/><text x="50%" y="50%" font-size="14" fill="%23999" text-anchor="middle">👤</text></svg>';
-                }
-                if (pagesResult && pagesResult.success && pagesResult.data) {
-                    var aboutPage = pagesResult.data.find(function(p) { return p.page === 'about'; });
-                    if (aboutPage) {
-                        document.getElementById('pageAboutTitle').value = aboutPage.title || '';
-                        document.getElementById('pageAboutContent').value = aboutPage.content || '';
+                for (var i = 0; i < files.length; i++) {
+                    var file = files[i];                    console.log('[UPLOAD] Processing file:', file.name, 'Size:', file.size, 'Type:', file.type);
+                   
+                    var base64 = await fileToBase64(file);
+                    console.log('[UPLOAD] Base64 length:', base64.length);
+                   
+                    await apiCall('upload_image', {
+                        image: base64,
+                        fileName: file.name
+                    });
+
+                    console.log('[UPLOAD] Waiting for server to save URL...');
+                    await new Promise(r => setTimeout(r, 2000));
+                   
+                    console.log('[UPLOAD] Fetching last uploaded URL...');
+                    var urlResponse = await fetch(config.scriptUrl + '?action=get_last_file_url');
+                    var urlData = await urlResponse.json();
+                    console.log('[UPLOAD] Got URL response:', urlData);
+                   
+                    if (urlData && urlData.url) {
+                        console.log('[UPLOAD] Adding photo to field:', urlData.url);
+                        addPhotoToField(type, urlData.url);
+                    } else {
+                        console.error('[UPLOAD] No URL in response');
+                        showToast('⚠️ Фото загружено, но URL не получен. Попробуйте ещё раз.');
                     }
                 }
-                document.getElementById('profileLoading').style.display = 'none';
-                document.getElementById('profileForm').style.display = 'block';
-            } catch (e) { document.getElementById('profileLoading').textContent = '❌ Ошибка'; }
-        }
-
-        async function uploadAgentPhoto(input) {
-            if (!input.files || input.files.length === 0) return;
-            var file = input.files[0];
-            var btn = input.parentElement;
-            var originalText = btn.innerHTML;
-            btn.innerHTML = '...';
-            try {
-                var reader = new FileReader();
-                reader.onload = async function(e) {
-                    try {
-                        await apiCall('upload_image', { image: e.target.result, fileName: 'agent_' + new Date().getTime() + '.jpg' });
-                        await new Promise(r => setTimeout(r, 2000));
-                        var urlResponse = await fetch(config.scriptUrl + '?action=get_last_file_url');
-                        var urlData = await urlResponse.json();
-                        if (urlData && urlData.url) {
-                            document.getElementById('profilePhotoUrl').value = urlData.url;                            document.getElementById('profilePhotoPreview').src = urlData.url;
-                            showToast('✅ Фото загружено');
-                        }
-                    } catch (err) { showToast('❌ Ошибка'); }
-                    finally { btn.innerHTML = originalText; input.value = ''; }
-                };
-                reader.readAsDataURL(file);
-            } catch (e) { showToast('❌ Ошибка'); btn.innerHTML = originalText; }
-        }
-
-        async function saveProfile() {
-            var name = document.getElementById('profileName').value.trim();
-            if (!name) { showToast('⚠️ Укажите имя'); return; }
-            var btn = document.querySelector('#profileForm .btn-primary');
-            btn.disabled = true; btn.textContent = 'Сохранение...';
-            try {
-                await apiCall('update_agent_profile', {
-                    name: name,
-                    role: document.getElementById('profileRole').value.trim(),
-                    phone: document.getElementById('profilePhone').value.trim(),
-                    telegramUsername: document.getElementById('profileTelegram').value.trim().replace(/^@/, ''),
-                    agencyName: document.getElementById('profileAgency').value.trim(),
-                    agencyAddress: document.getElementById('profileAgencyAddress').value.trim(),
-                    photoUrl: document.getElementById('profilePhotoUrl').value.trim()
-                });
-                var aboutTitle = document.getElementById('pageAboutTitle').value.trim();
-                var aboutContent = document.getElementById('pageAboutContent').value.trim();
-                if (aboutTitle || aboutContent) {
-                    await apiCall('update_page', { page: 'about', title: aboutTitle || 'Обо мне', content: aboutContent });
-                }
-                showToast('✅ Профиль сохранён');
-            } catch (e) { showToast('❌ Ошибка: ' + e.message); }
-            finally { btn.disabled = false; btn.textContent = '💾 Сохранить'; }
-        }
-
-        async function loadLeads() {
-            document.getElementById('leadsLoading').style.display = 'block';
-            document.getElementById('leadsFilterContainer').style.display = 'none';
-            document.getElementById('leadsList').innerHTML = '';
-            if (!config.scriptUrl) await loadConfig();
-            try {
-                var result = await apiGet('get_leads');
-                document.getElementById('leadsLoading').style.display = 'none';
-                if (result && result.success && result.data && result.data.length > 0) {
-                    leads = result.data;
-                    document.getElementById('leadsFilterContainer').style.display = 'flex';
-                    renderLeads();
-                } else {
-                    document.getElementById('leadsList').innerHTML = '<div class="empty-state"><h3>Нет заявок</h3></div>';
-                }            } catch (e) { document.getElementById('leadsLoading').textContent = '❌ Ошибка'; }
-        }
-
-        function filterLeads(status) {
-            currentLeadFilter = status;
-            document.querySelectorAll('.filter-btn').forEach(function(btn) { btn.classList.toggle('active', btn.dataset.filter === status); });
-            renderLeads();
-        }
-
-        function renderLeads() {
-            var listEl = document.getElementById('leadsList');
-            listEl.innerHTML = '';
-            var filtered = leads;
-            if (currentLeadFilter !== 'all') {
-                filtered = leads.filter(function(lead) { return (lead.status || 'new') === currentLeadFilter; });
+                showToast('✅ Фото загружено');
+            } catch (e) {
+                console.error('[UPLOAD] Error:', e);
+                showToast(' Ошибка загрузки фото. Попробуйте ещё раз.');
+            } finally {
+                btn.innerHTML = originalText;
+                input.value = '';
             }
-            if (filtered.length === 0) { listEl.innerHTML = '<div class="empty-state"><h3>Нет заявок</h3></div>'; return; }
-            filtered.sort(function(a, b) { return (b.timestamp || '').localeCompare(a.timestamp || ''); });
-            filtered.forEach(function(lead, index) {
-                var status = lead.status || 'new';
-                var dateStr = lead.timestamp || '';
-                if (dateStr) { try { var d = new Date(dateStr); dateStr = d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }); } catch(e) {} }
-                var card = document.createElement('div');
-                card.className = 'lead-card status-' + status;
-                card.innerHTML = '<div class="lead-header"><div class="lead-object">🏢 ' + escapeHtml(lead.objectName || 'Объект') + '</div><div class="lead-date">' + escapeHtml(dateStr) + '</div></div><div class="lead-body"><div>👤 <b>' + escapeHtml(lead.clientName || 'Не указано') + '</b></div><div>📞 ' + escapeHtml(lead.clientPhone || 'Не указан') + '</div>' + (lead.clientTelegram ? '<div>💬 ' + escapeHtml(lead.clientTelegram) + '</div>' : '') + '</div><div class="lead-actions"><button class="lead-status-btn status-new ' + (status === 'new' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + (lead.id || index) + '\', \'new\')">🔵 Новая</button><button class="lead-status-btn status-progress ' + (status === 'progress' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + (lead.id || index) + '\', \'progress\')"> В работе</button><button class="lead-status-btn status-closed ' + (status === 'closed' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + (lead.id || index) + '\', \'closed\')"> Закрыта</button></div>';
-                listEl.appendChild(card);
+        }
+
+        function fileToBase64(file) {
+            return new Promise(function(resolve, reject) {
+                var reader = new FileReader();
+                reader.onload = function() {
+                    console.log('[BASE64] File converted, length:', reader.result.length);
+                    resolve(reader.result);
+                };
+                reader.onerror = function(e) {
+                    console.error('[BASE64] Error:', e);
+                    reject(e);
+                };
+                console.log('[BASE64] Starting conversion...');
+                reader.readAsDataURL(file);
+            });        }
+
+        function addPhotoToField(type, url) {
+            console.log('[PHOTO] Adding photo to', type, ':', url);
+            if (type === 'main') {
+                photoStore.main = url;
+                document.getElementById('fieldImageMain').value = url;
+                renderPhotoPreview('main', [url]);
+            } else if (type === 'gallery') {
+                if (photoStore.gallery.indexOf(url) === -1) {
+                    photoStore.gallery.push(url);
+                    console.log('[PHOTO] Gallery count:', photoStore.gallery.length);
+                }
+                document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(',');
+                renderPhotoPreview('gallery', photoStore.gallery);
+            } else if (type === 'plans') {
+                if (photoStore.plans.indexOf(url) === -1) {
+                    photoStore.plans.push(url);
+                    console.log('[PHOTO] Plans count:', photoStore.plans.length);
+                }
+                document.getElementById('fieldFloorPlansImages').value = photoStore.plans.join(',');
+                renderPhotoPreview('plans', photoStore.plans);
+            }
+        }
+
+        function removePhoto(type, index) {
+            console.log('[PHOTO] Removing photo from', type, 'at index', index);
+            if (type === 'main') {
+                photoStore.main = '';
+                document.getElementById('fieldImageMain').value = '';
+                renderPhotoPreview('main', []);
+            } else if (type === 'gallery') {
+                photoStore.gallery.splice(index, 1);
+                document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(',');
+                renderPhotoPreview('gallery', photoStore.gallery);
+            } else if (type === 'plans') {
+                photoStore.plans.splice(index, 1);
+                document.getElementById('fieldFloorPlansImages').value = photoStore.plans.join(',');
+                renderPhotoPreview('plans', photoStore.plans);
+            }
+        }
+
+        function renderPhotoPreview(type, urls) {
+            console.log('[PREVIEW] Rendering preview for', type, 'URLs:', urls);
+            var containerId = type === 'main' ? 'mainPhotoPreview' : type === 'gallery' ? 'galleryPreview' : 'plansPreview';
+            var container = document.getElementById(containerId);
+            container.innerHTML = '';
+
+            urls.forEach(function(url, index) {
+                if (!url) return;               
+                var displayUrl = url;
+                if (url.indexOf('lh3.googleusercontent.com/d/') !== -1) {
+                    var fileId = url.split('/d/')[1];
+                    if (fileId) {
+                        displayUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
+                        console.log('[PREVIEW] Converted to thumbnail URL');
+                    }
+                }
+               
+                var wrapper = document.createElement('div');
+                wrapper.style.position = 'relative';
+                wrapper.style.display = 'inline-block';
+               
+                var img = document.createElement('img');
+                img.src = displayUrl;
+                img.className = 'photo-thumb';
+                img.onerror = function() {
+                    console.error('[PREVIEW] Image failed to load:', displayUrl);
+                    this.onerror = null;
+                    this.style.background = '#E0E6ED';
+                    this.src = '';
+                };
+                img.onload = function() {
+                    console.log('[PREVIEW] Image loaded successfully');
+                };
+               
+                var removeBtn = document.createElement('button');
+                removeBtn.className = 'photo-remove';
+                removeBtn.textContent = '✕';
+                removeBtn.onclick = function(e) { e.stopPropagation(); removePhoto(type, index); };
+
+                wrapper.appendChild(img);
+                wrapper.appendChild(removeBtn);
+                container.appendChild(wrapper);
             });
+           
+            console.log('[PREVIEW] Rendered', urls.length, 'photos');
         }
 
-        async function updateLeadStatus(leadId, newStatus) {
-            var lead = leads.find(function(l) { return String(l.id) === String(leadId); });
-            if (!lead) { var idx = parseInt(leadId); if (!isNaN(idx) && leads[idx]) lead = leads[idx]; }
-            if (!lead) { showToast('❌ Не найдена'); return; }
-            try {
-                await apiCall('update_lead_status', { id: lead.id, status: newStatus });
-                lead.status = newStatus;
-                renderLeads();
-                showToast('✅ Статус обновлён');
-            } catch (e) { showToast('❌ Ошибка'); }
+        function escapeHtml(text) {
+            if (!text) return '';
+            var div = document.createElement('div');
+            div.textContent = String(text);
+            return div.innerHTML;
         }
 
-        function escapeHtml(text) { if (!text) return ''; var div = document.createElement('div'); div.textContent = String(text); return div.innerHTML; }
-        function showToast(message) { var toast = document.getElementById('toast'); toast.textContent = message; toast.classList.remove('show'); void toast.offsetWidth; toast.classList.add('show'); setTimeout(function() { toast.classList.remove('show'); }, 3000); }
+        function showToast(message) {
+            console.log('[TOAST]', message);
+            var toast = document.getElementById('toast');            toast.textContent = message;
+            toast.classList.remove('show');
+            void toast.offsetWidth;
+            toast.classList.add('show');
+            setTimeout(function() { toast.classList.remove('show'); }, 3000);
+        }
 
-        document.addEventListener('DOMContentLoaded', function() { loadConfig().then(function() { loadObjects(); }); });
-        document.getElementById('objectModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[INIT] DOM loaded, starting initialization...');
+            loadConfig().then(function() {
+                console.log('[INIT] Config loaded, loading objects...');
+                loadObjects();
+            });
+        });
+
+        document.getElementById('objectModal').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
     </script>
 </body>
 </html>
