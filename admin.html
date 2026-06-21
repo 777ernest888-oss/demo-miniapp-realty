@@ -122,17 +122,30 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
+            gap: 12px;
         }
-        .modal-header h2 { font-size: 20px; }
+        .modal-header h2 { font-size: 20px; flex: 1; text-align: center; }
         .close-btn { background: none; border: none; font-size: 24px; color: var(--text-secondary); cursor: pointer; }
+       
+        /* НОВОЕ: Кнопка "Назад" */
+        .back-btn {
+            background: none;
+            border: none;
+            color: var(--accent);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            padding: 4px 8px;
+            white-space: nowrap;
+        }
+        .back-btn:active { opacity: 0.7; }
 
         .form-group { margin-bottom: 16px; }
         .form-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary); }
         .form-input, .form-select, .form-textarea {
             width: 100%;
             padding: 12px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
+            border: 1px solid var(--border);            border-radius: 8px;
             font-size: 15px;
             background: var(--card-bg);
             outline: none;
@@ -145,7 +158,8 @@
 
         .photo-section { margin-bottom: 16px; }
         .photo-preview-area {
-            display: flex;            gap: 8px;
+            display: flex;
+            gap: 8px;
             flex-wrap: wrap;
             margin-top: 8px;
         }
@@ -180,8 +194,7 @@
             padding: 10px 16px;
             background: var(--card-bg);
             border: 1px dashed var(--accent);
-            border-radius: 8px;
-            color: var(--accent);
+            border-radius: 8px;            color: var(--accent);
             font-size: 14px;
             cursor: pointer;
             margin-top: 8px;
@@ -194,7 +207,8 @@
             border: none;
             border-radius: 8px;
             font-size: 16px;
-            font-weight: 600;            cursor: pointer;
+            font-weight: 600;
+            cursor: pointer;
             margin-top: 8px;
         }
         .btn-primary { background: var(--accent); color: white; }
@@ -229,8 +243,7 @@
             padding: 10px 20px;
             border-radius: 20px;
             font-size: 14px;
-            z-index: 300;
-            display: none;
+            z-index: 300;            display: none;
         }
         .toast.show { display: block; animation: fadeInOut 3s ease; }
         @keyframes fadeInOut { 0% { opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
@@ -243,7 +256,8 @@
         <button class="header-btn" onclick="loadObjects()">↻</button>
     </div>
 
-    <div class="container" id="mainContainer">        <div class="loading" id="loadingState">Загрузка объектов...</div>
+    <div class="container" id="mainContainer">
+        <div class="loading" id="loadingState">Загрузка объектов...</div>
         <div id="objectsList"></div>
     </div>
 
@@ -252,6 +266,7 @@
     <div class="modal-overlay" id="objectModal">
         <div class="modal-content">
             <div class="modal-header">
+                <button class="back-btn" onclick="closeModal()">← Назад</button>
                 <h2 id="modalTitle">Новый объект</h2>
                 <button class="close-btn" onclick="closeModal()">✕</button>
             </div>
@@ -277,8 +292,7 @@
                         <label class="form-label">Район</label>
                         <input type="text" class="form-input" id="fieldDistrict" placeholder="Введите район">
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Метро</label>
+                    <div class="form-group">                        <label class="form-label">Метро</label>
                         <input type="text" class="form-input" id="fieldMetro" placeholder="Станция метро">
                     </div>
                 </div>
@@ -292,7 +306,8 @@
                         <label class="form-label">Цена до (млн ₽)</label>
                         <input type="number" step="0.1" class="form-input" id="fieldPriceTo" placeholder="0">
                     </div>
-                </div>                <div class="form-row">
+                </div>
+                <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Площадь от (м²)</label>
                         <input type="number" step="0.1" class="form-input" id="fieldAreaMin" placeholder="0">
@@ -326,8 +341,7 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Срок сдачи (начало)</label>
-                        <input type="text" class="form-input" id="fieldCompletionSoonest" placeholder="IV кв. 2026">
-                    </div>
+                        <input type="text" class="form-input" id="fieldCompletionSoonest" placeholder="IV кв. 2026">                    </div>
                     <div class="form-group">
                         <label class="form-label">Срок сдачи (конец)</label>
                         <input type="text" class="form-input" id="fieldCompletionAll" placeholder="II кв. 2027">
@@ -341,7 +355,8 @@
                         <option value="Предчистовая">Предчистовая</option>
                         <option value="Чистовая">Чистовая</option>
                         <option value="Под ключ">Под ключ</option>
-                    </select>                </div>
+                    </select>
+                </div>
                 <div class="form-group">
                     <label class="form-label">Статус стройки</label>
                     <select class="form-select" id="fieldStatus">
@@ -375,8 +390,7 @@
                     <label class="form-label">Галерея</label>
                     <div class="photo-preview-area" id="galleryPreview"></div>
                     <label class="upload-btn">
-                        🖼️ Добавить фото
-                        <input type="file" accept="image/*" multiple onchange="uploadPhoto('gallery', this)">
+                        🖼️ Добавить фото                        <input type="file" accept="image/*" multiple onchange="uploadPhoto('gallery', this)">
                     </label>
                     <input type="hidden" id="fieldImagesGallery">
                 </div>
@@ -390,6 +404,7 @@
                     </label>
                     <input type="hidden" id="fieldFloorPlansImages">
                 </div>
+
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Широта</label>
@@ -424,7 +439,6 @@
         } else {
             console.log('[ADMIN] Running outside Telegram');
         }
-
         async function loadConfig() {
             console.log('[CONFIG] Loading client-config.json...');
             try {
@@ -439,7 +453,8 @@
                 });
             } catch (e) {
                 console.error('[CONFIG] Error:', e);
-                showToast('❌ Ошибка конфигурации');            }
+                showToast('❌ Ошибка конфигурации');
+            }
         }
 
         async function apiCall(action, params) {
@@ -466,8 +481,6 @@
                 });
                
                 console.log('[API] Fetch completed. Status:', fetchResult.status, 'Type:', fetchResult.type);
-                console.log('[API] With no-cors, we cannot read the response body');
-               
                 return { success: true };
             } catch (e) {
                 console.error('[API] Fetch error:', e);
@@ -475,20 +488,21 @@
             }
         }
 
-        async function fetchData() {
+        // ИСПРАВЛЕНО: добавлен параметр includeHidden=true для админки        async function fetchData() {
             console.log('[FETCH] Getting data from script...');
             if (!config.scriptUrl) {
                 console.error('[FETCH] Script URL not configured');
                 return [];
             }
             try {
-                var url = config.scriptUrl + '?type=listings';
+                var url = config.scriptUrl + '?type=listings&includeHidden=true';
                 console.log('[FETCH] URL:', url.substring(0, 100) + '...');
                 var response = await fetch(url);
                 console.log('[FETCH] Response status:', response.status);
                
                 if (!response.ok) throw new Error('Network error: ' + response.status);
-                                var data = await response.json();
+               
+                var data = await response.json();
                 console.log('[FETCH] Data type:', typeof data, 'Is array:', Array.isArray(data));
                
                 if (Array.isArray(data) && data.length > 1) {
@@ -523,8 +537,7 @@
 
             if (!config.scriptUrl) {
                 console.log('[LOAD] Config not loaded, loading now...');
-                await loadConfig();
-            }
+                await loadConfig();            }
 
             console.log('[LOAD] Fetching objects...');
             objects = await fetchData();
@@ -537,6 +550,7 @@
                 listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">🏗️</div><h3>Нет объектов</h3><p>Нажмите + чтобы добавить первый ЖК</p></div>';
                 return;
             }
+
             objects.forEach(function(obj, index) {
                 var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
                 var thumbUrl = obj.image_main || '';
@@ -548,6 +562,7 @@
 
                 var statusClass = isActive ? 'status-active' : 'status-hidden';
                 var statusText = isActive ? 'Активен' : 'Скрыт';
+                // ИСПРАВЛЕНО: добавляем класс hidden-object для скрытых объектов
                 var cardClass = 'object-card' + (isActive ? '' : ' hidden-object');
 
                 var card = document.createElement('div');
@@ -571,8 +586,7 @@
 
         function openCreateModal() {
             console.log('[MODAL] Opening create modal');
-            currentEditId = null;
-            document.getElementById('modalTitle').textContent = 'Новый ЖК';
+            currentEditId = null;            document.getElementById('modalTitle').textContent = 'Новый ЖК';
             document.getElementById('objectForm').reset();
             document.getElementById('objectId').value = '';
             document.getElementById('statusToggle').style.display = 'none';
@@ -586,7 +600,8 @@
             document.getElementById('mainPhotoPreview').innerHTML = '';
             document.getElementById('galleryPreview').innerHTML = '';
             document.getElementById('plansPreview').innerHTML = '';
-            document.getElementById('fieldImageMain').value = '';            document.getElementById('fieldImagesGallery').value = '';
+            document.getElementById('fieldImageMain').value = '';
+            document.getElementById('fieldImagesGallery').value = '';
             document.getElementById('fieldFloorPlansImages').value = '';
 
             document.getElementById('objectModal').classList.add('active');
@@ -620,8 +635,7 @@
             document.getElementById('fieldRooms').value = obj.rooms || '';
             document.getElementById('fieldClass').value = obj.class || '';
             document.getElementById('fieldCompletionSoonest').value = obj.completion_soonest || '';
-            document.getElementById('fieldCompletionAll').value = obj.completion_all || '';
-            document.getElementById('fieldFinishing').value = obj.finishing || '';
+            document.getElementById('fieldCompletionAll').value = obj.completion_all || '';            document.getElementById('fieldFinishing').value = obj.finishing || '';
             document.getElementById('fieldStatus').value = obj.status || '';
             document.getElementById('fieldDescription').value = obj.description || '';
             document.getElementById('fieldFeatures').value = obj.features || '';
@@ -635,6 +649,7 @@
             document.getElementById('fieldImageMain').value = photoStore.main;
             console.log('[MODAL] Main photo URL:', photoStore.main);
             renderPhotoPreview('main', photoStore.main ? [photoStore.main] : []);
+
             photoStore.gallery = obj.images_gallery ? String(obj.images_gallery).split(',').map(function(u){return u.trim();}).filter(Boolean) : [];
             document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(',');
             console.log('[MODAL] Gallery count:', photoStore.gallery.length);
@@ -669,8 +684,7 @@
            
             var btn = document.getElementById('saveBtn');
             var originalText = btn.textContent;
-            btn.disabled = true;
-            btn.textContent = 'Сохранение...';
+            btn.disabled = true;            btn.textContent = 'Сохранение...';
 
             try {
                 var params = {
@@ -684,7 +698,8 @@
                     area_min: parseFloat(document.getElementById('fieldAreaMin').value) || '',
                     area_max: parseFloat(document.getElementById('fieldAreaMax').value) || '',
                     rooms: document.getElementById('fieldRooms').value.trim(),
-                    class: document.getElementById('fieldClass').value,                    completion_soonest: document.getElementById('fieldCompletionSoonest').value.trim(),
+                    class: document.getElementById('fieldClass').value,
+                    completion_soonest: document.getElementById('fieldCompletionSoonest').value.trim(),
                     completion_all: document.getElementById('fieldCompletionAll').value.trim(),
                     finishing: document.getElementById('fieldFinishing').value,
                     status: document.getElementById('fieldStatus').value,
@@ -718,8 +733,7 @@
                     loadObjects();
                 }, 2000);
 
-            } catch (e) {
-                console.error('[SAVE] Error:', e);
+            } catch (e) {                console.error('[SAVE] Error:', e);
                 showToast('❌ Ошибка сохранения');
             } finally {
                 btn.disabled = false;
@@ -733,7 +747,8 @@
             if (!confirm('Удалить этот объект? Фотографии также будут удалены.')) return;
 
             var btn = document.getElementById('deleteBtn');
-            btn.disabled = true;            btn.textContent = 'Удаление...';
+            btn.disabled = true;
+            btn.textContent = 'Удаление...';
 
             try {
                 await apiCall('delete', { id: currentEditId });
@@ -749,11 +764,17 @@
             }
         }
 
+        // ИСПРАВЛЕНО: улучшена обработка первого клика
         async function uploadPhoto(type, input) {
             console.log('[UPLOAD] Starting upload for type:', type);
+           
             if (!input.files || input.files.length === 0) {
-                console.log('[UPLOAD] No files selected');
-                return;
+                console.log('[UPLOAD] No files selected, waiting 100ms...');
+                await new Promise(r => setTimeout(r, 100));
+                if (!input.files || input.files.length === 0) {
+                    console.log('[UPLOAD] Still no files, aborting');
+                    return;
+                }
             }
 
             var files = Array.from(input.files);
@@ -762,7 +783,6 @@
             var btn = input.parentElement;
             var originalText = btn.innerHTML;
             btn.innerHTML = '⏳ Загрузка...';
-
             try {
                 for (var i = 0; i < files.length; i++) {
                     var file = files[i];
@@ -782,18 +802,20 @@
                     console.log('[UPLOAD] Fetching last uploaded URL...');
                     var urlResponse = await fetch(config.scriptUrl + '?action=get_last_file_url');
                     var urlData = await urlResponse.json();
-                    console.log('[UPLOAD] Got URL response:', urlData);                   
+                    console.log('[UPLOAD] Got URL response:', urlData);
+                   
                     if (urlData && urlData.url) {
                         console.log('[UPLOAD] Adding photo to field:', urlData.url);
                         addPhotoToField(type, urlData.url);
                     } else {
                         console.error('[UPLOAD] No URL in response');
+                        showToast('⚠️ Фото загружено, но URL не получен. Попробуйте ещё раз.');
                     }
                 }
                 showToast('✅ Фото загружено');
             } catch (e) {
                 console.error('[UPLOAD] Error:', e);
-                showToast('❌ Ошибка загрузки фото');
+                showToast('❌ Ошибка загрузки фото. Попробуйте ещё раз.');
             } finally {
                 btn.innerHTML = originalText;
                 input.value = '';
@@ -809,8 +831,7 @@
                 };
                 reader.onerror = function(e) {
                     console.error('[BASE64] Error:', e);
-                    reject(e);
-                };
+                    reject(e);                };
                 console.log('[BASE64] Starting conversion...');
                 reader.readAsDataURL(file);
             });
@@ -831,7 +852,8 @@
                 renderPhotoPreview('gallery', photoStore.gallery);
             } else if (type === 'plans') {
                 if (photoStore.plans.indexOf(url) === -1) {
-                    photoStore.plans.push(url);                    console.log('[PHOTO] Plans count:', photoStore.plans.length);
+                    photoStore.plans.push(url);
+                    console.log('[PHOTO] Plans count:', photoStore.plans.length);
                 }
                 document.getElementById('fieldFloorPlansImages').value = photoStore.plans.join(',');
                 renderPhotoPreview('plans', photoStore.plans);
@@ -858,8 +880,7 @@
         function renderPhotoPreview(type, urls) {
             console.log('[PREVIEW] Rendering preview for', type, 'URLs:', urls);
             var containerId = type === 'main' ? 'mainPhotoPreview' : type === 'gallery' ? 'galleryPreview' : 'plansPreview';
-            var container = document.getElementById(containerId);
-            container.innerHTML = '';
+            var container = document.getElementById(containerId);            container.innerHTML = '';
 
             urls.forEach(function(url, index) {
                 if (!url) return;
@@ -880,7 +901,8 @@
                 var img = document.createElement('img');
                 img.src = displayUrl;
                 img.className = 'photo-thumb';
-                img.onerror = function() {                     console.error('[PREVIEW] Image failed to load:', displayUrl);
+                img.onerror = function() {
+                    console.error('[PREVIEW] Image failed to load:', displayUrl);
                     this.onerror = null;
                     this.style.background = '#E0E6ED';
                     this.src = '';
@@ -908,7 +930,6 @@
             div.textContent = String(text);
             return div.innerHTML;
         }
-
         function showToast(message) {
             console.log('[TOAST]', message);
             var toast = document.getElementById('toast');
@@ -929,6 +950,7 @@
 
         document.getElementById('objectModal').addEventListener('click', function(e) {
             if (e.target === this) closeModal();
-        });    </script>
+        });
+    </script>
 </body>
 </html>
