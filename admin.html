@@ -417,51 +417,86 @@
         var currentStatus = 'true';
         var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 
-        if (tg) { tg.ready(); tg.expand(); }
+        if (tg) {
+            console.log('[ADMIN] Telegram WebApp detected');
+            tg.ready();
+            tg.expand();
+        } else {
+            console.log('[ADMIN] Running outside Telegram');
+        }
 
         async function loadConfig() {
+            console.log('[CONFIG] Loading client-config.json...');
             try {
                 var response = await fetch('client-config.json');
+                console.log('[CONFIG] Response status:', response.status);
                 var data = await response.json();
                 config.scriptUrl = data.client.scriptUrl;
                 config.pin = data.client.secretKey || '123456';
+                console.log('[CONFIG] Loaded:', {
+                    scriptUrl: config.scriptUrl.substring(0, 50) + '...',
+                    pin: config.pin
+                });
             } catch (e) {
-                console.error('Config error:', e);
-                showToast('❌ Ошибка конфигурации');
-            }
+                console.error('[CONFIG] Error:', e);
+                showToast('❌ Ошибка конфигурации');            }
         }
 
-        // ИСПРАВЛЕНО: mode: 'no-cors' для всех POST
         async function apiCall(action, params) {
-            if (!config.scriptUrl) throw new Error('Script URL не настроен');
+            console.log('[API] Calling:', action, params);
+            if (!config.scriptUrl) {
+                console.error('[API] Script URL not configured');
+                throw new Error('Script URL не настроен');
+            }
 
             var payload = Object.assign({}, params, {
                 action: action,
                 pin: config.pin,
                 type: 'listing'
             });
-            // При no-cors мы НЕ МОЖЕМ прочитать ответ
-            // Поэтому просто отправляем и предполагаем успех
-            await fetch(config.scriptUrl, {
-                method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
 
-            // Возвращаем успех без чтения ответа
-            return { success: true };
+            console.log('[API] Sending payload:', JSON.stringify(payload).substring(0, 200) + '...');
+
+            try {
+                var fetchResult = await fetch(config.scriptUrl, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+               
+                console.log('[API] Fetch completed. Status:', fetchResult.status, 'Type:', fetchResult.type);
+                console.log('[API] With no-cors, we cannot read the response body');
+               
+                return { success: true };
+            } catch (e) {
+                console.error('[API] Fetch error:', e);
+                throw e;
+            }
         }
 
         async function fetchData() {
-            if (!config.scriptUrl) return [];
+            console.log('[FETCH] Getting data from script...');
+            if (!config.scriptUrl) {
+                console.error('[FETCH] Script URL not configured');
+                return [];
+            }
             try {
-                var response = await fetch(config.scriptUrl + '?type=listings');
-                if (!response.ok) throw new Error('Network error');
-                var data = await response.json();
+                var url = config.scriptUrl + '?type=listings';
+                console.log('[FETCH] URL:', url.substring(0, 100) + '...');
+                var response = await fetch(url);
+                console.log('[FETCH] Response status:', response.status);
+               
+                if (!response.ok) throw new Error('Network error: ' + response.status);
+                                var data = await response.json();
+                console.log('[FETCH] Data type:', typeof data, 'Is array:', Array.isArray(data));
+               
                 if (Array.isArray(data) && data.length > 1) {
                     var headers = data[0];
                     var rows = data.slice(1);
+                    console.log('[FETCH] Headers:', headers);
+                    console.log('[FETCH] Rows count:', rows.length);
+                   
                     return rows.map(function(row) {
                         var obj = {};
                         headers.forEach(function(header, i) {
@@ -470,30 +505,39 @@
                         return obj;
                     });
                 }
+                console.log('[FETCH] No data or invalid format');
                 return [];
             } catch (e) {
-                console.error('Fetch error:', e);
+                console.error('[FETCH] Error:', e);
                 return [];
             }
         }
 
         async function loadObjects() {
+            console.log('[LOAD] Starting loadObjects...');
             var listEl = document.getElementById('objectsList');
             var loadingEl = document.getElementById('loadingState');
            
             loadingEl.style.display = 'block';
             listEl.innerHTML = '';
 
-            if (!config.scriptUrl) await loadConfig();
+            if (!config.scriptUrl) {
+                console.log('[LOAD] Config not loaded, loading now...');
+                await loadConfig();
+            }
 
+            console.log('[LOAD] Fetching objects...');
             objects = await fetchData();
+            console.log('[LOAD] Objects loaded:', objects.length);
+           
             loadingEl.style.display = 'none';
+
             if (objects.length === 0) {
+                console.log('[LOAD] No objects, showing empty state');
                 listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">🏗️</div><h3>Нет объектов</h3><p>Нажмите + чтобы добавить первый ЖК</p></div>';
                 return;
             }
-
-            objects.forEach(function(obj) {
+            objects.forEach(function(obj, index) {
                 var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
                 var thumbUrl = obj.image_main || '';
                 var displayThumb = thumbUrl;
@@ -508,7 +552,10 @@
 
                 var card = document.createElement('div');
                 card.className = cardClass;
-                card.onclick = function() { openEditModal(obj.id); };
+                card.onclick = function() {
+                    console.log('[UI] Opening edit modal for ID:', obj.id);
+                    openEditModal(obj.id);
+                };
                 card.innerHTML =
                     '<img src="' + escapeHtml(displayThumb) + '" class="card-thumb" onerror="this.onerror=null;this.style.background=\'#E0E6ED\';this.src=\'\';">' +
                     '<div class="card-info">' +
@@ -518,9 +565,12 @@
                     '</div>';
                 listEl.appendChild(card);
             });
+           
+            console.log('[LOAD] Rendered', objects.length, 'cards');
         }
 
         function openCreateModal() {
+            console.log('[MODAL] Opening create modal');
             currentEditId = null;
             document.getElementById('modalTitle').textContent = 'Новый ЖК';
             document.getElementById('objectForm').reset();
@@ -536,15 +586,20 @@
             document.getElementById('mainPhotoPreview').innerHTML = '';
             document.getElementById('galleryPreview').innerHTML = '';
             document.getElementById('plansPreview').innerHTML = '';
-            document.getElementById('fieldImageMain').value = '';
-            document.getElementById('fieldImagesGallery').value = '';            document.getElementById('fieldFloorPlansImages').value = '';
+            document.getElementById('fieldImageMain').value = '';            document.getElementById('fieldImagesGallery').value = '';
+            document.getElementById('fieldFloorPlansImages').value = '';
 
             document.getElementById('objectModal').classList.add('active');
+            console.log('[MODAL] Create modal opened');
         }
 
         function openEditModal(id) {
+            console.log('[MODAL] Opening edit modal for ID:', id);
             var obj = objects.find(function(o) { return o.id === id; });
-            if (!obj) return;
+            if (!obj) {
+                console.error('[MODAL] Object not found:', id);
+                return;
+            }
 
             currentEditId = id;
             document.getElementById('modalTitle').textContent = 'Редактировать ЖК';
@@ -578,19 +633,24 @@
 
             photoStore.main = obj.image_main || '';
             document.getElementById('fieldImageMain').value = photoStore.main;
+            console.log('[MODAL] Main photo URL:', photoStore.main);
             renderPhotoPreview('main', photoStore.main ? [photoStore.main] : []);
-
             photoStore.gallery = obj.images_gallery ? String(obj.images_gallery).split(',').map(function(u){return u.trim();}).filter(Boolean) : [];
             document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(',');
+            console.log('[MODAL] Gallery count:', photoStore.gallery.length);
             renderPhotoPreview('gallery', photoStore.gallery);
 
             photoStore.plans = obj.floor_plans_images ? String(obj.floor_plans_images).split(',').map(function(u){return u.trim();}).filter(Boolean) : [];
             document.getElementById('fieldFloorPlansImages').value = photoStore.plans.join(',');
+            console.log('[MODAL] Plans count:', photoStore.plans.length);
             renderPhotoPreview('plans', photoStore.plans);
+
             document.getElementById('objectModal').classList.add('active');
+            console.log('[MODAL] Edit modal opened');
         }
 
         function closeModal() {
+            console.log('[MODAL] Closing modal');
             document.getElementById('objectModal').classList.remove('active');
             currentEditId = null;
         }
@@ -600,9 +660,11 @@
             document.querySelectorAll('.toggle-option').forEach(function(el) {
                 el.classList.toggle('selected', el.dataset.value === value);
             });
+            console.log('[STATUS] Set to:', value);
         }
 
         async function saveObject(event) {
+            console.log('[SAVE] Starting save...');
             event.preventDefault();
            
             var btn = document.getElementById('saveBtn');
@@ -622,8 +684,7 @@
                     area_min: parseFloat(document.getElementById('fieldAreaMin').value) || '',
                     area_max: parseFloat(document.getElementById('fieldAreaMax').value) || '',
                     rooms: document.getElementById('fieldRooms').value.trim(),
-                    class: document.getElementById('fieldClass').value,
-                    completion_soonest: document.getElementById('fieldCompletionSoonest').value.trim(),
+                    class: document.getElementById('fieldClass').value,                    completion_soonest: document.getElementById('fieldCompletionSoonest').value.trim(),
                     completion_all: document.getElementById('fieldCompletionAll').value.trim(),
                     finishing: document.getElementById('fieldFinishing').value,
                     status: document.getElementById('fieldStatus').value,
@@ -636,21 +697,29 @@
                     lng: parseFloat(document.getElementById('fieldLng').value) || '',
                     active: currentStatus === 'true'
                 };
+
+                console.log('[SAVE] Params:', JSON.stringify(params, null, 2).substring(0, 500) + '...');
+
                 if (currentEditId) {
                     params.id = currentEditId;
+                    console.log('[SAVE] Updating object ID:', currentEditId);
                     await apiCall('update', params);
                     showToast('✅ Объект обновлён');
                 } else {
+                    console.log('[SAVE] Creating new object');
                     await apiCall('create', params);
                     showToast('✅ Объект создан');
                 }
 
                 closeModal();
-                // ИСПРАВЛЕНО: Ждём 2 секунды чтобы Apps Script успел сохранить
-                setTimeout(function() { loadObjects(); }, 2000);
+                console.log('[SAVE] Waiting 2 seconds for server...');
+                setTimeout(function() {
+                    console.log('[SAVE] Reloading objects...');
+                    loadObjects();
+                }, 2000);
 
             } catch (e) {
-                console.error('Save error:', e);
+                console.error('[SAVE] Error:', e);
                 showToast('❌ Ошибка сохранения');
             } finally {
                 btn.disabled = false;
@@ -659,12 +728,12 @@
         }
 
         async function deleteObject() {
+            console.log('[DELETE] Starting delete for ID:', currentEditId);
             if (!currentEditId) return;
             if (!confirm('Удалить этот объект? Фотографии также будут удалены.')) return;
 
             var btn = document.getElementById('deleteBtn');
-            btn.disabled = true;
-            btn.textContent = 'Удаление...';
+            btn.disabled = true;            btn.textContent = 'Удаление...';
 
             try {
                 await apiCall('delete', { id: currentEditId });
@@ -672,7 +741,7 @@
                 closeModal();
                 setTimeout(function() { loadObjects(); }, 2000);
             } catch (e) {
-                console.error('Delete error:', e);
+                console.error('[DELETE] Error:', e);
                 showToast('❌ Ошибка удаления');
             } finally {
                 btn.disabled = false;
@@ -681,35 +750,49 @@
         }
 
         async function uploadPhoto(type, input) {
-            if (!input.files || input.files.length === 0) return;
+            console.log('[UPLOAD] Starting upload for type:', type);
+            if (!input.files || input.files.length === 0) {
+                console.log('[UPLOAD] No files selected');
+                return;
+            }
 
             var files = Array.from(input.files);
-            var btn = input.parentElement;            var originalText = btn.innerHTML;
+            console.log('[UPLOAD] Files count:', files.length);
+           
+            var btn = input.parentElement;
+            var originalText = btn.innerHTML;
             btn.innerHTML = '⏳ Загрузка...';
 
             try {
                 for (var i = 0; i < files.length; i++) {
                     var file = files[i];
+                    console.log('[UPLOAD] Processing file:', file.name, 'Size:', file.size, 'Type:', file.type);
+                   
                     var base64 = await fileToBase64(file);
+                    console.log('[UPLOAD] Base64 length:', base64.length);
                    
                     await apiCall('upload_image', {
                         image: base64,
                         fileName: file.name
                     });
 
-                    // ИСПРАВЛЕНО: Ждём 2 секунды чтобы Apps Script сохранил URL
+                    console.log('[UPLOAD] Waiting for server to save URL...');
                     await new Promise(r => setTimeout(r, 2000));
                    
+                    console.log('[UPLOAD] Fetching last uploaded URL...');
                     var urlResponse = await fetch(config.scriptUrl + '?action=get_last_file_url');
                     var urlData = await urlResponse.json();
-                   
+                    console.log('[UPLOAD] Got URL response:', urlData);                   
                     if (urlData && urlData.url) {
+                        console.log('[UPLOAD] Adding photo to field:', urlData.url);
                         addPhotoToField(type, urlData.url);
+                    } else {
+                        console.error('[UPLOAD] No URL in response');
                     }
                 }
                 showToast('✅ Фото загружено');
             } catch (e) {
-                console.error('Upload error:', e);
+                console.error('[UPLOAD] Error:', e);
                 showToast('❌ Ошибка загрузки фото');
             } finally {
                 btn.innerHTML = originalText;
@@ -720,25 +803,35 @@
         function fileToBase64(file) {
             return new Promise(function(resolve, reject) {
                 var reader = new FileReader();
-                reader.onload = function() { resolve(reader.result); };
-                reader.onerror = reject;
+                reader.onload = function() {
+                    console.log('[BASE64] File converted, length:', reader.result.length);
+                    resolve(reader.result);
+                };
+                reader.onerror = function(e) {
+                    console.error('[BASE64] Error:', e);
+                    reject(e);
+                };
+                console.log('[BASE64] Starting conversion...');
                 reader.readAsDataURL(file);
             });
         }
 
         function addPhotoToField(type, url) {
+            console.log('[PHOTO] Adding photo to', type, ':', url);
             if (type === 'main') {
                 photoStore.main = url;
                 document.getElementById('fieldImageMain').value = url;
                 renderPhotoPreview('main', [url]);
             } else if (type === 'gallery') {
                 if (photoStore.gallery.indexOf(url) === -1) {
-                    photoStore.gallery.push(url);                }
+                    photoStore.gallery.push(url);
+                    console.log('[PHOTO] Gallery count:', photoStore.gallery.length);
+                }
                 document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(',');
                 renderPhotoPreview('gallery', photoStore.gallery);
             } else if (type === 'plans') {
                 if (photoStore.plans.indexOf(url) === -1) {
-                    photoStore.plans.push(url);
+                    photoStore.plans.push(url);                    console.log('[PHOTO] Plans count:', photoStore.plans.length);
                 }
                 document.getElementById('fieldFloorPlansImages').value = photoStore.plans.join(',');
                 renderPhotoPreview('plans', photoStore.plans);
@@ -746,6 +839,7 @@
         }
 
         function removePhoto(type, index) {
+            console.log('[PHOTO] Removing photo from', type, 'at index', index);
             if (type === 'main') {
                 photoStore.main = '';
                 document.getElementById('fieldImageMain').value = '';
@@ -762,6 +856,7 @@
         }
 
         function renderPhotoPreview(type, urls) {
+            console.log('[PREVIEW] Rendering preview for', type, 'URLs:', urls);
             var containerId = type === 'main' ? 'mainPhotoPreview' : type === 'gallery' ? 'galleryPreview' : 'plansPreview';
             var container = document.getElementById(containerId);
             container.innerHTML = '';
@@ -774,6 +869,7 @@
                     var fileId = url.split('/d/')[1];
                     if (fileId) {
                         displayUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
+                        console.log('[PREVIEW] Converted to thumbnail URL');
                     }
                 }
                
@@ -782,11 +878,15 @@
                 wrapper.style.display = 'inline-block';
                
                 var img = document.createElement('img');
-                img.src = displayUrl;                img.className = 'photo-thumb';
-                img.onerror = function() {
+                img.src = displayUrl;
+                img.className = 'photo-thumb';
+                img.onerror = function() {                     console.error('[PREVIEW] Image failed to load:', displayUrl);
                     this.onerror = null;
                     this.style.background = '#E0E6ED';
                     this.src = '';
+                };
+                img.onload = function() {
+                    console.log('[PREVIEW] Image loaded successfully');
                 };
                
                 var removeBtn = document.createElement('button');
@@ -798,6 +898,8 @@
                 wrapper.appendChild(removeBtn);
                 container.appendChild(wrapper);
             });
+           
+            console.log('[PREVIEW] Rendered', urls.length, 'photos');
         }
 
         function escapeHtml(text) {
@@ -808,6 +910,7 @@
         }
 
         function showToast(message) {
+            console.log('[TOAST]', message);
             var toast = document.getElementById('toast');
             toast.textContent = message;
             toast.classList.remove('show');
@@ -817,14 +920,15 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            console.log('[INIT] DOM loaded, starting initialization...');
             loadConfig().then(function() {
+                console.log('[INIT] Config loaded, loading objects...');
                 loadObjects();
             });
         });
 
         document.getElementById('objectModal').addEventListener('click', function(e) {
             if (e.target === this) closeModal();
-        });
-    </script>
+        });    </script>
 </body>
 </html>
