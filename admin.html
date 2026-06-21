@@ -665,7 +665,7 @@
             }
         }
 
-        // ИСПРАВЛЕНО: Передаём данные через URL параметр
+        // ИСПРАВЛЕНО: Вернул no-cors и application/json
         async function apiCall(action, params) {
             console.log('[API] Calling:', action);
             if (!config.scriptUrl) throw new Error('Script URL не настроен');
@@ -679,14 +679,13 @@
             console.log('[API] Sending payload...');
 
             try {
-                // Передаём данные через URL параметр
-                var url = config.scriptUrl + '?data=' + encodeURIComponent(JSON.stringify(payload));
-               
-                await fetch(url, {
+                await fetch(config.scriptUrl, {
                     method: 'POST',
-                    mode: 'no-cors'                });
-               
-                console.log('[API] Request sent');
+                    mode: 'no-cors',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });               
+                console.log('[API] Request sent successfully');
                 return { success: true };
             } catch (e) {
                 console.error('[API] Error:', e);
@@ -733,8 +732,8 @@
                     });
                 }
                 return [];
-            } catch (e) {                console.error('[FETCH] Error:', e);
-                return [];
+            } catch (e) {
+                console.error('[FETCH] Error:', e);                return [];
             }
         }
 
@@ -782,8 +781,8 @@
                 listEl.appendChild(card);
             });
            
-            console.log('[LOAD] Rendered', objects.length, 'cards');        }
-
+            console.log('[LOAD] Rendered', objects.length, 'cards');
+        }
         function openCreateModal() {
             currentEditId = null;
             document.getElementById('modalTitle').textContent = 'Новый ЖК';
@@ -831,8 +830,8 @@
             document.getElementById('fieldAreaMin').value = obj.area_min || '';
             document.getElementById('fieldAreaMax').value = obj.area_max || '';
             document.getElementById('fieldRooms').value = obj.rooms || '';
-            document.getElementById('fieldClass').value = obj.class || '';            document.getElementById('fieldCompletionSoonest').value = obj.completion_soonest || '';
-            document.getElementById('fieldCompletionAll').value = obj.completion_all || '';
+            document.getElementById('fieldClass').value = obj.class || '';
+            document.getElementById('fieldCompletionSoonest').value = obj.completion_soonest || '';            document.getElementById('fieldCompletionAll').value = obj.completion_all || '';
             document.getElementById('fieldFinishing').value = obj.finishing || '';
             document.getElementById('fieldStatus').value = obj.status || '';
             document.getElementById('fieldDescription').value = obj.description || '';
@@ -880,8 +879,8 @@
             var originalText = btn.textContent;
             btn.disabled = true;
             btn.textContent = 'Сохранение...';
-            try {
-                if (!currentEditId && !photoStore.main) {
+
+            try {                if (!currentEditId && !photoStore.main) {
                     showToast('⚠️ Загрузите главное фото');
                     btn.disabled = false;
                     btn.textContent = originalText;
@@ -929,8 +928,8 @@
             } catch (e) {
                 console.error('[SAVE] Error:', e);
                 showToast('❌ Ошибка сохранения: ' + e.message);
-            } finally {                btn.disabled = false;
-                btn.textContent = originalText;
+            } finally {
+                btn.disabled = false;                btn.textContent = originalText;
             }
         }
 
@@ -978,8 +977,8 @@
                     });
 
                     await new Promise(r => setTimeout(r, 2000));
-                                        var urlResponse = await fetch(config.scriptUrl + '?action=get_last_file_url');
-                    var urlData = await urlResponse.json();
+                   
+                    var urlResponse = await fetch(config.scriptUrl + '?action=get_last_file_url');                    var urlData = await urlResponse.json();
                    
                     if (urlData && urlData.url) {
                         addPhotoToField(type, urlData.url);
@@ -1027,8 +1026,8 @@
         }
 
         function removePhoto(type, index) {
-            if (type === 'main') {                photoStore.main = '';
-                document.getElementById('fieldImageMain').value = '';
+            if (type === 'main') {
+                photoStore.main = '';                document.getElementById('fieldImageMain').value = '';
                 renderPhotoPreview('main', []);
             } else if (type === 'gallery') {
                 photoStore.gallery.splice(index, 1);
@@ -1076,8 +1075,8 @@
                 wrapper.appendChild(img);
                 wrapper.appendChild(removeBtn);
                 container.appendChild(wrapper);
-            });        }
-
+            });
+        }
         async function loadProfile() {
             console.log('[PROFILE] Loading profile...');
             var loadingEl = document.getElementById('profileLoading');
@@ -1125,8 +1124,8 @@
                 loadingEl.textContent = '❌ Ошибка загрузки профиля';
             }
         }
-        async function uploadAgentPhoto(input) {
-            if (!input.files || input.files.length === 0) return;
+
+        async function uploadAgentPhoto(input) {            if (!input.files || input.files.length === 0) return;
            
             var file = input.files[0];
             var btn = input.parentElement;
@@ -1223,8 +1222,8 @@
             try {
                 var result = await apiGet('get_leads');
                 console.log('[LEADS] Result:', result);
-                                loadingEl.style.display = 'none';
-
+               
+                loadingEl.style.display = 'none';
                 if (result && result.success && result.data && result.data.length > 0) {
                     leads = result.data;
                     filterContainer.style.display = 'flex';
@@ -1272,8 +1271,8 @@
             filtered.forEach(function(lead, index) {
                 var status = lead.status || 'new';
                 var statusClass = 'status-' + status;
-                var dateStr = lead.timestamp || lead.created_at || '';                if (dateStr) {
-                    try {
+                var dateStr = lead.timestamp || lead.created_at || '';
+                if (dateStr) {                    try {
                         var d = new Date(dateStr);
                         dateStr = d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
                     } catch(e) {}
@@ -1321,8 +1320,8 @@
                 });
                
                 lead.status = newStatus;
-                renderLeads();                showToast('✅ Статус обновлён');
-               
+                renderLeads();
+                showToast('✅ Статус обновлён');               
             } catch (e) {
                 console.error('[LEADS STATUS] Error:', e);
                 showToast('❌ Ошибка обновления статуса');
