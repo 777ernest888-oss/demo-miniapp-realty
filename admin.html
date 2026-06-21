@@ -450,7 +450,7 @@
             <div class="modal-header">
                 <button class="back-btn" onclick="closeModal()">← Назад</button>
                 <h2 id="modalTitle">Новый объект</h2>
-                <button class="close-btn" onclick="closeModal()"></button>
+                <button class="close-btn" onclick="closeModal()">✕</button>
             </div>
 
             <div class="status-toggle" id="statusToggle" style="display:none;">
@@ -626,7 +626,6 @@
         }
 
         function switchTab(tabName) {
-            console.log('[TAB] Switching to:', tabName);
             currentTab = tabName;
            
             document.querySelectorAll('.tab').forEach(function(btn) {
@@ -635,8 +634,8 @@
            
             document.querySelectorAll('.tab-content').forEach(function(content) {
                 content.classList.remove('active');
-            });            document.getElementById('tab-' + tabName).classList.add('active');
-           
+            });
+            document.getElementById('tab-' + tabName).classList.add('active');           
             var fab = document.getElementById('fabAdd');
             fab.style.display = tabName === 'objects' ? 'flex' : 'none';
            
@@ -660,14 +659,13 @@
                 var data = await response.json();
                 config.scriptUrl = data.client.scriptUrl;
                 config.pin = data.client.secretKey || '123456';
-                console.log('[CONFIG] Loaded scriptUrl:', config.scriptUrl.substring(0, 50) + '...');
             } catch (e) {
                 console.error('[CONFIG] Error:', e);
                 showToast('❌ Ошибка конфигурации');
             }
         }
 
-        // ИСПРАВЛЕНО: no-cors + text/plain для обхода CORS
+        // ИСПРАВЛЕНО: Передаём данные через URL параметр
         async function apiCall(action, params) {
             console.log('[API] Calling:', action);
             if (!config.scriptUrl) throw new Error('Script URL не настроен');
@@ -678,20 +676,20 @@
                 type: 'listing'
             });
 
-            console.log('[API] Sending payload, keys:', Object.keys(payload).join(', '));
+            console.log('[API] Sending payload...');
 
             try {
-                // Используем no-cors + text/plain чтобы обойти CORS
-                await fetch(config.scriptUrl, {
-                    method: 'POST',
-                    mode: 'no-cors',                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                    body: JSON.stringify(payload)
-                });
+                // Передаём данные через URL параметр
+                var url = config.scriptUrl + '?data=' + encodeURIComponent(JSON.stringify(payload));
                
-                console.log('[API] Request sent successfully (opaque response)');
+                await fetch(url, {
+                    method: 'POST',
+                    mode: 'no-cors'                });
+               
+                console.log('[API] Request sent');
                 return { success: true };
             } catch (e) {
-                console.error('[API] Fetch error:', e);
+                console.error('[API] Error:', e);
                 throw e;
             }
         }
@@ -733,9 +731,9 @@
                         });
                         return obj;
                     });
-                }                return [];
-            } catch (e) {
-                console.error('[FETCH] Error:', e);
+                }
+                return [];
+            } catch (e) {                console.error('[FETCH] Error:', e);
                 return [];
             }
         }
@@ -782,9 +780,9 @@
                         '<span class="card-status ' + statusClass + '">' + statusText + '</span>' +
                     '</div>';
                 listEl.appendChild(card);
-            });           
-            console.log('[LOAD] Rendered', objects.length, 'cards');
-        }
+            });
+           
+            console.log('[LOAD] Rendered', objects.length, 'cards');        }
 
         function openCreateModal() {
             currentEditId = null;
@@ -831,9 +829,9 @@
             document.getElementById('fieldPriceTo').value = obj.price_to || '';
             document.getElementById('fieldPriceSqm').value = obj.price_per_sqm || '';
             document.getElementById('fieldAreaMin').value = obj.area_min || '';
-            document.getElementById('fieldAreaMax').value = obj.area_max || '';            document.getElementById('fieldRooms').value = obj.rooms || '';
-            document.getElementById('fieldClass').value = obj.class || '';
-            document.getElementById('fieldCompletionSoonest').value = obj.completion_soonest || '';
+            document.getElementById('fieldAreaMax').value = obj.area_max || '';
+            document.getElementById('fieldRooms').value = obj.rooms || '';
+            document.getElementById('fieldClass').value = obj.class || '';            document.getElementById('fieldCompletionSoonest').value = obj.completion_soonest || '';
             document.getElementById('fieldCompletionAll').value = obj.completion_all || '';
             document.getElementById('fieldFinishing').value = obj.finishing || '';
             document.getElementById('fieldStatus').value = obj.status || '';
@@ -880,11 +878,11 @@
            
             var btn = document.getElementById('saveBtn');
             var originalText = btn.textContent;
-            btn.disabled = true;            btn.textContent = 'Сохранение...';
-
+            btn.disabled = true;
+            btn.textContent = 'Сохранение...';
             try {
                 if (!currentEditId && !photoStore.main) {
-                    showToast('️ Загрузите главное фото');
+                    showToast('⚠️ Загрузите главное фото');
                     btn.disabled = false;
                     btn.textContent = originalText;
                     return;
@@ -929,9 +927,9 @@
                 setTimeout(function() { loadObjects(); }, 2000);
 
             } catch (e) {
-                console.error('[SAVE] Error:', e);                showToast('❌ Ошибка сохранения: ' + e.message);
-            } finally {
-                btn.disabled = false;
+                console.error('[SAVE] Error:', e);
+                showToast('❌ Ошибка сохранения: ' + e.message);
+            } finally {                btn.disabled = false;
                 btn.textContent = originalText;
             }
         }
@@ -978,9 +976,9 @@
                         image: base64,
                         fileName: file.name
                     });
+
                     await new Promise(r => setTimeout(r, 2000));
-                   
-                    var urlResponse = await fetch(config.scriptUrl + '?action=get_last_file_url');
+                                        var urlResponse = await fetch(config.scriptUrl + '?action=get_last_file_url');
                     var urlData = await urlResponse.json();
                    
                     if (urlData && urlData.url) {
@@ -1027,9 +1025,9 @@
                 renderPhotoPreview('plans', photoStore.plans);
             }
         }
+
         function removePhoto(type, index) {
-            if (type === 'main') {
-                photoStore.main = '';
+            if (type === 'main') {                photoStore.main = '';
                 document.getElementById('fieldImageMain').value = '';
                 renderPhotoPreview('main', []);
             } else if (type === 'gallery') {
@@ -1076,9 +1074,9 @@
                 removeBtn.onclick = function(e) { e.stopPropagation(); removePhoto(type, index); };
 
                 wrapper.appendChild(img);
-                wrapper.appendChild(removeBtn);                container.appendChild(wrapper);
-            });
-        }
+                wrapper.appendChild(removeBtn);
+                container.appendChild(wrapper);
+            });        }
 
         async function loadProfile() {
             console.log('[PROFILE] Loading profile...');
@@ -1125,8 +1123,8 @@
             } catch (e) {
                 console.error('[PROFILE] Error:', e);
                 loadingEl.textContent = '❌ Ошибка загрузки профиля';
-            }        }
-
+            }
+        }
         async function uploadAgentPhoto(input) {
             if (!input.files || input.files.length === 0) return;
            
@@ -1174,9 +1172,9 @@
             }
 
             var btn = document.querySelector('#profileForm .btn-primary');
-            var originalText = btn.textContent;            btn.disabled = true;
+            var originalText = btn.textContent;
+            btn.disabled = true;
             btn.textContent = 'Сохранение...';
-
             try {
                 await apiCall('update_agent_profile', {
                     name: name,
@@ -1223,9 +1221,9 @@
             if (!config.scriptUrl) await loadConfig();
 
             try {
-                var result = await apiGet('get_leads');                console.log('[LEADS] Result:', result);
-               
-                loadingEl.style.display = 'none';
+                var result = await apiGet('get_leads');
+                console.log('[LEADS] Result:', result);
+                                loadingEl.style.display = 'none';
 
                 if (result && result.success && result.data && result.data.length > 0) {
                     leads = result.data;
@@ -1272,9 +1270,9 @@
             });
 
             filtered.forEach(function(lead, index) {
-                var status = lead.status || 'new';                var statusClass = 'status-' + status;
-                var dateStr = lead.timestamp || lead.created_at || '';
-                if (dateStr) {
+                var status = lead.status || 'new';
+                var statusClass = 'status-' + status;
+                var dateStr = lead.timestamp || lead.created_at || '';                if (dateStr) {
                     try {
                         var d = new Date(dateStr);
                         dateStr = d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
@@ -1294,7 +1292,7 @@
                         (lead.clientTelegram || lead.leadtelegram ? '<div>💬 ' + escapeHtml(lead.clientTelegram || lead.leadtelegram) + '</div>' : '') +
                     '</div>' +
                     '<div class="lead-actions">' +
-                        '<button class="lead-status-btn status-new ' + (status === 'new' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + (lead.id || index) + '\', \'new\')"> Новая</button>' +
+                        '<button class="lead-status-btn status-new ' + (status === 'new' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + (lead.id || index) + '\', \'new\')">🔵 Новая</button>' +
                         '<button class="lead-status-btn status-progress ' + (status === 'progress' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + (lead.id || index) + '\', \'progress\')">🟡 В работе</button>' +
                         '<button class="lead-status-btn status-closed ' + (status === 'closed' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + (lead.id || index) + '\', \'closed\')">🟢 Закрыта</button>' +
                     '</div>';
@@ -1321,9 +1319,9 @@
                     id: lead.id,
                     status: newStatus
                 });
-                                lead.status = newStatus;
-                renderLeads();
-                showToast('✅ Статус обновлён');
+               
+                lead.status = newStatus;
+                renderLeads();                showToast('✅ Статус обновлён');
                
             } catch (e) {
                 console.error('[LEADS STATUS] Error:', e);
