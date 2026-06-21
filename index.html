@@ -54,7 +54,7 @@
 
   <script>
     const ADMIN_USER_ID = 2038206387;
- 
+
     function checkAdminAccess() {
       if (window.Telegram && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
@@ -67,7 +67,7 @@
       window.isAdmin = false;
       return false;
     }
- 
+
     function openAdminPanel() {
       if (!window.isAdmin) {
         alert('⛔ Доступ запрещён!');
@@ -77,26 +77,46 @@
       const adminFrame = document.getElementById('adminFrame');
       if (adminFrame) {
         adminFrame.classList.add('active');
-        // 🔥 Загружаем iframe ТОЛЬКО при клике (не заранее!)
         const iframe = document.getElementById('adminIframe');
         if (iframe) {
           iframe.src = 'admin.html?v=1.0.7';
         }
       }
     }
- 
+
     function closeAdminPanel() {
       const adminFrame = document.getElementById('adminFrame');
       if (adminFrame) {
         adminFrame.classList.remove('active');
       }
     }
- 
+
+    // Глобальная функция для кнопки
+    window.startApp = function() {
+      console.log('startApp called');
+      const welcomeScreen = document.getElementById('welcomeScreen');
+      const mainContent = document.getElementById('mainContent');
+            if (welcomeScreen) {
+        welcomeScreen.classList.add('hidden');
+      }
+      if (mainContent) {
+        mainContent.classList.remove('hidden');
+      }
+     
+      window.scrollTo(0, 0);
+     
+      const backBtn = document.getElementById('headerBackBtn');
+      if (backBtn) {
+        backBtn.classList.add('hidden');
+      }
+    };
+
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', checkAdminAccess);
     } else {
       checkAdminAccess();
-    }  </script>
+    }
+  </script>
 </head>
 <body>
 
@@ -125,12 +145,11 @@
         <span class="back-arrow">←</span>
         <span>Назад</span>
       </button>
-      <div class="header-brand">
-        <img src="logo.png" alt="Logo" class="brand-logo">
+      <div class="header-brand">        <img src="logo.png" alt="Logo" class="brand-logo">
         <h1 class="brand-title" id="headerTitle"></h1>
       </div>
     </header>
-  
+ 
     <div class="filters-toggle">
       <button class="filters-toggle-btn" onclick="toggleFilters()">🔽 Фильтры</button>
     </div>
@@ -145,7 +164,8 @@
           <button class="price-btn" data-price="100000000">До 100 млн</button>
         </div>
       </div>
-      <div class="filter-group">        <label>📍 Районы</label>
+      <div class="filter-group">
+        <label>📍 Районы</label>
         <div id="districtCheckboxes" class="checkbox-group"></div>
       </div>
       <div class="filter-group">
@@ -157,12 +177,12 @@
         <div id="roomsCheckboxes" class="checkbox-group"></div>
       </div>
     </div>
- 
+
     <div class="view-toggle">
       <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>
       <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺️ Карта</button>
     </div>
- 
+
     <div id="listingsContainer" class="listings"></div>
     <div id="mapContainer" class="map-container hidden"></div>
   </div>
@@ -174,8 +194,7 @@
       <h2 id="modalTitle"></h2>
       <div id="modalPrice" class="modal-price"></div>
       <div id="modalMeta" class="modal-meta"></div>
-      <h3>📖 Описание</h3>
-      <div id="modalDescription" class="modal-desc"></div>
+      <h3>📖 Описание</h3>      <div id="modalDescription" class="modal-desc"></div>
       <h3>✨ Преимущества</h3>
       <div id="modalFeatures" class="modal-features"></div>
       <h3>📐 Планировки</h3>
@@ -194,7 +213,8 @@
         <input id="consultName" type="text" placeholder="Ваше имя" required>
         <input id="consultPhone" type="tel" placeholder="+7 (___) ___-__-__" required>
         <input id="consultTelegram" type="text" placeholder="Telegram (необязательно)">
-        <button type="submit" class="tg-btn">Отправить заявку</button>      </form>
+        <button type="submit" class="tg-btn">Отправить заявку</button>
+      </form>
     </div>
   </div>
 
@@ -223,8 +243,7 @@
         <li>Проверяю документы и историю застройщика.</li>
         <li>Торгуюсь за скидку (часто до 5-10%).</li>
         <li>Помогаю с ипотекой и одобрением.</li>
-      </ul>
-    </div>
+      </ul>    </div>
   </div>
 
   <div id="page-contacts" class="page hidden">
@@ -243,7 +262,8 @@
       <div id="agencyBlock" class="agency-block">
         <h4>🏢 Агентство</h4>
         <p id="agencyName">Название АН</p>
-        <p id="agencyAddress" class="address-text">📍 Адрес офиса</p>      </div>
+        <p id="agencyAddress" class="address-text">📍 Адрес офиса</p>
+      </div>
       <div class="contact-actions">
         <button class="btn-tg" onclick="openDirectChat()">✈️ Написать в Telegram</button>
         <button class="btn-phone" onclick="callAgent()">📞 Позвонить</button>
@@ -260,10 +280,9 @@
     <iframe id="adminIframe"></iframe>
   </div>
 
-<!-- СКРИПТЫ БЕЗ defer -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="app.js?v=1.0.7"></script>
+<script src="app.js?v=1.0.8"></script>
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
@@ -273,8 +292,7 @@
     if (window.isAdmin) {
       const adminMenuItem = document.getElementById('adminMenuItem');
       if (adminMenuItem) {
-        adminMenuItem.style.display = 'block';
-      }
+        adminMenuItem.style.display = 'block';      }
     }
   });
 </script>
