@@ -40,15 +40,14 @@
         .header h1 { font-size: 18px; font-weight: 600; }
         .header-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 4px 8px; }
 
-        /* ТАБЫ */
         .tabs {
             display: flex;
             background: var(--card-bg);
             border-bottom: 1px solid var(--border);
             position: sticky;
             top: 56px;
-            z-index: 99;        }
-        .tab {
+            z-index: 99;
+        }        .tab {
             flex: 1;
             padding: 12px 8px;
             background: none;
@@ -96,8 +95,8 @@
        
         .card-info { flex: 1; min-width: 0; }
         .card-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .card-address { font-size: 13px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }        .card-status {
-            font-size: 11px;
+        .card-address { font-size: 13px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .card-status {             font-size: 11px;
             padding: 2px 8px;
             border-radius: 10px;
             display: inline-block;
@@ -145,8 +144,8 @@
             animation: slideUp 0.3s ease;
         }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-        .modal-header {
-            display: flex;
+
+        .modal-header {            display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 20px;
@@ -194,8 +193,8 @@
         .photo-thumb {
             width: 80px;
             height: 80px;
-            border-radius: 8px;            object-fit: cover;
-            position: relative;
+            border-radius: 8px;
+            object-fit: cover;            position: relative;
             border: 1px solid var(--border);
         }
         .photo-remove {
@@ -243,8 +242,8 @@
         .btn-danger { background: var(--danger); color: white; margin-top: 16px; }
         .btn-secondary { background: var(--border); color: var(--text); margin-top: 16px; }
         .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .status-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
-        .toggle-option {
+
+        .status-toggle { display: flex; gap: 8px; margin-bottom: 16px; }        .toggle-option {
             flex: 1;
             padding: 10px;
             text-align: center;
@@ -277,7 +276,6 @@
         .toast.show { display: block; animation: fadeInOut 3s ease; }
         @keyframes fadeInOut { 0% { opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
 
-        /* СТИЛИ ДЛЯ ПРОФИЛЯ */
         .profile-photo-preview {
             width: 120px;
             height: 120px;
@@ -292,10 +290,9 @@
             text-align: center;
             margin-bottom: 20px;
         }
-        /* СТИЛИ ДЛЯ ЗАЯВОК */
+
         .lead-card {
-            background: var(--card-bg);
-            border-radius: var(--radius);
+            background: var(--card-bg);            border-radius: var(--radius);
             padding: 14px;
             margin-bottom: 12px;
             box-shadow: var(--shadow);
@@ -341,10 +338,10 @@
         .lead-status-btn.status-progress.active { background: var(--warning); border-color: var(--warning); }
         .lead-status-btn.status-closed.active { background: var(--success); border-color: var(--success); }
 
-        .leads-filter {            display: flex;
+        .leads-filter {
+            display: flex;
             gap: 8px;
-            margin-bottom: 16px;
-            flex-wrap: wrap;
+            margin-bottom: 16px;            flex-wrap: wrap;
         }
         .filter-btn {
             padding: 8px 14px;
@@ -368,20 +365,17 @@
         <button class="header-btn" onclick="refreshCurrentTab()">↻</button>
     </div>
 
-    <!-- ТАБЫ НАВИГАЦИИ -->
     <nav class="tabs">
         <button class="tab active" data-tab="objects" onclick="switchTab('objects')">📋 Объекты</button>
         <button class="tab" data-tab="profile" onclick="switchTab('profile')">👤 Профиль</button>
-        <button class="tab" data-tab="leads" onclick="switchTab('leads')"> Заявки</button>
+        <button class="tab" data-tab="leads" onclick="switchTab('leads')">📨 Заявки</button>
     </nav>
 
-    <!-- ВКЛАДКА: ОБЪЕКТЫ -->
     <div id="tab-objects" class="tab-content active">
         <div class="loading" id="objectsLoading">Загрузка объектов...</div>
         <div id="objectsList"></div>
     </div>
 
-    <!-- ВКЛАДКА: ПРОФИЛЬ -->
     <div id="tab-profile" class="tab-content">
         <div class="loading" id="profileLoading">Загрузка профиля...</div>
        
@@ -390,13 +384,13 @@
                 <img id="profilePhotoPreview" class="profile-photo-preview" src="" alt="Фото агента">
                 <label class="upload-btn">
                     📷 Изменить фото
-                    <input type="file" accept="image/*" onchange="uploadAgentPhoto(this)">                </label>
+                    <input type="file" accept="image/*" onchange="uploadAgentPhoto(this)">
+                </label>
                 <input type="hidden" id="profilePhotoUrl">
             </div>
 
             <div class="form-group">
-                <label class="form-label">Имя *</label>
-                <input type="text" class="form-input" id="profileName" placeholder="Эрнест Гареев" required>
+                <label class="form-label">Имя *</label>                <input type="text" class="form-input" id="profileName" placeholder="Эрнест Гареев" required>
             </div>
             <div class="form-group">
                 <label class="form-label">Роль / Должность</label>
@@ -437,23 +431,20 @@
         </form>
     </div>
 
-    <!-- ВКЛАДКА: ЗАЯВКИ -->
     <div id="tab-leads" class="tab-content">
-        <div class="loading" id="leadsLoading">Загрузка заявок...</div>       
+        <div class="loading" id="leadsLoading">Загрузка заявок...</div>
+       
         <div id="leadsFilterContainer" class="leads-filter" style="display:none;">
             <button class="filter-btn active" data-filter="all" onclick="filterLeads('all')">Все</button>
             <button class="filter-btn" data-filter="new" onclick="filterLeads('new')">🔵 Новые</button>
-            <button class="filter-btn" data-filter="progress" onclick="filterLeads('progress')"> В работе</button>
+            <button class="filter-btn" data-filter="progress" onclick="filterLeads('progress')">🟡 В работе</button>
             <button class="filter-btn" data-filter="closed" onclick="filterLeads('closed')">🟢 Закрыты</button>
-        </div>
-       
+        </div>       
         <div id="leadsList"></div>
     </div>
 
-    <!-- FAB только для вкладки объектов -->
     <button class="fab" id="fabAdd" onclick="openCreateModal()">+</button>
 
-    <!-- МОДАЛКА ОБЪЕКТА -->
     <div class="modal-overlay" id="objectModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -488,6 +479,7 @@
                         <input type="text" class="form-input" id="fieldMetro" placeholder="Станция метро">
                     </div>
                 </div>
+
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Цена от (млн ₽)</label>
@@ -496,8 +488,7 @@
                     <div class="form-group">
                         <label class="form-label">Цена до (млн ₽)</label>
                         <input type="number" step="0.1" class="form-input" id="fieldPriceTo" placeholder="0">
-                    </div>
-                </div>
+                    </div>                </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Площадь от (м²)</label>
@@ -537,7 +528,8 @@
                     <div class="form-group">
                         <label class="form-label">Срок сдачи (конец)</label>
                         <input type="text" class="form-input" id="fieldCompletionAll" placeholder="II кв. 2027">
-                    </div>                </div>
+                    </div>
+                </div>
                 <div class="form-group">
                     <label class="form-label">Отделка</label>
                     <select class="form-select" id="fieldFinishing">
@@ -545,8 +537,7 @@
                         <option value="Черновая">Черновая</option>
                         <option value="Предчистовая">Предчистовая</option>
                         <option value="Чистовая">Чистовая</option>
-                        <option value="Под ключ">Под ключ</option>
-                    </select>
+                        <option value="Под ключ">Под ключ</option>                    </select>
                 </div>
                 <div class="form-group">
                     <label class="form-label">Статус стройки</label>
@@ -586,6 +577,7 @@
                     </label>
                     <input type="hidden" id="fieldImagesGallery">
                 </div>
+
                 <div class="photo-section">
                     <label class="form-label">Планировки</label>
                     <div class="photo-preview-area" id="plansPreview"></div>
@@ -595,7 +587,6 @@
                     </label>
                     <input type="hidden" id="fieldFloorPlansImages">
                 </div>
-
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Широта</label>
@@ -616,9 +607,6 @@
     <div class="toast" id="toast"></div>
 
     <script>
-        // ============================================
-        // КОНФИГУРАЦИЯ И СОСТОЯНИЕ
-        // ============================================
         var config = { scriptUrl: '', pin: '' };
         var objects = [];
         var leads = [];
@@ -636,29 +624,22 @@
         } else {
             console.log('[ADMIN] Running outside Telegram');
         }
-        // ============================================
-        // НАВИГАЦИЯ ПО ТАБАМ
-        // ============================================
+
         function switchTab(tabName) {
             console.log('[TAB] Switching to:', tabName);
             currentTab = tabName;
            
-            // Переключаем кнопки табов
             document.querySelectorAll('.tab').forEach(function(btn) {
                 btn.classList.toggle('active', btn.dataset.tab === tabName);
             });
            
-            // Переключаем контент
             document.querySelectorAll('.tab-content').forEach(function(content) {
                 content.classList.remove('active');
-            });
-            document.getElementById('tab-' + tabName).classList.add('active');
+            });            document.getElementById('tab-' + tabName).classList.add('active');
            
-            // FAB только на вкладке объектов
             var fab = document.getElementById('fabAdd');
             fab.style.display = tabName === 'objects' ? 'flex' : 'none';
            
-            // Загружаем данные для вкладки
             if (tabName === 'objects') {
                 loadObjects();
             } else if (tabName === 'profile') {
@@ -677,14 +658,12 @@
             else if (currentTab === 'leads') loadLeads();
         }
 
-        // ============================================
-        // ЗАГРУЗКА КОНФИГА
-        // ============================================
         async function loadConfig() {
             console.log('[CONFIG] Loading client-config.json...');
             try {
                 var response = await fetch('client-config.json');
-                console.log('[CONFIG] Response status:', response.status);                var data = await response.json();
+                console.log('[CONFIG] Response status:', response.status);
+                var data = await response.json();
                 config.scriptUrl = data.client.scriptUrl;
                 config.pin = data.client.secretKey || '123456';
                 console.log('[CONFIG] Loaded:', {
@@ -697,9 +676,7 @@
             }
         }
 
-        // ============================================
-        // API ВЫЗОВЫ
-        // ============================================
+        // ИСПРАВЛЕНО: Убран mode: 'no-cors'
         async function apiCall(action, params) {
             console.log('[API] Calling:', action);
             if (!config.scriptUrl) {
@@ -707,8 +684,7 @@
                 throw new Error('Script URL не настроен');
             }
 
-            var payload = Object.assign({}, params, {
-                action: action,
+            var payload = Object.assign({}, params, {                action: action,
                 pin: config.pin,
                 type: 'listing'
             });
@@ -718,13 +694,19 @@
             try {
                 var fetchResult = await fetch(config.scriptUrl, {
                     method: 'POST',
-                    mode: 'no-cors',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(payload)
                 });
                
-                console.log('[API] Fetch completed. Status:', fetchResult.status, 'Type:', fetchResult.type);
-                return { success: true };
+                console.log('[API] Fetch completed. Status:', fetchResult.status);
+               
+                if (!fetchResult.ok) {
+                    var errorText = await fetchResult.text();
+                    console.error('[API] Error response:', errorText);
+                    throw new Error('Server error: ' + fetchResult.status);
+                }
+               
+                return await fetchResult.json();
             } catch (e) {
                 console.error('[API] Fetch error:', e);
                 throw e;
@@ -733,7 +715,8 @@
 
         async function apiGet(action) {
             console.log('[API-GET] Calling:', action);
-            if (!config.scriptUrl) throw new Error('Script URL не настроен');           
+            if (!config.scriptUrl) throw new Error('Script URL не настроен');
+           
             var url = config.scriptUrl + '?action=' + action;
             console.log('[API-GET] URL:', url.substring(0, 100) + '...');
            
@@ -744,17 +727,13 @@
             return await response.json();
         }
 
-        // ============================================
-        // ВКЛАДКА: ОБЪЕКТЫ
-        // ============================================
         async function fetchData() {
             console.log('[FETCH] Getting objects...');
             if (!config.scriptUrl) return [];
             try {
                 var url = config.scriptUrl + '?type=listings&includeHidden=true';
                 console.log('[FETCH] URL:', url.substring(0, 100) + '...');
-                var response = await fetch(url);
-                console.log('[FETCH] Response status:', response.status);
+                var response = await fetch(url);                console.log('[FETCH] Response status:', response.status);
                
                 if (!response.ok) throw new Error('Network error: ' + response.status);
                
@@ -782,7 +761,8 @@
 
         async function loadObjects() {
             console.log('[LOAD] Starting loadObjects...');
-            var listEl = document.getElementById('objectsList');            var loadingEl = document.getElementById('objectsLoading');
+            var listEl = document.getElementById('objectsList');
+            var loadingEl = document.getElementById('objectsLoading');
            
             loadingEl.style.display = 'block';
             listEl.innerHTML = '';
@@ -793,7 +773,7 @@
             loadingEl.style.display = 'none';
 
             if (objects.length === 0) {
-                listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">️</div><h3>Нет объектов</h3><p>Нажмите + чтобы добавить первый ЖК</p></div>';
+                listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">🏗️</div><h3>Нет объектов</h3><p>Нажмите + чтобы добавить первый ЖК</p></div>';
                 return;
             }
 
@@ -802,8 +782,7 @@
                 var thumbUrl = obj.image_main || '';
                 var displayThumb = thumbUrl;
                 if (thumbUrl.indexOf('lh3.googleusercontent.com/d/') !== -1) {
-                    var fileId = thumbUrl.split('/d/')[1];
-                    if (fileId) displayThumb = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
+                    var fileId = thumbUrl.split('/d/')[1];                    if (fileId) displayThumb = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
                 }
 
                 var statusClass = isActive ? 'status-active' : 'status-hidden';
@@ -817,7 +796,7 @@
                     '<img src="' + escapeHtml(displayThumb) + '" class="card-thumb" onerror="this.onerror=null;this.style.background=\'#E0E6ED\';this.src=\'\';">' +
                     '<div class="card-info">' +
                         '<div class="card-title">' + escapeHtml(obj.name || 'Без названия') + '</div>' +
-                        '<div class="card-address"> ' + escapeHtml(obj.address || 'Адрес не указан') + '</div>' +
+                        '<div class="card-address">📍 ' + escapeHtml(obj.address || 'Адрес не указан') + '</div>' +
                         '<span class="card-status ' + statusClass + '">' + statusText + '</span>' +
                     '</div>';
                 listEl.appendChild(card);
@@ -831,7 +810,8 @@
             currentEditId = null;
             document.getElementById('modalTitle').textContent = 'Новый ЖК';
             document.getElementById('objectForm').reset();
-            document.getElementById('objectId').value = '';            document.getElementById('statusToggle').style.display = 'none';
+            document.getElementById('objectId').value = '';
+            document.getElementById('statusToggle').style.display = 'none';
             document.getElementById('deleteBtn').style.display = 'none';
             document.getElementById('saveBtn').textContent = 'Создать объект';
            
@@ -851,7 +831,6 @@
             var modalContent = document.querySelector('#objectModal .modal-content');
             if (modalContent) modalContent.scrollTop = 0;
         }
-
         function openEditModal(id) {
             console.log('[MODAL] Opening edit modal for ID:', id);
             var obj = objects.find(function(o) { return o.id === id; });
@@ -880,7 +859,8 @@
             document.getElementById('fieldFinishing').value = obj.finishing || '';
             document.getElementById('fieldStatus').value = obj.status || '';
             document.getElementById('fieldDescription').value = obj.description || '';
-            document.getElementById('fieldFeatures').value = obj.features || '';            document.getElementById('fieldLat').value = obj.lat || '';
+            document.getElementById('fieldFeatures').value = obj.features || '';
+            document.getElementById('fieldLat').value = obj.lat || '';
             document.getElementById('fieldLng').value = obj.lng || '';
 
             var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
@@ -900,8 +880,7 @@
 
             document.getElementById('objectModal').classList.add('active');
            
-            var modalContent = document.querySelector('#objectModal .modal-content');
-            if (modalContent) modalContent.scrollTop = 0;
+            var modalContent = document.querySelector('#objectModal .modal-content');            if (modalContent) modalContent.scrollTop = 0;
         }
 
         function closeModal() {
@@ -925,11 +904,11 @@
             btn.textContent = 'Сохранение...';
 
             try {
-                // Проверка обязательного главного фото при создании
                 if (!currentEditId && !photoStore.main) {
                     showToast('⚠️ Загрузите главное фото');
                     btn.disabled = false;
-                    btn.textContent = originalText;                    return;
+                    btn.textContent = originalText;
+                    return;
                 }
 
                 var params = {
@@ -950,8 +929,7 @@
                     status: document.getElementById('fieldStatus').value,
                     description: document.getElementById('fieldDescription').value.trim(),
                     features: document.getElementById('fieldFeatures').value.trim(),
-                    image_main: photoStore.main,
-                    images_gallery: photoStore.gallery.join(','),
+                    image_main: photoStore.main,                    images_gallery: photoStore.gallery.join(','),
                     floor_plans_images: photoStore.plans.join(','),
                     lat: parseFloat(document.getElementById('fieldLat').value) || '',
                     lng: parseFloat(document.getElementById('fieldLng').value) || '',
@@ -972,12 +950,13 @@
 
             } catch (e) {
                 console.error('[SAVE] Error:', e);
-                showToast('❌ Ошибка сохранения');
+                showToast('❌ Ошибка сохранения: ' + e.message);
             } finally {
                 btn.disabled = false;
                 btn.textContent = originalText;
             }
         }
+
         async function deleteObject() {
             if (!currentEditId) return;
             if (!confirm('Удалить этот объект?')) return;
@@ -999,10 +978,6 @@
                 btn.textContent = 'Удалить объект';
             }
         }
-
-        // ============================================
-        // ЗАГРУЗКА ФОТО ОБЪЕКТОВ
-        // ============================================
         async function uploadPhoto(type, input) {
             if (!input.files || input.files.length === 0) {
                 await new Promise(r => setTimeout(r, 100));
@@ -1019,7 +994,7 @@
                     var file = files[i];
                     var base64 = await fileToBase64(file);
                    
-                    await apiCall('upload_image', {
+                    var result = await apiCall('upload_image', {
                         image: base64,
                         fileName: file.name
                     });
@@ -1027,7 +1002,8 @@
                     await new Promise(r => setTimeout(r, 2000));
                    
                     var urlResponse = await fetch(config.scriptUrl + '?action=get_last_file_url');
-                    var urlData = await urlResponse.json();                   
+                    var urlData = await urlResponse.json();
+                   
                     if (urlData && urlData.url) {
                         addPhotoToField(type, urlData.url);
                     } else {
@@ -1052,7 +1028,6 @@
                 reader.readAsDataURL(file);
             });
         }
-
         function addPhotoToField(type, url) {
             if (type === 'main') {
                 photoStore.main = url;
@@ -1076,7 +1051,8 @@
         function removePhoto(type, index) {
             if (type === 'main') {
                 photoStore.main = '';
-                document.getElementById('fieldImageMain').value = '';                renderPhotoPreview('main', []);
+                document.getElementById('fieldImageMain').value = '';
+                renderPhotoPreview('main', []);
             } else if (type === 'gallery') {
                 photoStore.gallery.splice(index, 1);
                 document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(',');
@@ -1100,8 +1076,7 @@
                 if (url.indexOf('lh3.googleusercontent.com/d/') !== -1) {
                     var fileId = url.split('/d/')[1];
                     if (fileId) displayUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
-                }
-               
+                }               
                 var wrapper = document.createElement('div');
                 wrapper.style.position = 'relative';
                 wrapper.style.display = 'inline-block';
@@ -1125,9 +1100,7 @@
                 container.appendChild(wrapper);
             });
         }
-        // ============================================
-        // ВКЛАДКА: ПРОФИЛЬ АГЕНТА
-        // ============================================
+
         async function loadProfile() {
             console.log('[PROFILE] Loading profile...');
             var loadingEl = document.getElementById('profileLoading');
@@ -1139,11 +1112,9 @@
             if (!config.scriptUrl) await loadConfig();
 
             try {
-                // Загружаем данные агента
                 var agentResult = await apiGet('get_agent_profile');
                 console.log('[PROFILE] Agent data:', agentResult);
                
-                // Загружаем страницы
                 var pagesResult = await apiGet('get_pages');
                 console.log('[PROFILE] Pages data:', pagesResult);
 
@@ -1154,11 +1125,10 @@
                     document.getElementById('profilePhone').value = data.phone || '';
                     document.getElementById('profileTelegram').value = data.telegramUsername || '';
                     document.getElementById('profileAgency').value = data.agencyName || '';
-                    document.getElementById('profileAgencyAddress').value = data.agencyAddress || '';
-                   
+                    document.getElementById('profileAgencyAddress').value = data.agencyAddress || '';                   
                     var photoUrl = data.photoUrl || '';
                     document.getElementById('profilePhotoUrl').value = photoUrl;
-                    document.getElementById('profilePhotoPreview').src = photoUrl || 'data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><rect width="120" height="120" fill="%23E0E6ED"/><text x="50%" y="50%" font-family="sans-serif" font-size="14" fill="%23999" text-anchor="middle" dy=".3em"></text></svg>';
+                    document.getElementById('profilePhotoPreview').src = photoUrl || 'data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><rect width="120" height="120" fill="%23E0E6ED"/><text x="50%" y="50%" font-family="sans-serif" font-size="14" fill="%23999" text-anchor="middle" dy=".3em">👤</text></svg>';
                 }
 
                 if (pagesResult && pagesResult.success && pagesResult.data) {
@@ -1174,7 +1144,8 @@
                
             } catch (e) {
                 console.error('[PROFILE] Error:', e);
-                loadingEl.textContent = '❌ Ошибка загрузки профиля';            }
+                loadingEl.textContent = '❌ Ошибка загрузки профиля';
+            }
         }
 
         async function uploadAgentPhoto(input) {
@@ -1188,7 +1159,7 @@
             try {
                 var base64 = await fileToBase64(file);
                
-                await apiCall('upload_image', {
+                var result = await apiCall('upload_image', {
                     image: base64,
                     fileName: 'agent_photo_' + new Date().getTime() + '.jpg'
                 });
@@ -1203,8 +1174,7 @@
                     document.getElementById('profilePhotoPreview').src = urlData.url;
                     showToast('✅ Фото загружено');
                 } else {
-                    showToast('⚠️ Фото загружено, но URL не получен');
-                }
+                    showToast('⚠️ Фото загружено, но URL не получен');                }
             } catch (e) {
                 console.error('[UPLOAD AGENT PHOTO] Error:', e);
                 showToast('❌ Ошибка загрузки фото');
@@ -1223,12 +1193,12 @@
                 return;
             }
 
-            var btn = document.querySelector('#profileForm .btn-primary');            var originalText = btn.textContent;
+            var btn = document.querySelector('#profileForm .btn-primary');
+            var originalText = btn.textContent;
             btn.disabled = true;
             btn.textContent = 'Сохранение...';
 
             try {
-                // Сохраняем данные агента
                 await apiCall('update_agent_profile', {
                     name: name,
                     role: document.getElementById('profileRole').value.trim(),
@@ -1239,7 +1209,6 @@
                     photoUrl: document.getElementById('profilePhotoUrl').value.trim()
                 });
 
-                // Сохраняем страницу "Обо мне"
                 var aboutTitle = document.getElementById('pageAboutTitle').value.trim();
                 var aboutContent = document.getElementById('pageAboutContent').value.trim();
                
@@ -1254,17 +1223,13 @@
                 showToast('✅ Профиль сохранён');
                
             } catch (e) {
-                console.error('[PROFILE SAVE] Error:', e);
-                showToast('❌ Ошибка сохранения');
+                console.error('[PROFILE SAVE] Error:', e);                showToast('❌ Ошибка сохранения: ' + e.message);
             } finally {
                 btn.disabled = false;
                 btn.textContent = originalText;
             }
         }
 
-        // ============================================
-        // ВКЛАДКА: ЗАЯВКИ
-        // ============================================
         async function loadLeads() {
             console.log('[LEADS] Loading leads...');
             var loadingEl = document.getElementById('leadsLoading');
@@ -1272,7 +1237,8 @@
             var listEl = document.getElementById('leadsList');
            
             loadingEl.style.display = 'block';
-            filterContainer.style.display = 'none';            listEl.innerHTML = '';
+            filterContainer.style.display = 'none';
+            listEl.innerHTML = '';
 
             if (!config.scriptUrl) await loadConfig();
 
@@ -1307,7 +1273,6 @@
         function renderLeads() {
             var listEl = document.getElementById('leadsList');
             listEl.innerHTML = '';
-
             var filtered = leads;
             if (currentLeadFilter !== 'all') {
                 filtered = leads.filter(function(lead) {
@@ -1320,8 +1285,8 @@
                 return;
             }
 
-            // Сортировка: новые сверху
-            filtered.sort(function(a, b) {                var dateA = a.timestamp || a.created_at || '';
+            filtered.sort(function(a, b) {
+                var dateA = a.timestamp || a.created_at || '';
                 var dateB = b.timestamp || b.created_at || '';
                 return dateB.localeCompare(dateA);
             });
@@ -1347,7 +1312,7 @@
                     '<div class="lead-body">' +
                         '<div>👤 <b>' + escapeHtml(lead.clientName || lead.leadname || 'Не указано') + '</b></div>' +
                         '<div>📞 ' + escapeHtml(lead.clientPhone || lead.leadphone || 'Не указан') + '</div>' +
-                        (lead.clientTelegram || lead.leadtelegram ? '<div> ' + escapeHtml(lead.clientTelegram || lead.leadtelegram) + '</div>' : '') +
+                        (lead.clientTelegram || lead.leadtelegram ? '<div>💬 ' + escapeHtml(lead.clientTelegram || lead.leadtelegram) + '</div>' : '') +
                     '</div>' +
                     '<div class="lead-actions">' +
                         '<button class="lead-status-btn status-new ' + (status === 'new' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + (lead.id || index) + '\', \'new\')">🔵 Новая</button>' +
@@ -1357,20 +1322,18 @@
                 listEl.appendChild(card);
             });
         }
-
         async function updateLeadStatus(leadId, newStatus) {
             console.log('[LEADS] Updating status:', leadId, newStatus);
            
-            // Находим заявку по id или индексу
             var lead = leads.find(function(l) { return String(l.id) === String(leadId); });
             if (!lead) {
-                // Если не нашли по id, пробуем по индексу
                 var idx = parseInt(leadId);
                 if (!isNaN(idx) && leads[idx]) lead = leads[idx];
             }
            
             if (!lead) {
-                showToast(' Заявка не найдена');                return;
+                showToast('❌ Заявка не найдена');
+                return;
             }
 
             try {
@@ -1389,9 +1352,6 @@
             }
         }
 
-        // ============================================
-        // УТИЛИТЫ
-        // ============================================
         function escapeHtml(text) {
             if (!text) return '';
             var div = document.createElement('div');
@@ -1408,18 +1368,15 @@
             setTimeout(function() { toast.classList.remove('show'); }, 3000);
         }
 
-        // ============================================
-        // ИНИЦИАЛИЗАЦИЯ
-        // ============================================
         document.addEventListener('DOMContentLoaded', function() {
             console.log('[INIT] DOM loaded');
-            loadConfig().then(function() {
-                loadObjects();
+            loadConfig().then(function() {                loadObjects();
             });
         });
 
         document.getElementById('objectModal').addEventListener('click', function(e) {
-            if (e.target === this) closeModal();        });
+            if (e.target === this) closeModal();
+        });
     </script>
 </body>
 </html>
