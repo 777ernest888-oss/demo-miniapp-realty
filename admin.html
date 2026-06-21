@@ -25,7 +25,6 @@
        
         body { background: var(--bg); color: var(--text); padding-bottom: 80px; min-height: 100vh; }
        
-        /* Header */
         .header {
             background: var(--primary);
             color: white;
@@ -41,16 +40,14 @@
         .header h1 { font-size: 18px; font-weight: 600; }
         .header-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 4px 8px; }
 
-        /* Container */
         .container { padding: 16px; max-width: 600px; margin: 0 auto; }
 
-        /* Cards List */
         .object-card {
             background: var(--card-bg);
-            border-radius: var(--radius);            padding: 12px;
+            border-radius: var(--radius);
+            padding: 12px;
             margin-bottom: 12px;
-            box-shadow: var(--shadow);
-            display: flex;
+            box-shadow: var(--shadow);            display: flex;
             gap: 12px;
             align-items: center;
             cursor: pointer;
@@ -81,7 +78,6 @@
         .status-active { background: #E8F8F0; color: var(--success); }
         .status-hidden { background: #FEF5E7; color: var(--warning); }
 
-        /* FAB */
         .fab {
             position: fixed;
             bottom: 24px;
@@ -96,11 +92,10 @@
             box-shadow: 0 4px 12px rgba(52, 152, 219, 0.4);
             cursor: pointer;
             z-index: 90;
-            display: flex;            align-items: center;
+            display: flex;
+            align-items: center;
             justify-content: center;
         }
-
-        /* Modal / Form */
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -131,7 +126,6 @@
         .modal-header h2 { font-size: 20px; }
         .close-btn { background: none; border: none; font-size: 24px; color: var(--text-secondary); cursor: pointer; }
 
-        /* Form Elements */
         .form-group { margin-bottom: 16px; }
         .form-label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text-secondary); }
         .form-input, .form-select, .form-textarea {
@@ -145,14 +139,13 @@
             transition: border-color 0.2s;
         }
         .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--accent); }
-        .form-textarea { resize: vertical; min-height: 80px; }        .form-row { display: flex; gap: 12px; }
+        .form-textarea { resize: vertical; min-height: 80px; }
+        .form-row { display: flex; gap: 12px; }
         .form-row .form-group { flex: 1; }
 
-        /* Photo Upload */
         .photo-section { margin-bottom: 16px; }
         .photo-preview-area {
-            display: flex;
-            gap: 8px;
+            display: flex;            gap: 8px;
             flex-wrap: wrap;
             margin-top: 8px;
         }
@@ -194,22 +187,20 @@
             margin-top: 8px;
         }
         .upload-btn input { display: none; }
-        /* Buttons */
+
         .btn {
             width: 100%;
             padding: 14px;
             border: none;
             border-radius: 8px;
             font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
+            font-weight: 600;            cursor: pointer;
             margin-top: 8px;
         }
         .btn-primary { background: var(--accent); color: white; }
         .btn-danger { background: var(--danger); color: white; margin-top: 16px; }
         .btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
-        /* Status Toggle */
         .status-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
         .toggle-option {
             flex: 1;
@@ -223,14 +214,11 @@
         }
         .toggle-option.selected { border-color: var(--accent); background: #EBF5FB; color: var(--accent); font-weight: 600; }
 
-        /* Empty State */
         .empty-state { text-align: center; padding: 60px 20px; color: var(--text-secondary); }
         .empty-icon { font-size: 48px; margin-bottom: 16px; }
 
-        /* Loading */
         .loading { text-align: center; padding: 40px; color: var(--text-secondary); }
 
-        /* Toast */
         .toast {
             position: fixed;
             bottom: 90px;
@@ -243,28 +231,24 @@
             font-size: 14px;
             z-index: 300;
             display: none;
-        }        .toast.show { display: block; animation: fadeInOut 3s ease; }
+        }
+        .toast.show { display: block; animation: fadeInOut 3s ease; }
         @keyframes fadeInOut { 0% { opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
     </style>
 </head>
 <body>
 
-    <!-- Header -->
     <div class="header">
         <h1>🏗️ Новостройки</h1>
         <button class="header-btn" onclick="loadObjects()">↻</button>
     </div>
 
-    <!-- Main Content -->
-    <div class="container" id="mainContainer">
-        <div class="loading" id="loadingState">Загрузка объектов...</div>
+    <div class="container" id="mainContainer">        <div class="loading" id="loadingState">Загрузка объектов...</div>
         <div id="objectsList"></div>
     </div>
 
-    <!-- FAB -->
     <button class="fab" onclick="openCreateModal()">+</button>
 
-    <!-- Create/Edit Modal -->
     <div class="modal-overlay" id="objectModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -272,7 +256,6 @@
                 <button class="close-btn" onclick="closeModal()">✕</button>
             </div>
 
-            <!-- Status Toggle (только при редактировании) -->
             <div class="status-toggle" id="statusToggle" style="display:none;">
                 <div class="toggle-option selected" data-value="true" onclick="setStatus('true')">✅ Активен</div>
                 <div class="toggle-option" data-value="false" onclick="setStatus('false')">👁️ Скрыт</div>
@@ -281,7 +264,6 @@
             <form id="objectForm" onsubmit="saveObject(event)">
                 <input type="hidden" id="objectId">
                
-                <!-- Основное -->
                 <div class="form-group">
                     <label class="form-label">Название *</label>
                     <input type="text" class="form-input" id="fieldName" placeholder="Например: ЖК Агасфера" required>
@@ -292,7 +274,8 @@
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label class="form-label">Район</label>                        <input type="text" class="form-input" id="fieldDistrict" placeholder="Введите район">
+                        <label class="form-label">Район</label>
+                        <input type="text" class="form-input" id="fieldDistrict" placeholder="Введите район">
                     </div>
                     <div class="form-group">
                         <label class="form-label">Метро</label>
@@ -300,7 +283,6 @@
                     </div>
                 </div>
 
-                <!-- Цены и площади -->
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Цена от (млн ₽)</label>
@@ -310,8 +292,7 @@
                         <label class="form-label">Цена до (млн ₽)</label>
                         <input type="number" step="0.1" class="form-input" id="fieldPriceTo" placeholder="0">
                     </div>
-                </div>
-                <div class="form-row">
+                </div>                <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Площадь от (м²)</label>
                         <input type="number" step="0.1" class="form-input" id="fieldAreaMin" placeholder="0">
@@ -326,7 +307,6 @@
                     <input type="number" class="form-input" id="fieldPriceSqm" placeholder="Рассчитается автоматически или введите вручную">
                 </div>
 
-                <!-- Параметры -->
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Комнатность</label>
@@ -341,7 +321,8 @@
                             <option value="Бизнес">Бизнес</option>
                             <option value="Премиум">Премиум</option>
                         </select>
-                    </div>                </div>
+                    </div>
+                </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Срок сдачи (начало)</label>
@@ -360,8 +341,7 @@
                         <option value="Предчистовая">Предчистовая</option>
                         <option value="Чистовая">Чистовая</option>
                         <option value="Под ключ">Под ключ</option>
-                    </select>
-                </div>
+                    </select>                </div>
                 <div class="form-group">
                     <label class="form-label">Статус стройки</label>
                     <select class="form-select" id="fieldStatus">
@@ -372,7 +352,6 @@
                     </select>
                 </div>
 
-                <!-- Описание -->
                 <div class="form-group">
                     <label class="form-label">Описание</label>
                     <textarea class="form-textarea" id="fieldDescription" placeholder="Расскажите о проекте"></textarea>
@@ -382,7 +361,6 @@
                     <input type="text" class="form-input" id="fieldFeatures" placeholder="Паркинг, охрана, двор без машин">
                 </div>
 
-                <!-- Фото -->
                 <div class="photo-section">
                     <label class="form-label">Главное фото *</label>
                     <div class="photo-preview-area" id="mainPhotoPreview"></div>
@@ -390,7 +368,8 @@
                         📷 Выбрать фото
                         <input type="file" accept="image/*" onchange="uploadPhoto('main', this)">
                     </label>
-                    <input type="hidden" id="fieldImageMain">                </div>
+                    <input type="hidden" id="fieldImageMain">
+                </div>
 
                 <div class="photo-section">
                     <label class="form-label">Галерея</label>
@@ -411,8 +390,6 @@
                     </label>
                     <input type="hidden" id="fieldFloorPlansImages">
                 </div>
-
-                <!-- Координаты -->
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Широта</label>
@@ -430,91 +407,61 @@
         </div>
     </div>
 
-    <!-- Toast -->
     <div class="toast" id="toast"></div>
 
     <script>
-        // ==========================================
-        // КОНФИГУРАЦИЯ
-        // ==========================================
-        var config = {
-            scriptUrl: '',
-            pin: ''        };
-
+        var config = { scriptUrl: '', pin: '' };
         var objects = [];
         var currentEditId = null;
+        var photoStore = { main: '', gallery: [], plans: [] };
+        var currentStatus = 'true';
         var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 
-        // Инициализация Telegram WebApp
-        if (tg) {
-            tg.ready();
-            tg.expand();
-            // Получаем данные из initData если есть
-            try {
-                var initData = tg.initDataUnsafe;
-                if (initData && initData.start_param) {
-                    // Можно передать конфиг через start_param
-                }
-            } catch(e) {}
-        }
+        if (tg) { tg.ready(); tg.expand(); }
 
-        // Загрузка конфигурации
         async function loadConfig() {
             try {
                 var response = await fetch('client-config.json');
                 var data = await response.json();
                 config.scriptUrl = data.client.scriptUrl;
                 config.pin = data.client.secretKey || '123456';
-                console.log('Config loaded, scriptUrl:', config.scriptUrl);
             } catch (e) {
-                console.error('Config load error:', e);
-                showToast('❌ Ошибка загрузки конфигурации');
+                console.error('Config error:', e);
+                showToast('❌ Ошибка конфигурации');
             }
         }
 
-        // ==========================================
-        // API CALL — ЕДИНАЯ ФУНКЦИЯ ДЛЯ ВСЕХ ЗАПРОСОВ
-        // ==========================================
+        // ИСПРАВЛЕНО: mode: 'no-cors' для всех POST
         async function apiCall(action, params) {
-            if (!config.scriptUrl) {
-                throw new Error('Script URL не настроен');
-            }
+            if (!config.scriptUrl) throw new Error('Script URL не настроен');
 
             var payload = Object.assign({}, params, {
                 action: action,
                 pin: config.pin,
-                type: 'listing' // Всегда ЖК на этом этапе
+                type: 'listing'
             });
-
-            console.log('API Call:', action, payload);
-
-            var response = await fetch(config.scriptUrl, {                method: 'POST',
+            // При no-cors мы НЕ МОЖЕМ прочитать ответ
+            // Поэтому просто отправляем и предполагаем успех
+            await fetch(config.scriptUrl, {
+                method: 'POST',
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
             });
 
-            // При no-cors мы не можем прочитать ответ
-            // Для операций записи это нормально — проверяем по результату
-            // Для чтения используем doGet отдельно
+            // Возвращаем успех без чтения ответа
             return { success: true };
         }
 
-        // Чтение данных (GET)
         async function fetchData() {
             if (!config.scriptUrl) return [];
-           
             try {
                 var response = await fetch(config.scriptUrl + '?type=listings');
                 if (!response.ok) throw new Error('Network error');
-               
                 var data = await response.json();
-               
-                // Парсим массив с заголовками
                 if (Array.isArray(data) && data.length > 1) {
                     var headers = data[0];
                     var rows = data.slice(1);
-                   
                     return rows.map(function(row) {
                         var obj = {};
                         headers.forEach(function(header, i) {
@@ -530,22 +477,17 @@
             }
         }
 
-        // ==========================================
-        // ЗАГРУЗКА И ОТРИСОВКА СПИСКА
-        // ==========================================
         async function loadObjects() {
             var listEl = document.getElementById('objectsList');
             var loadingEl = document.getElementById('loadingState');
            
-            loadingEl.style.display = 'block';            listEl.innerHTML = '';
+            loadingEl.style.display = 'block';
+            listEl.innerHTML = '';
 
-            if (!config.scriptUrl) {
-                await loadConfig();
-            }
+            if (!config.scriptUrl) await loadConfig();
 
             objects = await fetchData();
             loadingEl.style.display = 'none';
-
             if (objects.length === 0) {
                 listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">🏗️</div><h3>Нет объектов</h3><p>Нажмите + чтобы добавить первый ЖК</p></div>';
                 return;
@@ -554,6 +496,12 @@
             objects.forEach(function(obj) {
                 var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
                 var thumbUrl = obj.image_main || '';
+                var displayThumb = thumbUrl;
+                if (thumbUrl.indexOf('lh3.googleusercontent.com/d/') !== -1) {
+                    var fileId = thumbUrl.split('/d/')[1];
+                    if (fileId) displayThumb = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
+                }
+
                 var statusClass = isActive ? 'status-active' : 'status-hidden';
                 var statusText = isActive ? 'Активен' : 'Скрыт';
                 var cardClass = 'object-card' + (isActive ? '' : ' hidden-object');
@@ -562,7 +510,7 @@
                 card.className = cardClass;
                 card.onclick = function() { openEditModal(obj.id); };
                 card.innerHTML =
-                    '<img src="' + escapeHtml(thumbUrl) + '" class="card-thumb" onerror="this.src=\'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2270%22 height=%2270%22><rect fill=%22%23E0E6ED%22 width=%2270%22 height=%2270%22/><text x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%237F8C8D%22 font-size=%2220%22>🏗️</text></svg>\'">' +
+                    '<img src="' + escapeHtml(displayThumb) + '" class="card-thumb" onerror="this.onerror=null;this.style.background=\'#E0E6ED\';this.src=\'\';">' +
                     '<div class="card-info">' +
                         '<div class="card-title">' + escapeHtml(obj.name || 'Без названия') + '</div>' +
                         '<div class="card-address">📍 ' + escapeHtml(obj.address || 'Адрес не указан') + '</div>' +
@@ -572,9 +520,6 @@
             });
         }
 
-        // ==========================================
-        // МОДАЛЬНОЕ ОКНО: СОЗДАНИЕ
-        // ==========================================
         function openCreateModal() {
             currentEditId = null;
             document.getElementById('modalTitle').textContent = 'Новый ЖК';
@@ -584,19 +529,19 @@
             document.getElementById('deleteBtn').style.display = 'none';
             document.getElementById('saveBtn').textContent = 'Создать объект';
            
-            // Очищаем превью фото
+            photoStore.main = '';
+            photoStore.gallery = [];
+            photoStore.plans = [];
+           
             document.getElementById('mainPhotoPreview').innerHTML = '';
-            document.getElementById('galleryPreview').innerHTML = '';            document.getElementById('plansPreview').innerHTML = '';
+            document.getElementById('galleryPreview').innerHTML = '';
+            document.getElementById('plansPreview').innerHTML = '';
             document.getElementById('fieldImageMain').value = '';
-            document.getElementById('fieldImagesGallery').value = '';
-            document.getElementById('fieldFloorPlansImages').value = '';
+            document.getElementById('fieldImagesGallery').value = '';            document.getElementById('fieldFloorPlansImages').value = '';
 
             document.getElementById('objectModal').classList.add('active');
         }
 
-        // ==========================================
-        // МОДАЛЬНОЕ ОКНО: РЕДАКТИРОВАНИЕ
-        // ==========================================
         function openEditModal(id) {
             var obj = objects.find(function(o) { return o.id === id; });
             if (!obj) return;
@@ -608,7 +553,6 @@
             document.getElementById('deleteBtn').style.display = 'block';
             document.getElementById('saveBtn').textContent = 'Сохранить изменения';
 
-            // Заполняем поля
             document.getElementById('fieldName').value = obj.name || '';
             document.getElementById('fieldAddress').value = obj.address || '';
             document.getElementById('fieldDistrict').value = obj.district || '';
@@ -629,21 +573,20 @@
             document.getElementById('fieldLat').value = obj.lat || '';
             document.getElementById('fieldLng').value = obj.lng || '';
 
-            // Статус
             var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
             setStatus(isActive ? 'true' : 'false');
 
-            // Фото — предпросмотр существующих
-            document.getElementById('fieldImageMain').value = obj.image_main || '';
-            renderPhotoPreview('main', obj.image_main ? [obj.image_main] : []);
-            var galleryUrls = obj.images_gallery ? String(obj.images_gallery).split(',').map(function(u){return u.trim();}).filter(Boolean) : [];
-            document.getElementById('fieldImagesGallery').value = galleryUrls.join(',');
-            renderPhotoPreview('gallery', galleryUrls);
+            photoStore.main = obj.image_main || '';
+            document.getElementById('fieldImageMain').value = photoStore.main;
+            renderPhotoPreview('main', photoStore.main ? [photoStore.main] : []);
 
-            var plansUrls = obj.floor_plans_images ? String(obj.floor_plans_images).split(',').map(function(u){return u.trim();}).filter(Boolean) : [];
-            document.getElementById('fieldFloorPlansImages').value = plansUrls.join(',');
-            renderPhotoPreview('plans', plansUrls);
+            photoStore.gallery = obj.images_gallery ? String(obj.images_gallery).split(',').map(function(u){return u.trim();}).filter(Boolean) : [];
+            document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(',');
+            renderPhotoPreview('gallery', photoStore.gallery);
 
+            photoStore.plans = obj.floor_plans_images ? String(obj.floor_plans_images).split(',').map(function(u){return u.trim();}).filter(Boolean) : [];
+            document.getElementById('fieldFloorPlansImages').value = photoStore.plans.join(',');
+            renderPhotoPreview('plans', photoStore.plans);
             document.getElementById('objectModal').classList.add('active');
         }
 
@@ -652,11 +595,6 @@
             currentEditId = null;
         }
 
-        // ==========================================
-        // СТАТУС ТОГГЛ
-        // ==========================================
-        var currentStatus = 'true';
-
         function setStatus(value) {
             currentStatus = value;
             document.querySelectorAll('.toggle-option').forEach(function(el) {
@@ -664,9 +602,6 @@
             });
         }
 
-        // ==========================================
-        // СОХРАНЕНИЕ ОБЪЕКТА
-        // ==========================================
         async function saveObject(event) {
             event.preventDefault();
            
@@ -684,7 +619,8 @@
                     price_from: parseFloat(document.getElementById('fieldPriceFrom').value) || '',
                     price_to: parseFloat(document.getElementById('fieldPriceTo').value) || '',
                     price_per_sqm: parseFloat(document.getElementById('fieldPriceSqm').value) || '',
-                    area_min: parseFloat(document.getElementById('fieldAreaMin').value) || '',                    area_max: parseFloat(document.getElementById('fieldAreaMax').value) || '',
+                    area_min: parseFloat(document.getElementById('fieldAreaMin').value) || '',
+                    area_max: parseFloat(document.getElementById('fieldAreaMax').value) || '',
                     rooms: document.getElementById('fieldRooms').value.trim(),
                     class: document.getElementById('fieldClass').value,
                     completion_soonest: document.getElementById('fieldCompletionSoonest').value.trim(),
@@ -693,14 +629,13 @@
                     status: document.getElementById('fieldStatus').value,
                     description: document.getElementById('fieldDescription').value.trim(),
                     features: document.getElementById('fieldFeatures').value.trim(),
-                    image_main: document.getElementById('fieldImageMain').value,
-                    images_gallery: document.getElementById('fieldImagesGallery').value,
-                    floor_plans_images: document.getElementById('fieldFloorPlansImages').value,
+                    image_main: photoStore.main,
+                    images_gallery: photoStore.gallery.join(','),
+                    floor_plans_images: photoStore.plans.join(','),
                     lat: parseFloat(document.getElementById('fieldLat').value) || '',
                     lng: parseFloat(document.getElementById('fieldLng').value) || '',
                     active: currentStatus === 'true'
                 };
-
                 if (currentEditId) {
                     params.id = currentEditId;
                     await apiCall('update', params);
@@ -711,7 +646,8 @@
                 }
 
                 closeModal();
-                await loadObjects();
+                // ИСПРАВЛЕНО: Ждём 2 секунды чтобы Apps Script успел сохранить
+                setTimeout(function() { loadObjects(); }, 2000);
 
             } catch (e) {
                 console.error('Save error:', e);
@@ -722,9 +658,6 @@
             }
         }
 
-        // ==========================================
-        // УДАЛЕНИЕ ОБЪЕКТА
-        // ==========================================
         async function deleteObject() {
             if (!currentEditId) return;
             if (!confirm('Удалить этот объект? Фотографии также будут удалены.')) return;
@@ -733,10 +666,11 @@
             btn.disabled = true;
             btn.textContent = 'Удаление...';
 
-            try {                await apiCall('delete', { id: currentEditId });
+            try {
+                await apiCall('delete', { id: currentEditId });
                 showToast('✅ Объект удалён');
                 closeModal();
-                await loadObjects();
+                setTimeout(function() { loadObjects(); }, 2000);
             } catch (e) {
                 console.error('Delete error:', e);
                 showToast('❌ Ошибка удаления');
@@ -746,15 +680,11 @@
             }
         }
 
-        // ==========================================
-        // ЗАГРУЗКА ФОТО
-        // ==========================================
         async function uploadPhoto(type, input) {
             if (!input.files || input.files.length === 0) return;
 
             var files = Array.from(input.files);
-            var btn = input.parentElement;
-            var originalText = btn.innerHTML;
+            var btn = input.parentElement;            var originalText = btn.innerHTML;
             btn.innerHTML = '⏳ Загрузка...';
 
             try {
@@ -762,14 +692,13 @@
                     var file = files[i];
                     var base64 = await fileToBase64(file);
                    
-                    var result = await apiCall('upload_image', {
+                    await apiCall('upload_image', {
                         image: base64,
                         fileName: file.name
                     });
 
-                    // Поскольку no-cors не даёт прочитать ответ, получаем URL через get_last_file_url
-                    // Небольшая задержка чтобы скрипт успел сохранить
-                    await new Promise(r => setTimeout(r, 1000));
+                    // ИСПРАВЛЕНО: Ждём 2 секунды чтобы Apps Script сохранил URL
+                    await new Promise(r => setTimeout(r, 2000));
                    
                     var urlResponse = await fetch(config.scriptUrl + '?action=get_last_file_url');
                     var urlData = await urlResponse.json();
@@ -782,8 +711,9 @@
             } catch (e) {
                 console.error('Upload error:', e);
                 showToast('❌ Ошибка загрузки фото');
-            } finally {                btn.innerHTML = originalText;
-                input.value = ''; // Сброс input для повторной загрузки того же файла
+            } finally {
+                btn.innerHTML = originalText;
+                input.value = '';
             }
         }
 
@@ -798,44 +728,36 @@
 
         function addPhotoToField(type, url) {
             if (type === 'main') {
+                photoStore.main = url;
                 document.getElementById('fieldImageMain').value = url;
                 renderPhotoPreview('main', [url]);
             } else if (type === 'gallery') {
-                var current = document.getElementById('fieldImagesGallery').value;
-                var urls = current ? current.split(',').filter(Boolean) : [];
-                // MERGE: добавляем, не заменяем
-                if (urls.indexOf(url) === -1) {
-                    urls.push(url);
-                }
-                document.getElementById('fieldImagesGallery').value = urls.join(',');
-                renderPhotoPreview('gallery', urls);
+                if (photoStore.gallery.indexOf(url) === -1) {
+                    photoStore.gallery.push(url);                }
+                document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(',');
+                renderPhotoPreview('gallery', photoStore.gallery);
             } else if (type === 'plans') {
-                var current = document.getElementById('fieldFloorPlansImages').value;
-                var urls = current ? current.split(',').filter(Boolean) : [];
-                // MERGE: добавляем, не заменяем
-                if (urls.indexOf(url) === -1) {
-                    urls.push(url);
+                if (photoStore.plans.indexOf(url) === -1) {
+                    photoStore.plans.push(url);
                 }
-                document.getElementById('fieldFloorPlansImages').value = urls.join(',');
-                renderPhotoPreview('plans', urls);
+                document.getElementById('fieldFloorPlansImages').value = photoStore.plans.join(',');
+                renderPhotoPreview('plans', photoStore.plans);
             }
         }
 
         function removePhoto(type, index) {
             if (type === 'main') {
+                photoStore.main = '';
                 document.getElementById('fieldImageMain').value = '';
                 renderPhotoPreview('main', []);
             } else if (type === 'gallery') {
-                var current = document.getElementById('fieldImagesGallery').value;
-                var urls = current ? current.split(',').filter(Boolean) : [];
-                urls.splice(index, 1);
-                document.getElementById('fieldImagesGallery').value = urls.join(',');
-                renderPhotoPreview('gallery', urls);
-            } else if (type === 'plans') {                var current = document.getElementById('fieldFloorPlansImages').value;
-                var urls = current ? current.split(',').filter(Boolean) : [];
-                urls.splice(index, 1);
-                document.getElementById('fieldFloorPlansImages').value = urls.join(',');
-                renderPhotoPreview('plans', urls);
+                photoStore.gallery.splice(index, 1);
+                document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(',');
+                renderPhotoPreview('gallery', photoStore.gallery);
+            } else if (type === 'plans') {
+                photoStore.plans.splice(index, 1);
+                document.getElementById('fieldFloorPlansImages').value = photoStore.plans.join(',');
+                renderPhotoPreview('plans', photoStore.plans);
             }
         }
 
@@ -846,14 +768,26 @@
 
             urls.forEach(function(url, index) {
                 if (!url) return;
+               
+                var displayUrl = url;
+                if (url.indexOf('lh3.googleusercontent.com/d/') !== -1) {
+                    var fileId = url.split('/d/')[1];
+                    if (fileId) {
+                        displayUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
+                    }
+                }
+               
                 var wrapper = document.createElement('div');
                 wrapper.style.position = 'relative';
                 wrapper.style.display = 'inline-block';
                
                 var img = document.createElement('img');
-                img.src = url;
-                img.className = 'photo-thumb';
-                img.onerror = function() { this.src = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22><rect fill=%22%23E0E6ED%22 width=%2280%22 height=%2280%22/><text x=%2250%%22 y=%2250%%22 text-anchor=%22middle%22 dy=%22.3em%22 fill=%22%237F8C8D%22>❌</text></svg>'; };
+                img.src = displayUrl;                img.className = 'photo-thumb';
+                img.onerror = function() {
+                    this.onerror = null;
+                    this.style.background = '#E0E6ED';
+                    this.src = '';
+                };
                
                 var removeBtn = document.createElement('button');
                 removeBtn.className = 'photo-remove';
@@ -866,9 +800,6 @@
             });
         }
 
-        // ==========================================
-        // УТИЛИТЫ
-        // ==========================================
         function escapeHtml(text) {
             if (!text) return '';
             var div = document.createElement('div');
@@ -880,20 +811,17 @@
             var toast = document.getElementById('toast');
             toast.textContent = message;
             toast.classList.remove('show');
-            void toast.offsetWidth; // Trigger reflow            toast.classList.add('show');
+            void toast.offsetWidth;
+            toast.classList.add('show');
             setTimeout(function() { toast.classList.remove('show'); }, 3000);
         }
 
-        // ==========================================
-        // ИНИЦИАЛИЗАЦИЯ
-        // ==========================================
         document.addEventListener('DOMContentLoaded', function() {
             loadConfig().then(function() {
                 loadObjects();
             });
         });
 
-        // Закрытие модалки по клику на overlay
         document.getElementById('objectModal').addEventListener('click', function(e) {
             if (e.target === this) closeModal();
         });
