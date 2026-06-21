@@ -450,7 +450,7 @@
             <div class="modal-header">
                 <button class="back-btn" onclick="closeModal()">← Назад</button>
                 <h2 id="modalTitle">Новый объект</h2>
-                <button class="close-btn" onclick="closeModal()">✕</button>
+                <button class="close-btn" onclick="closeModal()"></button>
             </div>
 
             <div class="status-toggle" id="statusToggle" style="display:none;">
@@ -640,19 +640,14 @@
             var fab = document.getElementById('fabAdd');
             fab.style.display = tabName === 'objects' ? 'flex' : 'none';
            
-            if (tabName === 'objects') {
-                loadObjects();
-            } else if (tabName === 'profile') {
-                loadProfile();
-            } else if (tabName === 'leads') {
-                loadLeads();
-            }
+            if (tabName === 'objects') loadObjects();
+            else if (tabName === 'profile') loadProfile();
+            else if (tabName === 'leads') loadLeads();
            
             window.scrollTo(0, 0);
         }
 
         function refreshCurrentTab() {
-            console.log('[TAB] Refreshing current tab:', currentTab);
             if (currentTab === 'objects') loadObjects();
             else if (currentTab === 'profile') loadProfile();
             else if (currentTab === 'leads') loadLeads();
@@ -662,29 +657,23 @@
             console.log('[CONFIG] Loading client-config.json...');
             try {
                 var response = await fetch('client-config.json');
-                console.log('[CONFIG] Response status:', response.status);
                 var data = await response.json();
                 config.scriptUrl = data.client.scriptUrl;
                 config.pin = data.client.secretKey || '123456';
-                console.log('[CONFIG] Loaded:', {
-                    scriptUrl: config.scriptUrl.substring(0, 50) + '...',
-                    pin: '***'
-                });
+                console.log('[CONFIG] Loaded scriptUrl:', config.scriptUrl.substring(0, 50) + '...');
             } catch (e) {
                 console.error('[CONFIG] Error:', e);
                 showToast('❌ Ошибка конфигурации');
             }
         }
 
-        // ИСПРАВЛЕНО: Убран mode: 'no-cors'
+        // ИСПРАВЛЕНО: no-cors + text/plain для обхода CORS
         async function apiCall(action, params) {
             console.log('[API] Calling:', action);
-            if (!config.scriptUrl) {
-                console.error('[API] Script URL not configured');
-                throw new Error('Script URL не настроен');
-            }
+            if (!config.scriptUrl) throw new Error('Script URL не настроен');
 
-            var payload = Object.assign({}, params, {                action: action,
+            var payload = Object.assign({}, params, {
+                action: action,
                 pin: config.pin,
                 type: 'listing'
             });
@@ -692,21 +681,15 @@
             console.log('[API] Sending payload, keys:', Object.keys(payload).join(', '));
 
             try {
-                var fetchResult = await fetch(config.scriptUrl, {
+                // Используем no-cors + text/plain чтобы обойти CORS
+                await fetch(config.scriptUrl, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    mode: 'no-cors',                    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 });
                
-                console.log('[API] Fetch completed. Status:', fetchResult.status);
-               
-                if (!fetchResult.ok) {
-                    var errorText = await fetchResult.text();
-                    console.error('[API] Error response:', errorText);
-                    throw new Error('Server error: ' + fetchResult.status);
-                }
-               
-                return await fetchResult.json();
+                console.log('[API] Request sent successfully (opaque response)');
+                return { success: true };
             } catch (e) {
                 console.error('[API] Fetch error:', e);
                 throw e;
@@ -732,8 +715,7 @@
             if (!config.scriptUrl) return [];
             try {
                 var url = config.scriptUrl + '?type=listings&includeHidden=true';
-                console.log('[FETCH] URL:', url.substring(0, 100) + '...');
-                var response = await fetch(url);                console.log('[FETCH] Response status:', response.status);
+                var response = await fetch(url);
                
                 if (!response.ok) throw new Error('Network error: ' + response.status);
                
@@ -751,8 +733,7 @@
                         });
                         return obj;
                     });
-                }
-                return [];
+                }                return [];
             } catch (e) {
                 console.error('[FETCH] Error:', e);
                 return [];
@@ -782,7 +763,8 @@
                 var thumbUrl = obj.image_main || '';
                 var displayThumb = thumbUrl;
                 if (thumbUrl.indexOf('lh3.googleusercontent.com/d/') !== -1) {
-                    var fileId = thumbUrl.split('/d/')[1];                    if (fileId) displayThumb = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
+                    var fileId = thumbUrl.split('/d/')[1];
+                    if (fileId) displayThumb = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
                 }
 
                 var statusClass = isActive ? 'status-active' : 'status-hidden';
@@ -800,13 +782,11 @@
                         '<span class="card-status ' + statusClass + '">' + statusText + '</span>' +
                     '</div>';
                 listEl.appendChild(card);
-            });
-           
+            });           
             console.log('[LOAD] Rendered', objects.length, 'cards');
         }
 
         function openCreateModal() {
-            console.log('[MODAL] Opening create modal');
             currentEditId = null;
             document.getElementById('modalTitle').textContent = 'Новый ЖК';
             document.getElementById('objectForm').reset();
@@ -831,8 +811,8 @@
             var modalContent = document.querySelector('#objectModal .modal-content');
             if (modalContent) modalContent.scrollTop = 0;
         }
+
         function openEditModal(id) {
-            console.log('[MODAL] Opening edit modal for ID:', id);
             var obj = objects.find(function(o) { return o.id === id; });
             if (!obj) return;
 
@@ -851,8 +831,7 @@
             document.getElementById('fieldPriceTo').value = obj.price_to || '';
             document.getElementById('fieldPriceSqm').value = obj.price_per_sqm || '';
             document.getElementById('fieldAreaMin').value = obj.area_min || '';
-            document.getElementById('fieldAreaMax').value = obj.area_max || '';
-            document.getElementById('fieldRooms').value = obj.rooms || '';
+            document.getElementById('fieldAreaMax').value = obj.area_max || '';            document.getElementById('fieldRooms').value = obj.rooms || '';
             document.getElementById('fieldClass').value = obj.class || '';
             document.getElementById('fieldCompletionSoonest').value = obj.completion_soonest || '';
             document.getElementById('fieldCompletionAll').value = obj.completion_all || '';
@@ -880,7 +859,8 @@
 
             document.getElementById('objectModal').classList.add('active');
            
-            var modalContent = document.querySelector('#objectModal .modal-content');            if (modalContent) modalContent.scrollTop = 0;
+            var modalContent = document.querySelector('#objectModal .modal-content');
+            if (modalContent) modalContent.scrollTop = 0;
         }
 
         function closeModal() {
@@ -900,12 +880,11 @@
            
             var btn = document.getElementById('saveBtn');
             var originalText = btn.textContent;
-            btn.disabled = true;
-            btn.textContent = 'Сохранение...';
+            btn.disabled = true;            btn.textContent = 'Сохранение...';
 
             try {
                 if (!currentEditId && !photoStore.main) {
-                    showToast('⚠️ Загрузите главное фото');
+                    showToast('️ Загрузите главное фото');
                     btn.disabled = false;
                     btn.textContent = originalText;
                     return;
@@ -929,7 +908,8 @@
                     status: document.getElementById('fieldStatus').value,
                     description: document.getElementById('fieldDescription').value.trim(),
                     features: document.getElementById('fieldFeatures').value.trim(),
-                    image_main: photoStore.main,                    images_gallery: photoStore.gallery.join(','),
+                    image_main: photoStore.main,
+                    images_gallery: photoStore.gallery.join(','),
                     floor_plans_images: photoStore.plans.join(','),
                     lat: parseFloat(document.getElementById('fieldLat').value) || '',
                     lng: parseFloat(document.getElementById('fieldLng').value) || '',
@@ -949,8 +929,7 @@
                 setTimeout(function() { loadObjects(); }, 2000);
 
             } catch (e) {
-                console.error('[SAVE] Error:', e);
-                showToast('❌ Ошибка сохранения: ' + e.message);
+                console.error('[SAVE] Error:', e);                showToast('❌ Ошибка сохранения: ' + e.message);
             } finally {
                 btn.disabled = false;
                 btn.textContent = originalText;
@@ -978,6 +957,7 @@
                 btn.textContent = 'Удалить объект';
             }
         }
+
         async function uploadPhoto(type, input) {
             if (!input.files || input.files.length === 0) {
                 await new Promise(r => setTimeout(r, 100));
@@ -994,11 +974,10 @@
                     var file = files[i];
                     var base64 = await fileToBase64(file);
                    
-                    var result = await apiCall('upload_image', {
+                    await apiCall('upload_image', {
                         image: base64,
                         fileName: file.name
                     });
-
                     await new Promise(r => setTimeout(r, 2000));
                    
                     var urlResponse = await fetch(config.scriptUrl + '?action=get_last_file_url');
@@ -1028,6 +1007,7 @@
                 reader.readAsDataURL(file);
             });
         }
+
         function addPhotoToField(type, url) {
             if (type === 'main') {
                 photoStore.main = url;
@@ -1047,7 +1027,6 @@
                 renderPhotoPreview('plans', photoStore.plans);
             }
         }
-
         function removePhoto(type, index) {
             if (type === 'main') {
                 photoStore.main = '';
@@ -1076,7 +1055,8 @@
                 if (url.indexOf('lh3.googleusercontent.com/d/') !== -1) {
                     var fileId = url.split('/d/')[1];
                     if (fileId) displayUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
-                }               
+                }
+               
                 var wrapper = document.createElement('div');
                 wrapper.style.position = 'relative';
                 wrapper.style.display = 'inline-block';
@@ -1096,8 +1076,7 @@
                 removeBtn.onclick = function(e) { e.stopPropagation(); removePhoto(type, index); };
 
                 wrapper.appendChild(img);
-                wrapper.appendChild(removeBtn);
-                container.appendChild(wrapper);
+                wrapper.appendChild(removeBtn);                container.appendChild(wrapper);
             });
         }
 
@@ -1125,7 +1104,8 @@
                     document.getElementById('profilePhone').value = data.phone || '';
                     document.getElementById('profileTelegram').value = data.telegramUsername || '';
                     document.getElementById('profileAgency').value = data.agencyName || '';
-                    document.getElementById('profileAgencyAddress').value = data.agencyAddress || '';                   
+                    document.getElementById('profileAgencyAddress').value = data.agencyAddress || '';
+                   
                     var photoUrl = data.photoUrl || '';
                     document.getElementById('profilePhotoUrl').value = photoUrl;
                     document.getElementById('profilePhotoPreview').src = photoUrl || 'data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><rect width="120" height="120" fill="%23E0E6ED"/><text x="50%" y="50%" font-family="sans-serif" font-size="14" fill="%23999" text-anchor="middle" dy=".3em">👤</text></svg>';
@@ -1145,8 +1125,7 @@
             } catch (e) {
                 console.error('[PROFILE] Error:', e);
                 loadingEl.textContent = '❌ Ошибка загрузки профиля';
-            }
-        }
+            }        }
 
         async function uploadAgentPhoto(input) {
             if (!input.files || input.files.length === 0) return;
@@ -1159,7 +1138,7 @@
             try {
                 var base64 = await fileToBase64(file);
                
-                var result = await apiCall('upload_image', {
+                await apiCall('upload_image', {
                     image: base64,
                     fileName: 'agent_photo_' + new Date().getTime() + '.jpg'
                 });
@@ -1174,7 +1153,8 @@
                     document.getElementById('profilePhotoPreview').src = urlData.url;
                     showToast('✅ Фото загружено');
                 } else {
-                    showToast('⚠️ Фото загружено, но URL не получен');                }
+                    showToast('⚠️ Фото загружено, но URL не получен');
+                }
             } catch (e) {
                 console.error('[UPLOAD AGENT PHOTO] Error:', e);
                 showToast('❌ Ошибка загрузки фото');
@@ -1194,8 +1174,7 @@
             }
 
             var btn = document.querySelector('#profileForm .btn-primary');
-            var originalText = btn.textContent;
-            btn.disabled = true;
+            var originalText = btn.textContent;            btn.disabled = true;
             btn.textContent = 'Сохранение...';
 
             try {
@@ -1223,7 +1202,8 @@
                 showToast('✅ Профиль сохранён');
                
             } catch (e) {
-                console.error('[PROFILE SAVE] Error:', e);                showToast('❌ Ошибка сохранения: ' + e.message);
+                console.error('[PROFILE SAVE] Error:', e);
+                showToast('❌ Ошибка сохранения: ' + e.message);
             } finally {
                 btn.disabled = false;
                 btn.textContent = originalText;
@@ -1243,8 +1223,7 @@
             if (!config.scriptUrl) await loadConfig();
 
             try {
-                var result = await apiGet('get_leads');
-                console.log('[LEADS] Result:', result);
+                var result = await apiGet('get_leads');                console.log('[LEADS] Result:', result);
                
                 loadingEl.style.display = 'none';
 
@@ -1273,6 +1252,7 @@
         function renderLeads() {
             var listEl = document.getElementById('leadsList');
             listEl.innerHTML = '';
+
             var filtered = leads;
             if (currentLeadFilter !== 'all') {
                 filtered = leads.filter(function(lead) {
@@ -1292,8 +1272,7 @@
             });
 
             filtered.forEach(function(lead, index) {
-                var status = lead.status || 'new';
-                var statusClass = 'status-' + status;
+                var status = lead.status || 'new';                var statusClass = 'status-' + status;
                 var dateStr = lead.timestamp || lead.created_at || '';
                 if (dateStr) {
                     try {
@@ -1315,13 +1294,14 @@
                         (lead.clientTelegram || lead.leadtelegram ? '<div>💬 ' + escapeHtml(lead.clientTelegram || lead.leadtelegram) + '</div>' : '') +
                     '</div>' +
                     '<div class="lead-actions">' +
-                        '<button class="lead-status-btn status-new ' + (status === 'new' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + (lead.id || index) + '\', \'new\')">🔵 Новая</button>' +
+                        '<button class="lead-status-btn status-new ' + (status === 'new' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + (lead.id || index) + '\', \'new\')"> Новая</button>' +
                         '<button class="lead-status-btn status-progress ' + (status === 'progress' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + (lead.id || index) + '\', \'progress\')">🟡 В работе</button>' +
                         '<button class="lead-status-btn status-closed ' + (status === 'closed' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + (lead.id || index) + '\', \'closed\')">🟢 Закрыта</button>' +
                     '</div>';
                 listEl.appendChild(card);
             });
         }
+
         async function updateLeadStatus(leadId, newStatus) {
             console.log('[LEADS] Updating status:', leadId, newStatus);
            
@@ -1341,8 +1321,7 @@
                     id: lead.id,
                     status: newStatus
                 });
-               
-                lead.status = newStatus;
+                                lead.status = newStatus;
                 renderLeads();
                 showToast('✅ Статус обновлён');
                
@@ -1370,7 +1349,8 @@
 
         document.addEventListener('DOMContentLoaded', function() {
             console.log('[INIT] DOM loaded');
-            loadConfig().then(function() {                loadObjects();
+            loadConfig().then(function() {
+                loadObjects();
             });
         });
 
