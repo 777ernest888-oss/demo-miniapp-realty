@@ -127,7 +127,6 @@
         .modal-header h2 { font-size: 20px; flex: 1; text-align: center; }
         .close-btn { background: none; border: none; font-size: 24px; color: var(--text-secondary); cursor: pointer; }
        
-        /* НОВОЕ: Кнопка "Назад" */
         .back-btn {
             background: none;
             border: none;
@@ -145,8 +144,8 @@
         .form-input, .form-select, .form-textarea {
             width: 100%;
             padding: 12px;
-            border: 1px solid var(--border);            border-radius: 8px;
-            font-size: 15px;
+            border: 1px solid var(--border);
+            border-radius: 8px;            font-size: 15px;
             background: var(--card-bg);
             outline: none;
             transition: border-color 0.2s;
@@ -194,8 +193,8 @@
             padding: 10px 16px;
             background: var(--card-bg);
             border: 1px dashed var(--accent);
-            border-radius: 8px;            color: var(--accent);
-            font-size: 14px;
+            border-radius: 8px;
+            color: var(--accent);            font-size: 14px;
             cursor: pointer;
             margin-top: 8px;
         }
@@ -243,8 +242,8 @@
             padding: 10px 20px;
             border-radius: 20px;
             font-size: 14px;
-            z-index: 300;            display: none;
-        }
+            z-index: 300;
+            display: none;        }
         .toast.show { display: block; animation: fadeInOut 3s ease; }
         @keyframes fadeInOut { 0% { opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
     </style>
@@ -292,8 +291,8 @@
                         <label class="form-label">Район</label>
                         <input type="text" class="form-input" id="fieldDistrict" placeholder="Введите район">
                     </div>
-                    <div class="form-group">                        <label class="form-label">Метро</label>
-                        <input type="text" class="form-input" id="fieldMetro" placeholder="Станция метро">
+                    <div class="form-group">
+                        <label class="form-label">Метро</label>                        <input type="text" class="form-input" id="fieldMetro" placeholder="Станция метро">
                     </div>
                 </div>
 
@@ -341,8 +340,8 @@
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Срок сдачи (начало)</label>
-                        <input type="text" class="form-input" id="fieldCompletionSoonest" placeholder="IV кв. 2026">                    </div>
-                    <div class="form-group">
+                        <input type="text" class="form-input" id="fieldCompletionSoonest" placeholder="IV кв. 2026">
+                    </div>                    <div class="form-group">
                         <label class="form-label">Срок сдачи (конец)</label>
                         <input type="text" class="form-input" id="fieldCompletionAll" placeholder="II кв. 2027">
                     </div>
@@ -390,8 +389,8 @@
                     <label class="form-label">Галерея</label>
                     <div class="photo-preview-area" id="galleryPreview"></div>
                     <label class="upload-btn">
-                        🖼️ Добавить фото                        <input type="file" accept="image/*" multiple onchange="uploadPhoto('gallery', this)">
-                    </label>
+                        ️ Добавить фото
+                        <input type="file" accept="image/*" multiple onchange="uploadPhoto('gallery', this)">                    </label>
                     <input type="hidden" id="fieldImagesGallery">
                 </div>
 
@@ -439,8 +438,8 @@
         } else {
             console.log('[ADMIN] Running outside Telegram');
         }
-        async function loadConfig() {
-            console.log('[CONFIG] Loading client-config.json...');
+
+        async function loadConfig() {            console.log('[CONFIG] Loading client-config.json...');
             try {
                 var response = await fetch('client-config.json');
                 console.log('[CONFIG] Response status:', response.status);
@@ -488,9 +487,8 @@
             }
         }
 
-        // ИСПРАВЛЕНО: добавлен параметр includeHidden=true для админки        async function fetchData() {
-            console.log('[FETCH] Getting data from script...');
-            if (!config.scriptUrl) {
+        async function fetchData() {
+            console.log('[FETCH] Getting data from script...');            if (!config.scriptUrl) {
                 console.error('[FETCH] Script URL not configured');
                 return [];
             }
@@ -537,8 +535,8 @@
 
             if (!config.scriptUrl) {
                 console.log('[LOAD] Config not loaded, loading now...');
-                await loadConfig();            }
-
+                await loadConfig();
+            }
             console.log('[LOAD] Fetching objects...');
             objects = await fetchData();
             console.log('[LOAD] Objects loaded:', objects.length);
@@ -562,7 +560,6 @@
 
                 var statusClass = isActive ? 'status-active' : 'status-hidden';
                 var statusText = isActive ? 'Активен' : 'Скрыт';
-                // ИСПРАВЛЕНО: добавляем класс hidden-object для скрытых объектов
                 var cardClass = 'object-card' + (isActive ? '' : ' hidden-object');
 
                 var card = document.createElement('div');
@@ -586,10 +583,10 @@
 
         function openCreateModal() {
             console.log('[MODAL] Opening create modal');
-            currentEditId = null;            document.getElementById('modalTitle').textContent = 'Новый ЖК';
+            currentEditId = null;
+            document.getElementById('modalTitle').textContent = 'Новый ЖК';
             document.getElementById('objectForm').reset();
-            document.getElementById('objectId').value = '';
-            document.getElementById('statusToggle').style.display = 'none';
+            document.getElementById('objectId').value = '';            document.getElementById('statusToggle').style.display = 'none';
             document.getElementById('deleteBtn').style.display = 'none';
             document.getElementById('saveBtn').textContent = 'Создать объект';
            
@@ -635,10 +632,10 @@
             document.getElementById('fieldRooms').value = obj.rooms || '';
             document.getElementById('fieldClass').value = obj.class || '';
             document.getElementById('fieldCompletionSoonest').value = obj.completion_soonest || '';
-            document.getElementById('fieldCompletionAll').value = obj.completion_all || '';            document.getElementById('fieldFinishing').value = obj.finishing || '';
+            document.getElementById('fieldCompletionAll').value = obj.completion_all || '';
+            document.getElementById('fieldFinishing').value = obj.finishing || '';
             document.getElementById('fieldStatus').value = obj.status || '';
-            document.getElementById('fieldDescription').value = obj.description || '';
-            document.getElementById('fieldFeatures').value = obj.features || '';
+            document.getElementById('fieldDescription').value = obj.description || '';            document.getElementById('fieldFeatures').value = obj.features || '';
             document.getElementById('fieldLat').value = obj.lat || '';
             document.getElementById('fieldLng').value = obj.lng || '';
 
@@ -684,10 +681,10 @@
            
             var btn = document.getElementById('saveBtn');
             var originalText = btn.textContent;
-            btn.disabled = true;            btn.textContent = 'Сохранение...';
+            btn.disabled = true;
+            btn.textContent = 'Сохранение...';
 
-            try {
-                var params = {
+            try {                var params = {
                     name: document.getElementById('fieldName').value.trim(),
                     address: document.getElementById('fieldAddress').value.trim(),
                     district: document.getElementById('fieldDistrict').value.trim(),
@@ -733,10 +730,10 @@
                     loadObjects();
                 }, 2000);
 
-            } catch (e) {                console.error('[SAVE] Error:', e);
+            } catch (e) {
+                console.error('[SAVE] Error:', e);
                 showToast('❌ Ошибка сохранения');
-            } finally {
-                btn.disabled = false;
+            } finally {                btn.disabled = false;
                 btn.textContent = originalText;
             }
         }
@@ -764,7 +761,6 @@
             }
         }
 
-        // ИСПРАВЛЕНО: улучшена обработка первого клика
         async function uploadPhoto(type, input) {
             console.log('[UPLOAD] Starting upload for type:', type);
            
@@ -783,10 +779,10 @@
             var btn = input.parentElement;
             var originalText = btn.innerHTML;
             btn.innerHTML = '⏳ Загрузка...';
+
             try {
                 for (var i = 0; i < files.length; i++) {
-                    var file = files[i];
-                    console.log('[UPLOAD] Processing file:', file.name, 'Size:', file.size, 'Type:', file.type);
+                    var file = files[i];                    console.log('[UPLOAD] Processing file:', file.name, 'Size:', file.size, 'Type:', file.type);
                    
                     var base64 = await fileToBase64(file);
                     console.log('[UPLOAD] Base64 length:', base64.length);
@@ -815,7 +811,7 @@
                 showToast('✅ Фото загружено');
             } catch (e) {
                 console.error('[UPLOAD] Error:', e);
-                showToast('❌ Ошибка загрузки фото. Попробуйте ещё раз.');
+                showToast(' Ошибка загрузки фото. Попробуйте ещё раз.');
             } finally {
                 btn.innerHTML = originalText;
                 input.value = '';
@@ -831,11 +827,11 @@
                 };
                 reader.onerror = function(e) {
                     console.error('[BASE64] Error:', e);
-                    reject(e);                };
+                    reject(e);
+                };
                 console.log('[BASE64] Starting conversion...');
                 reader.readAsDataURL(file);
-            });
-        }
+            });        }
 
         function addPhotoToField(type, url) {
             console.log('[PHOTO] Adding photo to', type, ':', url);
@@ -880,11 +876,11 @@
         function renderPhotoPreview(type, urls) {
             console.log('[PREVIEW] Rendering preview for', type, 'URLs:', urls);
             var containerId = type === 'main' ? 'mainPhotoPreview' : type === 'gallery' ? 'galleryPreview' : 'plansPreview';
-            var container = document.getElementById(containerId);            container.innerHTML = '';
+            var container = document.getElementById(containerId);
+            container.innerHTML = '';
 
             urls.forEach(function(url, index) {
-                if (!url) return;
-               
+                if (!url) return;               
                 var displayUrl = url;
                 if (url.indexOf('lh3.googleusercontent.com/d/') !== -1) {
                     var fileId = url.split('/d/')[1];
@@ -930,10 +926,10 @@
             div.textContent = String(text);
             return div.innerHTML;
         }
+
         function showToast(message) {
             console.log('[TOAST]', message);
-            var toast = document.getElementById('toast');
-            toast.textContent = message;
+            var toast = document.getElementById('toast');            toast.textContent = message;
             toast.classList.remove('show');
             void toast.offsetWidth;
             toast.classList.add('show');
