@@ -11,17 +11,15 @@ let supabaseClient = null;
 
 function getImageUrl(sourceUrl) {
     if (!sourceUrl) return '';
-  
-    // Если уже полный URL — возвращаем как есть
+ 
     if (sourceUrl.startsWith('http://') || sourceUrl.startsWith('https://')) {
         return sourceUrl;
     }
-  
-    // Если относительный путь — добавляем CDN URL
+ 
     if (sourceUrl.startsWith('property-images/')) {
         return 'https://cdn.jsdelivr.net/gh/777ernest888-oss/demo-miniapp-realty@main/' + sourceUrl;
     }
-  
+ 
     return sourceUrl;
 }
 
@@ -47,8 +45,9 @@ try {
             initDataUnsafe: { user: {} },
             close: function() { window.close(); },
             openTelegramLink: function(url) { window.open(url); }
-        };    }} catch (e) { console.error(e); }
-
+        };
+    }
+} catch (e) { console.error(e); }
 async function loadClientConfig() {
     try {
         const response = await fetch('client-config.json');
@@ -67,6 +66,24 @@ async function loadClientConfig() {
 
 async function loadAgentData() {
     try {
+        // Пытаемся загрузить через Apps Script API (приоритет)
+        if (config.client && config.client.scriptUrl) {
+            try {
+                const res = await fetch(config.client.scriptUrl + '?action=get_agent_profile');
+                if (res.ok) {
+                    const result = await res.json();
+                    if (result && result.success && result.data) {
+                        currentAgentData = result.data;
+                        console.log('Agent data loaded from Apps Script');
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn('Agent data from Apps Script failed, trying CSV...');
+            }
+        }
+       
+        // Fallback: CSV
         const res = await fetch(config.sheets.agentData);
         if (!res.ok) throw new Error('Network error');
         const csv = await res.text();
@@ -79,6 +96,30 @@ async function loadAgentData() {
 
 async function loadPagesData() {
     try {
+        // Пытаемся загрузить через Apps Script API (приоритет)        if (config.client && config.client.scriptUrl) {
+            try {
+                const res = await fetch(config.client.scriptUrl + '?action=get_pages');
+                if (res.ok) {
+                    const result = await res.json();
+                    if (result && result.success && result.data) {
+                        result.data.forEach(function(row) {
+                            if (row.page && row.title) {
+                                pagesData[row.page] = {
+                                    title: row.title,
+                                    content: row.content || ''
+                                };
+                            }
+                        });
+                        console.log('Pages loaded from Apps Script:', Object.keys(pagesData).length);
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.warn('Pages from Apps Script failed, trying CSV...');
+            }
+        }
+       
+        // Fallback: CSV
         const res = await fetch(config.sheets.pages);
         if (!res.ok) throw new Error('Network error');
         const csv = await res.text();
@@ -88,20 +129,23 @@ async function loadPagesData() {
                 pagesData[row.page] = { title: row.title, content: row.content || '' };
             }
         });
-    } catch (e) { console.warn('Pages data error:', e); }
+    } catch (e) {
+        console.warn('Pages data error:', e);
+    }
 }
 
 async function loadPropertiesFromSupabase() {
     if (!supabaseClient) return null;
     try {
         const result = await supabaseClient
-            .from('properties')            .select('*')
-            .eq('active', true)            .order('created_at', { ascending: false });
+            .from('properties')
+            .select('*')
+            .eq('active', true)
+            .order('created_at', { ascending: false });
         if (result.error) throw result.error;
         return result.data;
     } catch (e) {
-        console.error('Supabase load error:', e);
-        return null;
+        console.error('Supabase load error:', e);        return null;
     }
 }
 
@@ -110,51 +154,47 @@ async function loadPropertiesFromScript() {
         console.log('No scriptUrl in config');
         return null;
     }
-   
+  
     console.log('Trying to load from script:', config.client.scriptUrl);
-   
+  
     try {
-        // Пробуем обычный fetch (Google Apps Script поддерживает CORS для GET)
         const response = await fetch(config.client.scriptUrl);
-       
+      
         console.log('Script response status:', response.status);
-       
+      
         if (!response.ok) {
             console.error('Script returned error status:', response.status);
             return null;
         }
-       
+      
         const data = await response.json();
         console.log('Script data received:', Array.isArray(data) ? data.length + ' rows' : typeof data);
-       
-        // Если ошибка в ответе
+      
         if (data.error) {
             console.error('Script error:', data.error);
             return null;
         }
-       
-        // Если это массив (данные из Google Sheets)
+      
         if (Array.isArray(data) && data.length > 1) {
             const headers = data[0];
             const rows = data.slice(1);
             console.log('Headers:', headers);
-           
+          
             const result = rows.map(function(row) {
                 const obj = {};
                 headers.forEach(function(header, i) {
                     obj[header] = row[i];
                 });
                 return obj;
-            });           
+            });          
             console.log('Loaded', result.length, 'properties from script');
             return result;
         }
-       
+      
         return data;
     } catch (e) {
         console.error('Script load error:', e);
-        return null;
-    }
+        return null;    }
 }
 
 function parseCSV(csv) {
@@ -194,7 +234,8 @@ function parseCSVLine(line) {
 
 function showBack() {
     const btn = document.getElementById('headerBackBtn');
-    if (btn) btn.classList.remove('hidden');}
+    if (btn) btn.classList.remove('hidden');
+}
 function hideBack() {
     const btn = document.getElementById('headerBackBtn');
     if (btn) btn.classList.add('hidden');
@@ -202,8 +243,7 @@ function hideBack() {
 
 function appBack() {
     if (!document.getElementById('consultModal').classList.contains('hidden')) { closeConsultModal(); return; }
-    if (!document.getElementById('detailsModal').classList.contains('hidden')) { closeModal(); return; }
-    if (!document.getElementById('mapContainer').classList.contains('hidden')) { switchView('list'); return; }
+    if (!document.getElementById('detailsModal').classList.contains('hidden')) { closeModal(); return; }    if (!document.getElementById('mapContainer').classList.contains('hidden')) { switchView('list'); return; }
     if (currentPage !== 'home') { showPage('home'); return; }
     if (tg.close) tg.close();
 }
@@ -243,15 +283,16 @@ function showPage(pageId) {
                     const contentDiv = targetPage.querySelector('.page-content');
                     const img = document.createElement('img');
                     const yandexSrc = getImageUrl(imageSrc);
-                    img.src = yandexSrc;                    img.className = 'about-agent-photo';                    img.alt = 'Фото';
+                    img.src = yandexSrc;
+                    img.className = 'about-agent-photo';
+                    img.alt = 'Фото';
                     img.onerror = onImgError;
                     contentDiv.insertBefore(img, contentDiv.firstChild);
                 }
             }
             targetPage.classList.remove('hidden');
             showBack();
-        } else {
-            if (targetPage) {
+        } else {            if (targetPage) {
                 targetPage.querySelector('.page-header h2').textContent = pageId === 'about' ? 'Обо мне' : 'Информация';
                 targetPage.querySelector('.page-content').innerHTML = '<p>Информация загружается...</p>';
                 targetPage.classList.remove('hidden');
@@ -271,7 +312,9 @@ function renderContactsPage() {
     document.getElementById('agentRole').textContent = data.role || 'Эксперт по недвижимости';
     const avatarEl = document.querySelector('.agent-avatar');
     avatarEl.innerHTML = '';
-    const agentPhoto = config.branding ? config.branding.agentPhoto : null;
+   
+    // Фото агента из AgentData (photoUrl) или из branding
+    const agentPhoto = data.photoUrl || (config.branding ? config.branding.agentPhoto : null);
     if (agentPhoto && agentPhoto.trim() && agentPhoto !== 'logo.png') {
         const img = document.createElement('img');
         const yandexPhoto = getImageUrl(agentPhoto);
@@ -289,14 +332,16 @@ function renderContactsPage() {
     } else {
         avatarEl.innerHTML = '';
     }
+   
     const hasAgency = data.agencyName || data.agencyAddress;
     document.getElementById('agencyBlock').style.display = hasAgency ? 'block' : 'none';
-    document.getElementById('agencyName').textContent = data.agencyName || '';    document.getElementById('agencyAddress').textContent = data.agencyAddress ? '📍 ' + data.agencyAddress : '';
+    document.getElementById('agencyName').textContent = data.agencyName || '';
+    document.getElementById('agencyAddress').textContent = data.agencyAddress ? '📍 ' + data.agencyAddress : '';
 }
+
 function openMenu() {
     document.getElementById('menuOverlay').classList.remove('hidden');
-    document.getElementById('sideMenu').classList.remove('hidden');
-}
+    document.getElementById('sideMenu').classList.remove('hidden');}
 
 function closeMenu() {
     document.getElementById('menuOverlay').classList.add('hidden');
@@ -325,7 +370,7 @@ function toggleFilters() {
     const block = document.getElementById('filtersBlock');
     const btn = document.querySelector('.filters-toggle-btn');
     block.classList.toggle('hidden');
-    btn.textContent = block.classList.contains('hidden') ? ' Фильтры' : '🔼 Скрыть фильтры';
+    btn.textContent = block.classList.contains('hidden') ? '🔽 Фильтры' : '🔼 Скрыть фильтры';
 }
 
 function switchView(view) {
@@ -339,26 +384,26 @@ function switchView(view) {
         hideBack();
     } else {
         listBtn.classList.remove('active'); mapBtn.classList.add('active');
-        listContainer.classList.add('hidden'); mapContainer.classList.remove('hidden');        showBack();
+        listContainer.classList.add('hidden'); mapContainer.classList.remove('hidden');
+        showBack();
         setTimeout(function() { initMap(); }, 100);
-    }}
+    }
+}
 
-async function init() {
-    try {
+async function init() {    try {
         await loadClientConfig();
         applyTheme();
         applyBranding();
         await loadAgentData();
         await loadPagesData();
-       
-        // Пробуем загрузить из Google Apps Script, если нет — из Supabase
+      
         let propertiesData = await loadPropertiesFromScript();
-       
+      
         if (!propertiesData || propertiesData.length === 0) {
             console.log('No data from script, trying Supabase...');
             propertiesData = await loadPropertiesFromSupabase();
         }
-       
+      
         if (!propertiesData || propertiesData.length === 0) {
             propertiesData = [];
         }
@@ -390,11 +435,12 @@ function applyBranding() {
     if (companyEl && config.branding.name) companyEl.textContent = config.branding.name;
     const titleEl = document.getElementById('welcomeTitle');
     if (titleEl && config.branding.welcomeTitle) titleEl.textContent = config.branding.welcomeTitle;
-    const taglineEl = document.getElementById('welcomeTagline');    if (taglineEl && config.branding.tagline) taglineEl.textContent = config.branding.tagline;
+    const taglineEl = document.getElementById('welcomeTagline');
+    if (taglineEl && config.branding.tagline) taglineEl.textContent = config.branding.tagline;
     const btnEl = document.getElementById('welcomeButton');
     if (btnEl && config.branding.buttonText) btnEl.textContent = config.branding.buttonText;
-    const headerTitle = document.getElementById('headerTitle');
-    if (headerTitle && config.branding.name) {        headerTitle.textContent = config.branding.name.toUpperCase();
+    const headerTitle = document.getElementById('headerTitle');    if (headerTitle && config.branding.name) {
+        headerTitle.textContent = config.branding.name.toUpperCase();
     }
     const headerLogo = document.querySelector('#headerBrand .brand-logo');
     if (headerLogo && config.branding.logo) {
@@ -439,10 +485,11 @@ function renderFilters() {
         const allRooms = [];
         listings.forEach(function(l) {
             if (l.rooms) {
-                String(l.rooms).split(',').map(function(r) { return r.trim(); }).forEach(function(r) { if (r && allRooms.indexOf(r) === -1) allRooms.push(r); });            }
+                String(l.rooms).split(',').map(function(r) { return r.trim(); }).forEach(function(r) { if (r && allRooms.indexOf(r) === -1) allRooms.push(r); });
+            }
         });
-        allRooms.sort();
-        roomsContainer.innerHTML = '';        allRooms.forEach(function(r) {
+        allRooms.sort();        roomsContainer.innerHTML = '';
+        allRooms.forEach(function(r) {
             const label = document.createElement('label');
             label.className = 'checkbox-label';
             label.innerHTML = '<input type="checkbox" value="' + escapeHtml(r) + '" class="filter-checkbox" data-filter="rooms"><span>' + escapeHtml(r) + '</span>';
@@ -489,15 +536,16 @@ function resetFilters() {
     document.querySelectorAll('.filter-checkbox').forEach(function(cb) { cb.checked = false; });
     renderListings(listings.filter(function(l) { return l.active; }));
 }
-function renderListings(data) {
-    const container = document.getElementById('listingsContainer');    if (!container) return;
+
+function renderListings(data) {    const container = document.getElementById('listingsContainer');
+    if (!container) return;
     container.innerHTML = '';
     if (listings.length === 0) {
         container.innerHTML = '<div class="empty-state"><div class="empty-icon">🏗️</div><h3>База пуста</h3><p>Объекты ещё не добавлены.</p></div>';
         return;
     }
     if (!data || data.length === 0) {
-        container.innerHTML = '<div class="empty-state"><div class="empty-icon"></div><h3>Ничего не найдено</h3><p>Попробуйте изменить параметры поиска.</p><button class="btn-reset-filters" onclick="resetFilters()">Сбросить фильтры</button></div>';
+        container.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><h3>Ничего не найдено</h3><p>Попробуйте изменить параметры поиска.</p><button class="btn-reset-filters" onclick="resetFilters()">Сбросить фильтры</button></div>';
         return;
     }
     data.forEach(function(item) {
@@ -509,7 +557,7 @@ function renderListings(data) {
         const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
         const area = (typeof item.area_min === 'number' && typeof item.area_max === 'number') ? item.area_min + '–' + item.area_max + ' м²' : '';
         const statusKey = (item.status || 'other').toString().replace(/\s+/g, '-');
-        const statusText = item.status === 'Сдан' ? '✅ Сдан' : item.status === 'Строится' ? '️ Строится' : '🟡 Частично сдан';
+        const statusText = item.status === 'Сдан' ? '✅ Сдан' : item.status === 'Строится' ? '🏗️ Строится' : '🟡 Частично сдан';
         const imageUrl = getImageUrl(item.image_main);
         const card = document.createElement('div');
         card.className = 'listing-card';
@@ -537,8 +585,9 @@ function initMap() {
     if (!mapContainer) return;
     if (!map) {
         map = L.map('mapContainer').setView([59.9343, 30.3351], 11);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);    }
-    filterListings();    setTimeout(function() { map.invalidateSize(); }, 150);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+    }    filterListings();
+    setTimeout(function() { map.invalidateSize(); }, 150);
 }
 
 function updateMapMarkers(filteredItems) {
@@ -586,7 +635,8 @@ function openDetails(id) {
     if (item.image_main) allImages.push(item.image_main);
     if (item.images_gallery) {
         allImages = allImages.concat(item.images_gallery.split(',').map(function(u) { return u.trim(); }).filter(function(u) { return u; }));
-    }    if (allImages.length > 0) {        const track = document.createElement('div');
+    }    if (allImages.length > 0) {
+        const track = document.createElement('div');
         track.className = 'carousel-track';
         const dotsContainer = document.createElement('div');
         dotsContainer.className = 'carousel-dots';
@@ -634,13 +684,14 @@ function openDetails(id) {
             const img = document.createElement('img');
             const yandexUrl = getImageUrl(url);
             img.src = yandexUrl;
-            img.style.height = '200px';
-            img.onclick = function() { window.open(yandexUrl, '_blank'); };            img.onerror = onImgError;            slide.appendChild(img);
+            img.style.height = '200px';            img.onclick = function() { window.open(yandexUrl, '_blank'); };
+            img.onerror = onImgError;
+            slide.appendChild(img);
             plansTrack.appendChild(slide);
         });
         plansContainer.appendChild(plansTrack);
     } else if (item.floor_plans_text) {
-        plansContainer.innerHTML = '<h3 class="plans-section-title"> Планировки</h3><p class="floor-plans-text">' + item.floor_plans_text + '</p>';
+        plansContainer.innerHTML = '<h3 class="plans-section-title">📐 Планировки</h3><p class="floor-plans-text">' + item.floor_plans_text + '</p>';
     }
     const modalContent = document.querySelector('#detailsModal .modal-content');
     let btn = document.getElementById('modalConsultBtn');
@@ -652,7 +703,7 @@ function openDetails(id) {
         btn.style.marginBottom = '40px';
         modalContent.appendChild(btn);
     }
-    btn.textContent = ' Получить консультацию';
+    btn.textContent = '📞 Получить консультацию';
     btn.onclick = function() { openConsultForm(id); };
     document.getElementById('detailsModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
@@ -682,9 +733,10 @@ function openConsultForm(id, event) {
         }
         document.getElementById('consultModal').classList.remove('hidden');
         showBack();
-    }
-}
-function closeConsultModal() {    document.getElementById('consultModal').classList.add('hidden');
+    }}
+
+function closeConsultModal() {
+    document.getElementById('consultModal').classList.add('hidden');
     document.getElementById('consultForm').reset();
     const submitBtn = document.querySelector('#consultForm button[type="submit"]');
     if (submitBtn) {
@@ -727,72 +779,59 @@ function submitConsultForm(event) {
         const phone = document.getElementById('consultPhone').value.trim();
         let telegram = document.getElementById('consultTelegram').value.trim() || '';
         if (!name || name.length < 2) {
-            tg.showAlert(' Введите имя');
+            tg.showAlert('⚠️ Введите имя');
             return;
         }
-        if (phone.replace(/\D/g, '').length < 10) {
-            tg.showAlert('❌ Введите корректный телефон');            return;
+        if (phone.replace(/\D/g, '').length < 10) {            tg.showAlert('❌ Введите корректный телефон');
+            return;
         }
-        if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) {            tg.showAlert('❌ Telegram только латиницей');
+        if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) {
+            tg.showAlert('❌ Telegram только латиницей');
             return;
         }
         const submitBtn = event.target.querySelector('button[type="submit"]');
         const originalText = submitBtn.textContent;
         submitBtn.textContent = 'Отправка...';
         submitBtn.disabled = true;
-        if (!supabaseClient) {
-            tg.showAlert('⚠️ Ошибка подключения. Попробуйте позже.');
-            submitBtn.textContent = originalText;
-            submitBtn.disabled = false;
-            return;
-        }
-        const supabasePayload = {
-            secret: config.client.secretKey,
-            projectid: config.client.projectId,
-            title: item.name,
-            leadname: name,
-            leadphone: phone,
-            leadtelegram: telegram || 'Не указан'
-        };
-        supabaseClient
-            .from('leads')
-            .insert([supabasePayload])
-            .then(function(result) {
-                if (result.error) {
-                    tg.showAlert('⚠️ Ошибка: ' + result.error.message);
-                    submitBtn.textContent = originalText;
-                    submitBtn.disabled = false;
-                    return;
+       
+        // Отправляем заявку через Apps Script (вместо Supabase)
+        if (config.client && config.client.scriptUrl) {
+            const payload = {
+                action: 'save_lead',
+                pin: config.client.secretKey || '123456',
+                type: 'listing',
+                data: {
+                    objectName: item.name,
+                    clientName: name,
+                    clientPhone: phone,
+                    clientTelegram: telegram || 'Не указан'
                 }
-                if (config.supabase && config.supabase.url) {
-                    fetch(config.supabase.url + '/functions/v1/notify-lead', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': 'Bearer ' + config.supabase.anonKey,
-                            'apikey': config.supabase.anonKey
-                        },
-                        body: JSON.stringify({
-                            leadname: name,
-                            leadphone: phone,
-                            leadtelegram: telegram || 'Не указан',
-                            title: item.name
-                        })
-                    }).catch(function() { });
-                }                submitBtn.textContent = 'Отправить заявку';
+            };
+           
+            fetch(config.client.scriptUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            }).then(function() {
+                submitBtn.textContent = 'Отправить заявку';
                 submitBtn.disabled = false;
                 document.getElementById('consultForm').reset();
-                closeConsultModal();                setTimeout(function() {
+                closeConsultModal();
+                setTimeout(function() {
                     tg.showAlert('✅ Заявка отправлена!');
                 }, 100);
-            })
-            .catch(function(err) {
+            }).catch(function(err) {
                 tg.showAlert('⚠️ Ошибка отправки.');
                 submitBtn.textContent = originalText;
                 submitBtn.disabled = false;
             });
-    } catch (e) {
-        tg.showAlert('⚠️ Произошла ошибка.');
+        } else {
+            tg.showAlert('⚠️ Ошибка подключения. Попробуйте позже.');
+            submitBtn.textContent = originalText;
+            submitBtn.disabled = false;
+        }
+    } catch (e) {        tg.showAlert('⚠️ Произошла ошибка.');
     }
 }
 
