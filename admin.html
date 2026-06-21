@@ -40,6 +40,34 @@
         .header h1 { font-size: 18px; font-weight: 600; }
         .header-btn { background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 4px 8px; }
 
+        /* ТАБЫ */
+        .tabs {
+            display: flex;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 56px;
+            z-index: 99;        }
+        .tab {
+            flex: 1;
+            padding: 12px 8px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .tab.active {
+            color: var(--accent);
+            border-bottom-color: var(--accent);
+            font-weight: 600;
+        }
+        .tab-content { display: none; padding: 16px; max-width: 600px; margin: 0 auto; }
+        .tab-content.active { display: block; }
+
         .container { padding: 16px; max-width: 600px; margin: 0 auto; }
 
         .object-card {
@@ -47,7 +75,8 @@
             border-radius: var(--radius);
             padding: 12px;
             margin-bottom: 12px;
-            box-shadow: var(--shadow);            display: flex;
+            box-shadow: var(--shadow);
+            display: flex;
             gap: 12px;
             align-items: center;
             cursor: pointer;
@@ -67,8 +96,7 @@
        
         .card-info { flex: 1; min-width: 0; }
         .card-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .card-address { font-size: 13px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .card-status {
+        .card-address { font-size: 13px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }        .card-status {
             font-size: 11px;
             padding: 2px 8px;
             border-radius: 10px;
@@ -96,6 +124,7 @@
             align-items: center;
             justify-content: center;
         }
+
         .modal-overlay {
             position: fixed;
             top: 0; left: 0; right: 0; bottom: 0;
@@ -116,7 +145,6 @@
             animation: slideUp 0.3s ease;
         }
         @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-
         .modal-header {
             display: flex;
             justify-content: space-between;
@@ -145,7 +173,8 @@
             width: 100%;
             padding: 12px;
             border: 1px solid var(--border);
-            border-radius: 8px;            font-size: 15px;
+            border-radius: 8px;
+            font-size: 15px;
             background: var(--card-bg);
             outline: none;
             transition: border-color 0.2s;
@@ -165,8 +194,7 @@
         .photo-thumb {
             width: 80px;
             height: 80px;
-            border-radius: 8px;
-            object-fit: cover;
+            border-radius: 8px;            object-fit: cover;
             position: relative;
             border: 1px solid var(--border);
         }
@@ -194,7 +222,8 @@
             background: var(--card-bg);
             border: 1px dashed var(--accent);
             border-radius: 8px;
-            color: var(--accent);            font-size: 14px;
+            color: var(--accent);
+            font-size: 14px;
             cursor: pointer;
             margin-top: 8px;
         }
@@ -212,8 +241,8 @@
         }
         .btn-primary { background: var(--accent); color: white; }
         .btn-danger { background: var(--danger); color: white; margin-top: 16px; }
+        .btn-secondary { background: var(--border); color: var(--text); margin-top: 16px; }
         .btn:disabled { opacity: 0.6; cursor: not-allowed; }
-
         .status-toggle { display: flex; gap: 8px; margin-bottom: 16px; }
         .toggle-option {
             flex: 1;
@@ -243,31 +272,194 @@
             border-radius: 20px;
             font-size: 14px;
             z-index: 300;
-            display: none;        }
+            display: none;
+        }
         .toast.show { display: block; animation: fadeInOut 3s ease; }
         @keyframes fadeInOut { 0% { opacity: 0; } 10% { opacity: 1; } 80% { opacity: 1; } 100% { opacity: 0; } }
+
+        /* СТИЛИ ДЛЯ ПРОФИЛЯ */
+        .profile-photo-preview {
+            width: 120px;
+            height: 120px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid var(--border);
+            margin: 0 auto 16px;
+            display: block;
+            background: var(--border);
+        }
+        .profile-photo-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        /* СТИЛИ ДЛЯ ЗАЯВОК */
+        .lead-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 14px;
+            margin-bottom: 12px;
+            box-shadow: var(--shadow);
+            border-left: 4px solid var(--accent);
+        }
+        .lead-card.status-new { border-left-color: var(--accent); }
+        .lead-card.status-progress { border-left-color: var(--warning); }
+        .lead-card.status-closed { border-left-color: var(--success); opacity: 0.7; }
+       
+        .lead-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .lead-object { font-weight: 600; font-size: 15px; }
+        .lead-date { font-size: 12px; color: var(--text-secondary); }
+        .lead-body { font-size: 14px; line-height: 1.6; }
+        .lead-body div { margin-bottom: 4px; }
+        .lead-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+        .lead-status-btn {
+            flex: 1;
+            min-width: 80px;
+            padding: 8px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: var(--card-bg);
+            font-size: 12px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .lead-status-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+        .lead-status-btn.status-new.active { background: var(--accent); border-color: var(--accent); }
+        .lead-status-btn.status-progress.active { background: var(--warning); border-color: var(--warning); }
+        .lead-status-btn.status-closed.active { background: var(--success); border-color: var(--success); }
+
+        .leads-filter {            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+        }
+        .filter-btn {
+            padding: 8px 14px;
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            background: var(--card-bg);
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .filter-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
     </style>
 </head>
 <body>
 
     <div class="header">
-        <h1>🏗️ Новостройки</h1>
-        <button class="header-btn" onclick="loadObjects()">↻</button>
+        <h1>🏗️ Админка</h1>
+        <button class="header-btn" onclick="refreshCurrentTab()">↻</button>
     </div>
 
-    <div class="container" id="mainContainer">
-        <div class="loading" id="loadingState">Загрузка объектов...</div>
+    <!-- ТАБЫ НАВИГАЦИИ -->
+    <nav class="tabs">
+        <button class="tab active" data-tab="objects" onclick="switchTab('objects')">📋 Объекты</button>
+        <button class="tab" data-tab="profile" onclick="switchTab('profile')">👤 Профиль</button>
+        <button class="tab" data-tab="leads" onclick="switchTab('leads')"> Заявки</button>
+    </nav>
+
+    <!-- ВКЛАДКА: ОБЪЕКТЫ -->
+    <div id="tab-objects" class="tab-content active">
+        <div class="loading" id="objectsLoading">Загрузка объектов...</div>
         <div id="objectsList"></div>
     </div>
 
-    <button class="fab" onclick="openCreateModal()">+</button>
+    <!-- ВКЛАДКА: ПРОФИЛЬ -->
+    <div id="tab-profile" class="tab-content">
+        <div class="loading" id="profileLoading">Загрузка профиля...</div>
+       
+        <form id="profileForm" style="display:none;">
+            <div class="profile-photo-container">
+                <img id="profilePhotoPreview" class="profile-photo-preview" src="" alt="Фото агента">
+                <label class="upload-btn">
+                    📷 Изменить фото
+                    <input type="file" accept="image/*" onchange="uploadAgentPhoto(this)">                </label>
+                <input type="hidden" id="profilePhotoUrl">
+            </div>
 
+            <div class="form-group">
+                <label class="form-label">Имя *</label>
+                <input type="text" class="form-input" id="profileName" placeholder="Эрнест Гареев" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Роль / Должность</label>
+                <input type="text" class="form-input" id="profileRole" placeholder="Эксперт по недвижимости">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">Телефон</label>
+                    <input type="tel" class="form-input" id="profilePhone" placeholder="+7 (999) 123-45-67">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Telegram</label>
+                    <input type="text" class="form-input" id="profileTelegram" placeholder="username (без @)">
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Название агентства</label>
+                <input type="text" class="form-input" id="profileAgency" placeholder="Название АН">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Адрес офиса</label>
+                <input type="text" class="form-input" id="profileAgencyAddress" placeholder="г. Санкт-Петербург, ул. ...">
+            </div>
+
+            <hr style="margin: 24px 0; border: none; border-top: 1px solid var(--border);">
+
+            <h3 style="margin-bottom: 16px; font-size: 18px;">📝 Страница "Обо мне"</h3>
+            <div class="form-group">
+                <label class="form-label">Заголовок</label>
+                <input type="text" class="form-input" id="pageAboutTitle" placeholder="Обо мне">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Содержание (поддерживается HTML: <b>, <br>, <ul>, <li>)</label>
+                <textarea class="form-textarea" id="pageAboutContent" rows="10" placeholder="Привет! Я — профессиональный брокер..."></textarea>
+            </div>
+
+            <button type="button" class="btn btn-primary" onclick="saveProfile()">💾 Сохранить профиль</button>
+        </form>
+    </div>
+
+    <!-- ВКЛАДКА: ЗАЯВКИ -->
+    <div id="tab-leads" class="tab-content">
+        <div class="loading" id="leadsLoading">Загрузка заявок...</div>       
+        <div id="leadsFilterContainer" class="leads-filter" style="display:none;">
+            <button class="filter-btn active" data-filter="all" onclick="filterLeads('all')">Все</button>
+            <button class="filter-btn" data-filter="new" onclick="filterLeads('new')">🔵 Новые</button>
+            <button class="filter-btn" data-filter="progress" onclick="filterLeads('progress')"> В работе</button>
+            <button class="filter-btn" data-filter="closed" onclick="filterLeads('closed')">🟢 Закрыты</button>
+        </div>
+       
+        <div id="leadsList"></div>
+    </div>
+
+    <!-- FAB только для вкладки объектов -->
+    <button class="fab" id="fabAdd" onclick="openCreateModal()">+</button>
+
+    <!-- МОДАЛКА ОБЪЕКТА -->
     <div class="modal-overlay" id="objectModal">
         <div class="modal-content">
             <div class="modal-header">
                 <button class="back-btn" onclick="closeModal()">← Назад</button>
                 <h2 id="modalTitle">Новый объект</h2>
-                <button class="close-btn" onclick="closeModal()"></button>
+                <button class="close-btn" onclick="closeModal()">✕</button>
             </div>
 
             <div class="status-toggle" id="statusToggle" style="display:none;">
@@ -292,10 +484,10 @@
                         <input type="text" class="form-input" id="fieldDistrict" placeholder="Введите район">
                     </div>
                     <div class="form-group">
-                        <label class="form-label">Метро</label>                        <input type="text" class="form-input" id="fieldMetro" placeholder="Станция метро">
+                        <label class="form-label">Метро</label>
+                        <input type="text" class="form-input" id="fieldMetro" placeholder="Станция метро">
                     </div>
                 </div>
-
                 <div class="form-row">
                     <div class="form-group">
                         <label class="form-label">Цена от (млн ₽)</label>
@@ -341,11 +533,11 @@
                     <div class="form-group">
                         <label class="form-label">Срок сдачи (начало)</label>
                         <input type="text" class="form-input" id="fieldCompletionSoonest" placeholder="IV кв. 2026">
-                    </div>                    <div class="form-group">
+                    </div>
+                    <div class="form-group">
                         <label class="form-label">Срок сдачи (конец)</label>
                         <input type="text" class="form-input" id="fieldCompletionAll" placeholder="II кв. 2027">
-                    </div>
-                </div>
+                    </div>                </div>
                 <div class="form-group">
                     <label class="form-label">Отделка</label>
                     <select class="form-select" id="fieldFinishing">
@@ -390,10 +582,10 @@
                     <div class="photo-preview-area" id="galleryPreview"></div>
                     <label class="upload-btn">
                         🖼️ Добавить фото
-                        <input type="file" accept="image/*" multiple onchange="uploadPhoto('gallery', this)">                    </label>
+                        <input type="file" accept="image/*" multiple onchange="uploadPhoto('gallery', this)">
+                    </label>
                     <input type="hidden" id="fieldImagesGallery">
                 </div>
-
                 <div class="photo-section">
                     <label class="form-label">Планировки</label>
                     <div class="photo-preview-area" id="plansPreview"></div>
@@ -424,11 +616,17 @@
     <div class="toast" id="toast"></div>
 
     <script>
+        // ============================================
+        // КОНФИГУРАЦИЯ И СОСТОЯНИЕ
+        // ============================================
         var config = { scriptUrl: '', pin: '' };
         var objects = [];
+        var leads = [];
+        var currentLeadFilter = 'all';
         var currentEditId = null;
         var photoStore = { main: '', gallery: [], plans: [] };
         var currentStatus = 'true';
+        var currentTab = 'objects';
         var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
 
         if (tg) {
@@ -438,17 +636,60 @@
         } else {
             console.log('[ADMIN] Running outside Telegram');
         }
+        // ============================================
+        // НАВИГАЦИЯ ПО ТАБАМ
+        // ============================================
+        function switchTab(tabName) {
+            console.log('[TAB] Switching to:', tabName);
+            currentTab = tabName;
+           
+            // Переключаем кнопки табов
+            document.querySelectorAll('.tab').forEach(function(btn) {
+                btn.classList.toggle('active', btn.dataset.tab === tabName);
+            });
+           
+            // Переключаем контент
+            document.querySelectorAll('.tab-content').forEach(function(content) {
+                content.classList.remove('active');
+            });
+            document.getElementById('tab-' + tabName).classList.add('active');
+           
+            // FAB только на вкладке объектов
+            var fab = document.getElementById('fabAdd');
+            fab.style.display = tabName === 'objects' ? 'flex' : 'none';
+           
+            // Загружаем данные для вкладки
+            if (tabName === 'objects') {
+                loadObjects();
+            } else if (tabName === 'profile') {
+                loadProfile();
+            } else if (tabName === 'leads') {
+                loadLeads();
+            }
+           
+            window.scrollTo(0, 0);
+        }
 
-        async function loadConfig() {            console.log('[CONFIG] Loading client-config.json...');
+        function refreshCurrentTab() {
+            console.log('[TAB] Refreshing current tab:', currentTab);
+            if (currentTab === 'objects') loadObjects();
+            else if (currentTab === 'profile') loadProfile();
+            else if (currentTab === 'leads') loadLeads();
+        }
+
+        // ============================================
+        // ЗАГРУЗКА КОНФИГА
+        // ============================================
+        async function loadConfig() {
+            console.log('[CONFIG] Loading client-config.json...');
             try {
                 var response = await fetch('client-config.json');
-                console.log('[CONFIG] Response status:', response.status);
-                var data = await response.json();
+                console.log('[CONFIG] Response status:', response.status);                var data = await response.json();
                 config.scriptUrl = data.client.scriptUrl;
                 config.pin = data.client.secretKey || '123456';
                 console.log('[CONFIG] Loaded:', {
                     scriptUrl: config.scriptUrl.substring(0, 50) + '...',
-                    pin: config.pin
+                    pin: '***'
                 });
             } catch (e) {
                 console.error('[CONFIG] Error:', e);
@@ -456,8 +697,11 @@
             }
         }
 
+        // ============================================
+        // API ВЫЗОВЫ
+        // ============================================
         async function apiCall(action, params) {
-            console.log('[API] Calling:', action, params);
+            console.log('[API] Calling:', action);
             if (!config.scriptUrl) {
                 console.error('[API] Script URL not configured');
                 throw new Error('Script URL не настроен');
@@ -469,7 +713,7 @@
                 type: 'listing'
             });
 
-            console.log('[API] Sending payload:', JSON.stringify(payload).substring(0, 200) + '...');
+            console.log('[API] Sending payload, keys:', Object.keys(payload).join(', '));
 
             try {
                 var fetchResult = await fetch(config.scriptUrl, {
@@ -487,11 +731,25 @@
             }
         }
 
+        async function apiGet(action) {
+            console.log('[API-GET] Calling:', action);
+            if (!config.scriptUrl) throw new Error('Script URL не настроен');           
+            var url = config.scriptUrl + '?action=' + action;
+            console.log('[API-GET] URL:', url.substring(0, 100) + '...');
+           
+            var response = await fetch(url);
+            console.log('[API-GET] Response status:', response.status);
+           
+            if (!response.ok) throw new Error('Network error: ' + response.status);
+            return await response.json();
+        }
+
+        // ============================================
+        // ВКЛАДКА: ОБЪЕКТЫ
+        // ============================================
         async function fetchData() {
-            console.log('[FETCH] Getting data from script...');            if (!config.scriptUrl) {
-                console.error('[FETCH] Script URL not configured');
-                return [];
-            }
+            console.log('[FETCH] Getting objects...');
+            if (!config.scriptUrl) return [];
             try {
                 var url = config.scriptUrl + '?type=listings&includeHidden=true';
                 console.log('[FETCH] URL:', url.substring(0, 100) + '...');
@@ -501,12 +759,10 @@
                 if (!response.ok) throw new Error('Network error: ' + response.status);
                
                 var data = await response.json();
-                console.log('[FETCH] Data type:', typeof data, 'Is array:', Array.isArray(data));
                
                 if (Array.isArray(data) && data.length > 1) {
                     var headers = data[0];
                     var rows = data.slice(1);
-                    console.log('[FETCH] Headers:', headers);
                     console.log('[FETCH] Rows count:', rows.length);
                    
                     return rows.map(function(row) {
@@ -517,7 +773,6 @@
                         return obj;
                     });
                 }
-                console.log('[FETCH] No data or invalid format');
                 return [];
             } catch (e) {
                 console.error('[FETCH] Error:', e);
@@ -527,29 +782,22 @@
 
         async function loadObjects() {
             console.log('[LOAD] Starting loadObjects...');
-            var listEl = document.getElementById('objectsList');
-            var loadingEl = document.getElementById('loadingState');
+            var listEl = document.getElementById('objectsList');            var loadingEl = document.getElementById('objectsLoading');
            
             loadingEl.style.display = 'block';
             listEl.innerHTML = '';
 
-            if (!config.scriptUrl) {
-                console.log('[LOAD] Config not loaded, loading now...');
-                await loadConfig();
-            }
-            console.log('[LOAD] Fetching objects...');
+            if (!config.scriptUrl) await loadConfig();
+
             objects = await fetchData();
-            console.log('[LOAD] Objects loaded:', objects.length);
-           
             loadingEl.style.display = 'none';
 
             if (objects.length === 0) {
-                console.log('[LOAD] No objects, showing empty state');
-                listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">🏗️</div><h3>Нет объектов</h3><p>Нажмите + чтобы добавить первый ЖК</p></div>';
+                listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">️</div><h3>Нет объектов</h3><p>Нажмите + чтобы добавить первый ЖК</p></div>';
                 return;
             }
 
-            objects.forEach(function(obj, index) {
+            objects.forEach(function(obj) {
                 var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
                 var thumbUrl = obj.image_main || '';
                 var displayThumb = thumbUrl;
@@ -564,15 +812,12 @@
 
                 var card = document.createElement('div');
                 card.className = cardClass;
-                card.onclick = function() {
-                    console.log('[UI] Opening edit modal for ID:', obj.id);
-                    openEditModal(obj.id);
-                };
+                card.onclick = function() { openEditModal(obj.id); };
                 card.innerHTML =
                     '<img src="' + escapeHtml(displayThumb) + '" class="card-thumb" onerror="this.onerror=null;this.style.background=\'#E0E6ED\';this.src=\'\';">' +
                     '<div class="card-info">' +
                         '<div class="card-title">' + escapeHtml(obj.name || 'Без названия') + '</div>' +
-                        '<div class="card-address">📍 ' + escapeHtml(obj.address || 'Адрес не указан') + '</div>' +
+                        '<div class="card-address"> ' + escapeHtml(obj.address || 'Адрес не указан') + '</div>' +
                         '<span class="card-status ' + statusClass + '">' + statusText + '</span>' +
                     '</div>';
                 listEl.appendChild(card);
@@ -603,22 +848,14 @@
 
             document.getElementById('objectModal').classList.add('active');
            
-            // Прокрутка модального окна вверх при открытии
-            var modalContent = document.querySelector('.modal-content');
-            if (modalContent) {
-                modalContent.scrollTop = 0;
-            }
-           
-            console.log('[MODAL] Create modal opened');
+            var modalContent = document.querySelector('#objectModal .modal-content');
+            if (modalContent) modalContent.scrollTop = 0;
         }
 
         function openEditModal(id) {
             console.log('[MODAL] Opening edit modal for ID:', id);
             var obj = objects.find(function(o) { return o.id === id; });
-            if (!obj) {
-                console.error('[MODAL] Object not found:', id);
-                return;
-            }
+            if (!obj) return;
 
             currentEditId = id;
             document.getElementById('modalTitle').textContent = 'Редактировать ЖК';
@@ -635,15 +872,15 @@
             document.getElementById('fieldPriceTo').value = obj.price_to || '';
             document.getElementById('fieldPriceSqm').value = obj.price_per_sqm || '';
             document.getElementById('fieldAreaMin').value = obj.area_min || '';
-            document.getElementById('fieldAreaMax').value = obj.area_max || '';            document.getElementById('fieldRooms').value = obj.rooms || '';
+            document.getElementById('fieldAreaMax').value = obj.area_max || '';
+            document.getElementById('fieldRooms').value = obj.rooms || '';
             document.getElementById('fieldClass').value = obj.class || '';
             document.getElementById('fieldCompletionSoonest').value = obj.completion_soonest || '';
             document.getElementById('fieldCompletionAll').value = obj.completion_all || '';
             document.getElementById('fieldFinishing').value = obj.finishing || '';
             document.getElementById('fieldStatus').value = obj.status || '';
             document.getElementById('fieldDescription').value = obj.description || '';
-            document.getElementById('fieldFeatures').value = obj.features || '';
-            document.getElementById('fieldLat').value = obj.lat || '';
+            document.getElementById('fieldFeatures').value = obj.features || '';            document.getElementById('fieldLat').value = obj.lat || '';
             document.getElementById('fieldLng').value = obj.lng || '';
 
             var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
@@ -651,32 +888,23 @@
 
             photoStore.main = obj.image_main || '';
             document.getElementById('fieldImageMain').value = photoStore.main;
-            console.log('[MODAL] Main photo URL:', photoStore.main);
             renderPhotoPreview('main', photoStore.main ? [photoStore.main] : []);
 
             photoStore.gallery = obj.images_gallery ? String(obj.images_gallery).split(',').map(function(u){return u.trim();}).filter(Boolean) : [];
             document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(',');
-            console.log('[MODAL] Gallery count:', photoStore.gallery.length);
             renderPhotoPreview('gallery', photoStore.gallery);
 
             photoStore.plans = obj.floor_plans_images ? String(obj.floor_plans_images).split(',').map(function(u){return u.trim();}).filter(Boolean) : [];
             document.getElementById('fieldFloorPlansImages').value = photoStore.plans.join(',');
-            console.log('[MODAL] Plans count:', photoStore.plans.length);
             renderPhotoPreview('plans', photoStore.plans);
 
             document.getElementById('objectModal').classList.add('active');
            
-            // Прокрутка модального окна вверх при открытии
-            var modalContent = document.querySelector('.modal-content');
-            if (modalContent) {
-                modalContent.scrollTop = 0;
-            }
-           
-            console.log('[MODAL] Edit modal opened');
+            var modalContent = document.querySelector('#objectModal .modal-content');
+            if (modalContent) modalContent.scrollTop = 0;
         }
 
         function closeModal() {
-            console.log('[MODAL] Closing modal');
             document.getElementById('objectModal').classList.remove('active');
             currentEditId = null;
         }
@@ -684,12 +912,11 @@
         function setStatus(value) {
             currentStatus = value;
             document.querySelectorAll('.toggle-option').forEach(function(el) {
-                el.classList.toggle('selected', el.dataset.value === value);            });
-            console.log('[STATUS] Set to:', value);
+                el.classList.toggle('selected', el.dataset.value === value);
+            });
         }
 
         async function saveObject(event) {
-            console.log('[SAVE] Starting save...');
             event.preventDefault();
            
             var btn = document.getElementById('saveBtn');
@@ -698,12 +925,11 @@
             btn.textContent = 'Сохранение...';
 
             try {
-                // ИСПРАВЛЕНО: Клиентская проверка обязательного главного фото при создании
+                // Проверка обязательного главного фото при создании
                 if (!currentEditId && !photoStore.main) {
                     showToast('⚠️ Загрузите главное фото');
                     btn.disabled = false;
-                    btn.textContent = originalText;
-                    return;
+                    btn.textContent = originalText;                    return;
                 }
 
                 var params = {
@@ -732,24 +958,17 @@
                     active: currentStatus === 'true'
                 };
 
-                console.log('[SAVE] Params:', JSON.stringify(params, null, 2).substring(0, 500) + '...');
                 if (currentEditId) {
                     params.id = currentEditId;
-                    console.log('[SAVE] Updating object ID:', currentEditId);
                     await apiCall('update', params);
                     showToast('✅ Объект обновлён');
                 } else {
-                    console.log('[SAVE] Creating new object');
                     await apiCall('create', params);
                     showToast('✅ Объект создан');
                 }
 
                 closeModal();
-                console.log('[SAVE] Waiting 2 seconds for server...');
-                setTimeout(function() {
-                    console.log('[SAVE] Reloading objects...');
-                    loadObjects();
-                }, 2000);
+                setTimeout(function() { loadObjects(); }, 2000);
 
             } catch (e) {
                 console.error('[SAVE] Error:', e);
@@ -759,11 +978,9 @@
                 btn.textContent = originalText;
             }
         }
-
         async function deleteObject() {
-            console.log('[DELETE] Starting delete for ID:', currentEditId);
             if (!currentEditId) return;
-            if (!confirm('Удалить этот объект? Фотографии также будут удалены.')) return;
+            if (!confirm('Удалить этот объект?')) return;
 
             var btn = document.getElementById('deleteBtn');
             btn.disabled = true;
@@ -782,21 +999,17 @@
                 btn.textContent = 'Удалить объект';
             }
         }
+
+        // ============================================
+        // ЗАГРУЗКА ФОТО ОБЪЕКТОВ
+        // ============================================
         async function uploadPhoto(type, input) {
-            console.log('[UPLOAD] Starting upload for type:', type);
-           
             if (!input.files || input.files.length === 0) {
-                console.log('[UPLOAD] No files selected, waiting 100ms...');
                 await new Promise(r => setTimeout(r, 100));
-                if (!input.files || input.files.length === 0) {
-                    console.log('[UPLOAD] Still no files, aborting');
-                    return;
-                }
+                if (!input.files || input.files.length === 0) return;
             }
 
             var files = Array.from(input.files);
-            console.log('[UPLOAD] Files count:', files.length);
-           
             var btn = input.parentElement;
             var originalText = btn.innerHTML;
             btn.innerHTML = '⏳ Загрузка...';
@@ -804,35 +1017,27 @@
             try {
                 for (var i = 0; i < files.length; i++) {
                     var file = files[i];
-                    console.log('[UPLOAD] Processing file:', file.name, 'Size:', file.size, 'Type:', file.type);
-                   
                     var base64 = await fileToBase64(file);
-                    console.log('[UPLOAD] Base64 length:', base64.length);
                    
                     await apiCall('upload_image', {
                         image: base64,
                         fileName: file.name
                     });
 
-                    console.log('[UPLOAD] Waiting for server to save URL...');
                     await new Promise(r => setTimeout(r, 2000));
                    
-                    console.log('[UPLOAD] Fetching last uploaded URL...');
                     var urlResponse = await fetch(config.scriptUrl + '?action=get_last_file_url');
-                    var urlData = await urlResponse.json();
-                    console.log('[UPLOAD] Got URL response:', urlData);
-                   
+                    var urlData = await urlResponse.json();                   
                     if (urlData && urlData.url) {
-                        console.log('[UPLOAD] Adding photo to field:', urlData.url);
                         addPhotoToField(type, urlData.url);
                     } else {
-                        console.error('[UPLOAD] No URL in response');
-                        showToast('⚠️ Фото загружено, но URL не получен. Попробуйте ещё раз.');
+                        showToast('⚠️ Фото загружено, но URL не получен');
                     }
                 }
                 showToast('✅ Фото загружено');
-            } catch (e) {                console.error('[UPLOAD] Error:', e);
-                showToast(' Ошибка загрузки фото. Попробуйте ещё раз.');
+            } catch (e) {
+                console.error('[UPLOAD] Error:', e);
+                showToast('❌ Ошибка загрузки фото');
             } finally {
                 btn.innerHTML = originalText;
                 input.value = '';
@@ -842,21 +1047,13 @@
         function fileToBase64(file) {
             return new Promise(function(resolve, reject) {
                 var reader = new FileReader();
-                reader.onload = function() {
-                    console.log('[BASE64] File converted, length:', reader.result.length);
-                    resolve(reader.result);
-                };
-                reader.onerror = function(e) {
-                    console.error('[BASE64] Error:', e);
-                    reject(e);
-                };
-                console.log('[BASE64] Starting conversion...');
+                reader.onload = function() { resolve(reader.result); };
+                reader.onerror = reject;
                 reader.readAsDataURL(file);
             });
         }
 
         function addPhotoToField(type, url) {
-            console.log('[PHOTO] Adding photo to', type, ':', url);
             if (type === 'main') {
                 photoStore.main = url;
                 document.getElementById('fieldImageMain').value = url;
@@ -864,14 +1061,12 @@
             } else if (type === 'gallery') {
                 if (photoStore.gallery.indexOf(url) === -1) {
                     photoStore.gallery.push(url);
-                    console.log('[PHOTO] Gallery count:', photoStore.gallery.length);
                 }
                 document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(',');
                 renderPhotoPreview('gallery', photoStore.gallery);
             } else if (type === 'plans') {
                 if (photoStore.plans.indexOf(url) === -1) {
                     photoStore.plans.push(url);
-                    console.log('[PHOTO] Plans count:', photoStore.plans.length);
                 }
                 document.getElementById('fieldFloorPlansImages').value = photoStore.plans.join(',');
                 renderPhotoPreview('plans', photoStore.plans);
@@ -879,10 +1074,9 @@
         }
 
         function removePhoto(type, index) {
-            console.log('[PHOTO] Removing photo from', type, 'at index', index);
-            if (type === 'main') {                photoStore.main = '';
-                document.getElementById('fieldImageMain').value = '';
-                renderPhotoPreview('main', []);
+            if (type === 'main') {
+                photoStore.main = '';
+                document.getElementById('fieldImageMain').value = '';                renderPhotoPreview('main', []);
             } else if (type === 'gallery') {
                 photoStore.gallery.splice(index, 1);
                 document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(',');
@@ -895,7 +1089,6 @@
         }
 
         function renderPhotoPreview(type, urls) {
-            console.log('[PREVIEW] Rendering preview for', type, 'URLs:', urls);
             var containerId = type === 'main' ? 'mainPhotoPreview' : type === 'gallery' ? 'galleryPreview' : 'plansPreview';
             var container = document.getElementById(containerId);
             container.innerHTML = '';
@@ -906,10 +1099,7 @@
                 var displayUrl = url;
                 if (url.indexOf('lh3.googleusercontent.com/d/') !== -1) {
                     var fileId = url.split('/d/')[1];
-                    if (fileId) {
-                        displayUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
-                        console.log('[PREVIEW] Converted to thumbnail URL');
-                    }
+                    if (fileId) displayUrl = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w400';
                 }
                
                 var wrapper = document.createElement('div');
@@ -920,27 +1110,288 @@
                 img.src = displayUrl;
                 img.className = 'photo-thumb';
                 img.onerror = function() {
-                    console.error('[PREVIEW] Image failed to load:', displayUrl);
                     this.onerror = null;
                     this.style.background = '#E0E6ED';
                     this.src = '';
                 };
-                img.onload = function() {
-                    console.log('[PREVIEW] Image loaded successfully');
-                };
                
-                var removeBtn = document.createElement('button');                removeBtn.className = 'photo-remove';
-                removeBtn.textContent = '';
+                var removeBtn = document.createElement('button');
+                removeBtn.className = 'photo-remove';
+                removeBtn.textContent = '✕';
                 removeBtn.onclick = function(e) { e.stopPropagation(); removePhoto(type, index); };
 
                 wrapper.appendChild(img);
                 wrapper.appendChild(removeBtn);
                 container.appendChild(wrapper);
             });
+        }
+        // ============================================
+        // ВКЛАДКА: ПРОФИЛЬ АГЕНТА
+        // ============================================
+        async function loadProfile() {
+            console.log('[PROFILE] Loading profile...');
+            var loadingEl = document.getElementById('profileLoading');
+            var formEl = document.getElementById('profileForm');
            
-            console.log('[PREVIEW] Rendered', urls.length, 'photos');
+            loadingEl.style.display = 'block';
+            formEl.style.display = 'none';
+
+            if (!config.scriptUrl) await loadConfig();
+
+            try {
+                // Загружаем данные агента
+                var agentResult = await apiGet('get_agent_profile');
+                console.log('[PROFILE] Agent data:', agentResult);
+               
+                // Загружаем страницы
+                var pagesResult = await apiGet('get_pages');
+                console.log('[PROFILE] Pages data:', pagesResult);
+
+                if (agentResult && agentResult.success && agentResult.data) {
+                    var data = agentResult.data;
+                    document.getElementById('profileName').value = data.name || '';
+                    document.getElementById('profileRole').value = data.role || '';
+                    document.getElementById('profilePhone').value = data.phone || '';
+                    document.getElementById('profileTelegram').value = data.telegramUsername || '';
+                    document.getElementById('profileAgency').value = data.agencyName || '';
+                    document.getElementById('profileAgencyAddress').value = data.agencyAddress || '';
+                   
+                    var photoUrl = data.photoUrl || '';
+                    document.getElementById('profilePhotoUrl').value = photoUrl;
+                    document.getElementById('profilePhotoPreview').src = photoUrl || 'data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120"><rect width="120" height="120" fill="%23E0E6ED"/><text x="50%" y="50%" font-family="sans-serif" font-size="14" fill="%23999" text-anchor="middle" dy=".3em"></text></svg>';
+                }
+
+                if (pagesResult && pagesResult.success && pagesResult.data) {
+                    var aboutPage = pagesResult.data.find(function(p) { return p.page === 'about'; });
+                    if (aboutPage) {
+                        document.getElementById('pageAboutTitle').value = aboutPage.title || '';
+                        document.getElementById('pageAboutContent').value = aboutPage.content || '';
+                    }
+                }
+
+                loadingEl.style.display = 'none';
+                formEl.style.display = 'block';
+               
+            } catch (e) {
+                console.error('[PROFILE] Error:', e);
+                loadingEl.textContent = '❌ Ошибка загрузки профиля';            }
         }
 
+        async function uploadAgentPhoto(input) {
+            if (!input.files || input.files.length === 0) return;
+           
+            var file = input.files[0];
+            var btn = input.parentElement;
+            var originalText = btn.innerHTML;
+            btn.innerHTML = '⏳ Загрузка...';
+
+            try {
+                var base64 = await fileToBase64(file);
+               
+                await apiCall('upload_image', {
+                    image: base64,
+                    fileName: 'agent_photo_' + new Date().getTime() + '.jpg'
+                });
+
+                await new Promise(r => setTimeout(r, 2000));
+               
+                var urlResponse = await fetch(config.scriptUrl + '?action=get_last_file_url');
+                var urlData = await urlResponse.json();
+               
+                if (urlData && urlData.url) {
+                    document.getElementById('profilePhotoUrl').value = urlData.url;
+                    document.getElementById('profilePhotoPreview').src = urlData.url;
+                    showToast('✅ Фото загружено');
+                } else {
+                    showToast('⚠️ Фото загружено, но URL не получен');
+                }
+            } catch (e) {
+                console.error('[UPLOAD AGENT PHOTO] Error:', e);
+                showToast('❌ Ошибка загрузки фото');
+            } finally {
+                btn.innerHTML = originalText;
+                input.value = '';
+            }
+        }
+
+        async function saveProfile() {
+            console.log('[PROFILE] Saving profile...');
+           
+            var name = document.getElementById('profileName').value.trim();
+            if (!name) {
+                showToast('⚠️ Укажите имя');
+                return;
+            }
+
+            var btn = document.querySelector('#profileForm .btn-primary');            var originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Сохранение...';
+
+            try {
+                // Сохраняем данные агента
+                await apiCall('update_agent_profile', {
+                    name: name,
+                    role: document.getElementById('profileRole').value.trim(),
+                    phone: document.getElementById('profilePhone').value.trim(),
+                    telegramUsername: document.getElementById('profileTelegram').value.trim().replace(/^@/, ''),
+                    agencyName: document.getElementById('profileAgency').value.trim(),
+                    agencyAddress: document.getElementById('profileAgencyAddress').value.trim(),
+                    photoUrl: document.getElementById('profilePhotoUrl').value.trim()
+                });
+
+                // Сохраняем страницу "Обо мне"
+                var aboutTitle = document.getElementById('pageAboutTitle').value.trim();
+                var aboutContent = document.getElementById('pageAboutContent').value.trim();
+               
+                if (aboutTitle || aboutContent) {
+                    await apiCall('update_page', {
+                        page: 'about',
+                        title: aboutTitle || 'Обо мне',
+                        content: aboutContent
+                    });
+                }
+
+                showToast('✅ Профиль сохранён');
+               
+            } catch (e) {
+                console.error('[PROFILE SAVE] Error:', e);
+                showToast('❌ Ошибка сохранения');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        // ============================================
+        // ВКЛАДКА: ЗАЯВКИ
+        // ============================================
+        async function loadLeads() {
+            console.log('[LEADS] Loading leads...');
+            var loadingEl = document.getElementById('leadsLoading');
+            var filterContainer = document.getElementById('leadsFilterContainer');
+            var listEl = document.getElementById('leadsList');
+           
+            loadingEl.style.display = 'block';
+            filterContainer.style.display = 'none';            listEl.innerHTML = '';
+
+            if (!config.scriptUrl) await loadConfig();
+
+            try {
+                var result = await apiGet('get_leads');
+                console.log('[LEADS] Result:', result);
+               
+                loadingEl.style.display = 'none';
+
+                if (result && result.success && result.data && result.data.length > 0) {
+                    leads = result.data;
+                    filterContainer.style.display = 'flex';
+                    renderLeads();
+                } else {
+                    listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">📨</div><h3>Заявок пока нет</h3><p>Здесь будут отображаться заявки от покупателей</p></div>';
+                }
+               
+            } catch (e) {
+                console.error('[LEADS] Error:', e);
+                loadingEl.textContent = '❌ Ошибка загрузки заявок';
+            }
+        }
+
+        function filterLeads(status) {
+            currentLeadFilter = status;
+            document.querySelectorAll('.filter-btn').forEach(function(btn) {
+                btn.classList.toggle('active', btn.dataset.filter === status);
+            });
+            renderLeads();
+        }
+
+        function renderLeads() {
+            var listEl = document.getElementById('leadsList');
+            listEl.innerHTML = '';
+
+            var filtered = leads;
+            if (currentLeadFilter !== 'all') {
+                filtered = leads.filter(function(lead) {
+                    return (lead.status || 'new') === currentLeadFilter;
+                });
+            }
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = '<div class="empty-state"><div class="empty-icon">📨</div><h3>Нет заявок</h3></div>';
+                return;
+            }
+
+            // Сортировка: новые сверху
+            filtered.sort(function(a, b) {                var dateA = a.timestamp || a.created_at || '';
+                var dateB = b.timestamp || b.created_at || '';
+                return dateB.localeCompare(dateA);
+            });
+
+            filtered.forEach(function(lead, index) {
+                var status = lead.status || 'new';
+                var statusClass = 'status-' + status;
+                var dateStr = lead.timestamp || lead.created_at || '';
+                if (dateStr) {
+                    try {
+                        var d = new Date(dateStr);
+                        dateStr = d.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+                    } catch(e) {}
+                }
+
+                var card = document.createElement('div');
+                card.className = 'lead-card ' + statusClass;
+                card.innerHTML =
+                    '<div class="lead-header">' +
+                        '<div class="lead-object">🏢 ' + escapeHtml(lead.objectName || lead.title || 'Объект не указан') + '</div>' +
+                        '<div class="lead-date">' + escapeHtml(dateStr) + '</div>' +
+                    '</div>' +
+                    '<div class="lead-body">' +
+                        '<div>👤 <b>' + escapeHtml(lead.clientName || lead.leadname || 'Не указано') + '</b></div>' +
+                        '<div>📞 ' + escapeHtml(lead.clientPhone || lead.leadphone || 'Не указан') + '</div>' +
+                        (lead.clientTelegram || lead.leadtelegram ? '<div> ' + escapeHtml(lead.clientTelegram || lead.leadtelegram) + '</div>' : '') +
+                    '</div>' +
+                    '<div class="lead-actions">' +
+                        '<button class="lead-status-btn status-new ' + (status === 'new' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + (lead.id || index) + '\', \'new\')">🔵 Новая</button>' +
+                        '<button class="lead-status-btn status-progress ' + (status === 'progress' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + (lead.id || index) + '\', \'progress\')">🟡 В работе</button>' +
+                        '<button class="lead-status-btn status-closed ' + (status === 'closed' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + (lead.id || index) + '\', \'closed\')">🟢 Закрыта</button>' +
+                    '</div>';
+                listEl.appendChild(card);
+            });
+        }
+
+        async function updateLeadStatus(leadId, newStatus) {
+            console.log('[LEADS] Updating status:', leadId, newStatus);
+           
+            // Находим заявку по id или индексу
+            var lead = leads.find(function(l) { return String(l.id) === String(leadId); });
+            if (!lead) {
+                // Если не нашли по id, пробуем по индексу
+                var idx = parseInt(leadId);
+                if (!isNaN(idx) && leads[idx]) lead = leads[idx];
+            }
+           
+            if (!lead) {
+                showToast(' Заявка не найдена');                return;
+            }
+
+            try {
+                await apiCall('update_lead_status', {
+                    id: lead.id,
+                    status: newStatus
+                });
+               
+                lead.status = newStatus;
+                renderLeads();
+                showToast('✅ Статус обновлён');
+               
+            } catch (e) {
+                console.error('[LEADS STATUS] Error:', e);
+                showToast('❌ Ошибка обновления статуса');
+            }
+        }
+
+        // ============================================
+        // УТИЛИТЫ
+        // ============================================
         function escapeHtml(text) {
             if (!text) return '';
             var div = document.createElement('div');
@@ -949,7 +1400,6 @@
         }
 
         function showToast(message) {
-            console.log('[TOAST]', message);
             var toast = document.getElementById('toast');
             toast.textContent = message;
             toast.classList.remove('show');
@@ -958,17 +1408,18 @@
             setTimeout(function() { toast.classList.remove('show'); }, 3000);
         }
 
+        // ============================================
+        // ИНИЦИАЛИЗАЦИЯ
+        // ============================================
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('[INIT] DOM loaded, starting initialization...');
+            console.log('[INIT] DOM loaded');
             loadConfig().then(function() {
-                console.log('[INIT] Config loaded, loading objects...');
                 loadObjects();
             });
         });
 
         document.getElementById('objectModal').addEventListener('click', function(e) {
-            if (e.target === this) closeModal();
-        });
+            if (e.target === this) closeModal();        });
     </script>
 </body>
 </html>
