@@ -13,9 +13,6 @@ function getImageUrl(sourceUrl) {
     if (sourceUrl.startsWith('http://') || sourceUrl.startsWith('https://')) {
         return sourceUrl;
     }
-    if (sourceUrl.startsWith('property-images/')) {
-        return 'https://cdn.jsdelivr.net/gh/777ernest888-oss/demo-miniapp-realty@main/' + sourceUrl;
-    }
     return sourceUrl;
 }
 
