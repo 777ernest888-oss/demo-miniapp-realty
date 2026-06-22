@@ -782,11 +782,9 @@
                 btn.textContent = 'Удалить объект';
             }
         }
-        // ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАГРУЗКИ ФОТО
         async function uploadPhoto(type, input) {
             console.log('[UPLOAD] Starting upload for type:', type);
 
-            // Ждём, пока файлы точно появятся
             if (!input.files || input.files.length === 0) {
                 await new Promise(resolve => setTimeout(resolve, 300));
             }
@@ -801,7 +799,7 @@
 
             var btn = input.parentElement;
             var originalText = btn.innerHTML;
-            btn.innerHTML = ' Загрузка...';
+            btn.innerHTML = '⏳ Загрузка...';
 
             try {
                 for (var i = 0; i < files.length; i++) {
@@ -816,10 +814,8 @@
                         fileName: file.name
                     });
 
-                    // Ждём, пока сервер сохранит URL
                     await new Promise(r => setTimeout(r, 1500));
 
-                    // Получаем URL последнего загруженного фото
                     var urlResponse = await fetch(config.scriptUrl + '?action=get_last_file_url');
                     var urlData = await urlResponse.json();
                     console.log('[UPLOAD] Got URL:', urlData);
@@ -831,12 +827,11 @@
                     }
                 }
                 showToast('✅ Фото загружено');
-            } catch (e) {                console.error('[UPLOAD] Error:', e);
-                showToast(' Ошибка загрузки фото');
+            } catch (e) {
+                console.error('[UPLOAD] Error:', e);
+                showToast('❌ Ошибка загрузки фото');
             } finally {
-                btn.innerHTML = originalText;
-                // Очищаем input ПОСЛЕ загрузки (не до)
-                setTimeout(function() {
+                btn.innerHTML = originalText;                setTimeout(function() {
                     input.value = '';
                 }, 500);
             }
@@ -880,12 +875,12 @@
                 renderPhotoPreview('plans', photoStore.plans);
             }
         }
+
         function removePhoto(type, index) {
             console.log('[PHOTO] Removing photo from', type, 'at index', index);
             if (type === 'main') {
                 photoStore.main = '';
-                document.getElementById('fieldImageMain').value = '';
-                renderPhotoPreview('main', []);
+                document.getElementById('fieldImageMain').value = '';                renderPhotoPreview('main', []);
             } else if (type === 'gallery') {
                 photoStore.gallery.splice(index, 1);
                 document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(',');
@@ -930,11 +925,11 @@
                 img.onload = function() {
                     console.log('[PREVIEW] Image loaded successfully');
                 };
+
                 var removeBtn = document.createElement('button');
                 removeBtn.className = 'photo-remove';
                 removeBtn.textContent = '✕';
                 removeBtn.onclick = function(e) { e.stopPropagation(); removePhoto(type, index); };
-
                 wrapper.appendChild(img);
                 wrapper.appendChild(removeBtn);
                 container.appendChild(wrapper);
