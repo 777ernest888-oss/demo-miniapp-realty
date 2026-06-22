@@ -76,7 +76,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>️ Админка</h1>
+        <h1>⚙️ Админка</h1>
         <button class="header-btn" onclick="refreshCurrentTab()">↻</button>
     </div>
     <div class="container">
@@ -86,7 +86,6 @@
             <button class="tab" onclick="switchTab('profile')">👤 Профиль</button>
             <button class="tab" onclick="switchTab('about')">📄 Обо мне</button>
         </div>
-       
         <div id="tab-objects" class="tab-content active">
             <div class="loading" id="objectsLoading">Загрузка объектов...</div>
             <div id="objectsList"></div>
@@ -96,8 +95,8 @@
             <div class="loading" id="leadsLoading">Загрузка заявок...</div>
             <div id="leadsList"></div>
         </div>
-        <div id="tab-profile" class="tab-content">            <div class="loading" id="profileLoading">Загрузка профиля...</div>
-            <form id="profileForm" onsubmit="saveProfile(event)" style="display:none;">
+        <div id="tab-profile" class="tab-content">
+            <div class="loading" id="profileLoading">Загрузка профиля...</div>            <form id="profileForm" onsubmit="saveProfile(event)" style="display:none;">
                 <div class="form-group"><label class="form-label">Имя *</label><input type="text" class="form-input" id="profileName" required></div>
                 <div class="form-group"><label class="form-label">Должность</label><input type="text" class="form-input" id="profileRole"></div>
                 <div class="form-group"><label class="form-label">Агентство</label><input type="text" class="form-input" id="profileAgencyName"></div>
@@ -124,7 +123,6 @@
             </form>
         </div>
     </div>
-
     <div class="modal-overlay" id="objectModal">
         <div class="modal-content">
             <div class="modal-header">
@@ -134,7 +132,7 @@
             </div>
             <div class="status-toggle" id="statusToggle" style="display:none;">
                 <div class="toggle-option selected" data-value="true" onclick="setStatus('true')">✅ Активен</div>
-                <div class="toggle-option" data-value="false" onclick="setStatus('false')">️ Скрыт</div>
+                <div class="toggle-option" data-value="false" onclick="setStatus('false')">🙈 Скрыт</div>
             </div>
             <form id="objectForm" onsubmit="saveObject(event)">
                 <input type="hidden" id="objectId">
@@ -145,9 +143,9 @@
                     <div class="form-group"><label class="form-label">Метро</label><input type="text" class="form-input" id="fieldMetro"></div>
                 </div>
                 <div class="form-row">
-                    <div class="form-group"><label class="form-label">Цена от (млн ₽)</label><input type="number" step="0.1" class="form-input" id="fieldPriceFrom"></div>                    <div class="form-group"><label class="form-label">Цена до (млн ₽)</label><input type="number" step="0.1" class="form-input" id="fieldPriceTo"></div>
-                </div>
-                <div class="form-row">
+                    <div class="form-group"><label class="form-label">Цена от (млн ₽)</label><input type="number" step="0.1" class="form-input" id="fieldPriceFrom"></div>
+                    <div class="form-group"><label class="form-label">Цена до (млн ₽)</label><input type="number" step="0.1" class="form-input" id="fieldPriceTo"></div>
+                </div>                <div class="form-row">
                     <div class="form-group"><label class="form-label">Площадь от (м²)</label><input type="number" step="0.1" class="form-input" id="fieldAreaMin"></div>
                     <div class="form-group"><label class="form-label">Площадь до (м²)</label><input type="number" step="0.1" class="form-input" id="fieldAreaMax"></div>
                 </div>
@@ -192,12 +190,11 @@
         </div>
     </div>
     <div class="toast" id="toast"></div>
-
     <script>
-        var config = { scriptUrl: '', ownerId: '' };        var objects = [], leads = [], currentAgentData = {}, pagesData = {};
+        var config = { scriptUrl: '', ownerId: '' };
+        var objects = [], leads = [], currentAgentData = {}, pagesData = {};
         var currentEditId = null, photoStore = { main: '', gallery: [], plans: [] }, currentStatus = 'true', currentTab = 'objects';
-        var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-        if (tg) { tg.ready(); tg.expand(); }
+        var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;        if (tg) { tg.ready(); tg.expand(); }
 
         async function loadConfig() {
             try {
@@ -205,15 +202,12 @@
                 var data = await response.json();
                 config.scriptUrl = data.client.scriptUrl;
                 config.ownerId = data.client.ownerId || '';
-               
-                // ✅ ПРОВЕРКА АВТОРИЗАЦИИ ПО TELEGRAM ID
                 if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
                     if (String(tg.initDataUnsafe.user.id) !== String(config.ownerId)) {
                         document.body.innerHTML = '<div style="display:flex;justify-content:center;align-items:center;height:100vh;text-align:center;padding:20px;"><h1>⛔ Доступ запрещён</h1><p>Эта админка принадлежит другому пользователю.</p></div>';
                         throw new Error('Access denied');
                     }
                 } else {
-                    // Если открыто не в Telegram (для тестов)
                     console.warn('⚠️ Opened outside Telegram');
                 }
             } catch (e) {
@@ -224,10 +218,7 @@
 
         async function apiCall(action, params) {
             if (!config.scriptUrl) throw new Error('Script URL не настроен');
-            var payload = Object.assign({}, params, {
-                action: action,
-                initData: tg ? tg.initData : '' // ✅ ОТПРАВЛЯЕМ ПОДПИСЬ TELEGRAM
-            });
+            var payload = Object.assign({}, params, { action: action, initData: tg ? tg.initData : '' });
             var fetchResult;
             try {
                 fetchResult = await fetch(config.scriptUrl, {
@@ -236,14 +227,13 @@
                     body: JSON.stringify(payload)
                 });
             } catch (networkError) { throw new Error('Ошибка сети'); }
-           
             if (!fetchResult.ok && fetchResult.status !== 0) throw new Error('Ошибка сервера: ' + fetchResult.status);
-           
             var data;
             try { data = await fetchResult.json(); } catch (parseError) { return { success: true }; }
             if (data && data.success === false) throw new Error(data.error || 'Ошибка');
             return data || { success: true };
         }
+
         function switchTab(tabName) {
             currentTab = tabName;
             document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
@@ -253,8 +243,7 @@
             if (tabName === 'objects') loadObjects();
             else if (tabName === 'leads') loadLeads();
             else if (tabName === 'profile') loadProfile();
-            else if (tabName === 'about') loadAboutPage();
-        }
+            else if (tabName === 'about') loadAboutPage();        }
 
         function refreshCurrentTab() {
             if (currentTab === 'objects') loadObjects();
@@ -279,7 +268,7 @@
                 } else { objects = []; }
                 document.getElementById('objectsLoading').style.display = 'none';
                 if (objects.length === 0) {
-                    document.getElementById('objectsList').innerHTML = '<div class="empty-state"><div class="empty-icon">️</div><h3>Нет объектов</h3><p>Нажмите + чтобы добавить первый ЖК</p></div>';
+                    document.getElementById('objectsList').innerHTML = '<div class="empty-state"><div class="empty-icon">🏗️</div><h3>Нет объектов</h3><p>Нажмите + чтобы добавить первый ЖК</p></div>';
                     return;
                 }
                 objects.forEach(function(obj) {
@@ -292,7 +281,8 @@
                     card.className = 'object-card' + (isActive ? '' : ' hidden-object');
                     card.onclick = function() { openEditModal(obj.id); };
                     card.innerHTML = '<img src="' + escapeHtml(displayThumb) + '" class="card-thumb" onerror="this.style.background=\'#E0E6ED\'">' + '<div class="card-info"><div class="card-title">' + escapeHtml(obj.name || 'Без названия') + '</div><div class="card-address">📍 ' + escapeHtml(obj.address || '') + '</div><span class="card-status ' + statusClass + '">' + statusText + '</span></div>';
-                    document.getElementById('objectsList').appendChild(card);                });
+                    document.getElementById('objectsList').appendChild(card);
+                });
             } catch (e) { document.getElementById('objectsLoading').style.display = 'none'; showToast('❌ Ошибка загрузки объектов'); }
         }
 
@@ -302,11 +292,10 @@
             document.getElementById('objectForm').reset();
             document.getElementById('objectId').value = '';
             document.getElementById('statusToggle').style.display = 'none';
-            document.getElementById('deleteBtn').style.display = 'none';
-            document.getElementById('saveBtn').textContent = 'Создать объект';
+            document.getElementById('deleteBtn').style.display = 'none';            document.getElementById('saveBtn').textContent = 'Создать объект';
             photoStore = { main: '', gallery: [], plans: [] };
-            ['mainPhotoPreview', 'galleryPreview', 'plansPreview'].forEach(id => document.getElementById(id).innerHTML = '');
-            ['fieldImageMain', 'fieldImagesGallery', 'fieldFloorPlansImages'].forEach(id => document.getElementById(id).value = '');
+            ['mainPhotoPreview', 'galleryPreview', 'plansPreview'].forEach(function(id) { document.getElementById(id).innerHTML = ''; });
+            ['fieldImageMain', 'fieldImagesGallery', 'fieldFloorPlansImages'].forEach(function(id) { document.getElementById(id).value = ''; });
             document.getElementById('objectModal').classList.add('active');
         }
 
@@ -341,7 +330,8 @@
         function closeModal() { document.getElementById('objectModal').classList.remove('active'); currentEditId = null; }
         function setStatus(value) {
             currentStatus = value;
-            document.querySelectorAll('.toggle-option').forEach(function(el) { el.classList.toggle('selected', el.dataset.value === value); });        }
+            document.querySelectorAll('.toggle-option').forEach(function(el) { el.classList.toggle('selected', el.dataset.value === value); });
+        }
 
         async function saveObject(event) {
             event.preventDefault();
@@ -351,8 +341,7 @@
             try {
                 var params = {
                     name: document.getElementById('fieldName').value.trim(),
-                    address: document.getElementById('fieldAddress').value.trim(),
-                    district: document.getElementById('fieldDistrict').value.trim(),
+                    address: document.getElementById('fieldAddress').value.trim(),                    district: document.getElementById('fieldDistrict').value.trim(),
                     metro: document.getElementById('fieldMetro').value.trim(),
                     price_from: parseFloat(document.getElementById('fieldPriceFrom').value) || '',
                     price_to: parseFloat(document.getElementById('fieldPriceTo').value) || '',
@@ -390,7 +379,8 @@
             finally { btn.disabled = false; btn.textContent = 'Удалить объект'; }
         }
 
-        async function uploadPhoto(type, input) {            if (!input.files || input.files.length === 0) { await new Promise(r => setTimeout(r, 300)); }
+        async function uploadPhoto(type, input) {
+            if (!input.files || input.files.length === 0) { await new Promise(function(r) { setTimeout(r, 300); }); }
             if (!input.files || input.files.length === 0) return;
             var files = Array.from(input.files);
             var btn = input.parentElement; var originalText = btn.innerHTML; btn.innerHTML = '⏳ Загрузка...';
@@ -399,9 +389,8 @@
                     var file = files[i];
                     var base64 = await fileToBase64(file);
                     await apiCall('upload_image', { image: base64, fileName: file.name });
-                    await new Promise(r => setTimeout(r, 1500));
-                    var urlResponse = await fetch(config.scriptUrl + '?action=get_last_file_url');
-                    var urlData = await urlResponse.json();
+                    await new Promise(function(r) { setTimeout(r, 1500); });
+                    var urlResponse = await fetch(config.scriptUrl + '?action=get_last_file_url');                    var urlData = await urlResponse.json();
                     if (urlData && urlData.url) addPhotoToField(type, urlData.url);
                 }
                 showToast('✅ Фото загружено');
@@ -439,7 +428,8 @@
                 var wrapper = document.createElement('div'); wrapper.style.position = 'relative'; wrapper.style.display = 'inline-block';
                 var img = document.createElement('img'); img.src = displayUrl; img.className = 'photo-thumb'; img.onerror = function() { this.style.background = '#E0E6ED'; };
                 var removeBtn = document.createElement('button'); removeBtn.className = 'photo-remove'; removeBtn.textContent = '✕'; removeBtn.onclick = function(e) { e.stopPropagation(); removePhoto(type, index); };
-                wrapper.appendChild(img); wrapper.appendChild(removeBtn); container.appendChild(wrapper);            });
+                wrapper.appendChild(img); wrapper.appendChild(removeBtn); container.appendChild(wrapper);
+            });
         }
 
         async function loadLeads() {
@@ -449,8 +439,7 @@
             try {
                 var result = await apiCall('get_leads', {});
                 leads = result.data || [];
-                document.getElementById('leadsLoading').style.display = 'none';
-                if (leads.length === 0) { document.getElementById('leadsList').innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><h3>Нет заявок</h3></div>'; return; }
+                document.getElementById('leadsLoading').style.display = 'none';                if (leads.length === 0) { document.getElementById('leadsList').innerHTML = '<div class="empty-state"><div class="empty-icon">📭</div><h3>Нет заявок</h3></div>'; return; }
                 leads.forEach(function(lead) {
                     var card = document.createElement('div'); card.className = 'lead-card';
                     var statusClass = 'status-' + (lead.status === 'Новая' ? 'new' : lead.status === 'Обзвонена' ? 'contacted' : lead.status === 'Завершена' ? 'completed' : 'cancelled');
@@ -488,6 +477,7 @@
                 if (currentAgentData.photoUrl) renderPhotoPreview('profile', [currentAgentData.photoUrl]);
             } catch (e) { document.getElementById('profileLoading').style.display = 'none'; showToast('❌ Ошибка загрузки профиля'); }
         }
+
         async function saveProfile(event) {
             event.preventDefault();
             var btn = event.target.querySelector('button[type="submit"]');
@@ -498,8 +488,7 @@
                     agencyName: document.getElementById('profileAgencyName').value.trim(), agencyAddress: document.getElementById('profileAgencyAddress').value.trim(),
                     telegramUsername: document.getElementById('profileTelegram').value.trim(), phone: document.getElementById('profilePhone').value.trim(),
                     photoUrl: document.getElementById('profilePhotoUrl').value.trim()
-                });
-                showToast('✅ Профиль сохранён');
+                });                showToast('✅ Профиль сохранён');
             } catch (e) { showToast('❌ Ошибка'); }
             finally { btn.disabled = false; btn.textContent = originalText; }
         }
@@ -510,7 +499,7 @@
             try {
                 var base64 = await fileToBase64(file);
                 await apiCall('upload_image', { image: base64, fileName: file.name });
-                await new Promise(r => setTimeout(r, 1500));
+                await new Promise(function(r) { setTimeout(r, 1500); });
                 var urlResponse = await fetch(config.scriptUrl + '?action=get_last_file_url');
                 var urlData = await urlResponse.json();
                 if (urlData && urlData.url) { document.getElementById('profilePhotoUrl').value = urlData.url; renderPhotoPreview('profile', [urlData.url]); showToast('✅ Фото загружено'); }
@@ -537,7 +526,8 @@
             event.preventDefault();
             var btn = event.target.querySelector('button[type="submit"]');
             var originalText = btn.textContent; btn.disabled = true; btn.textContent = 'Сохранение...';
-            try {                await apiCall('update_page', { page: 'about', title: document.getElementById('aboutTitle').value.trim(), content: document.getElementById('aboutContent').value.trim() });
+            try {
+                await apiCall('update_page', { page: 'about', title: document.getElementById('aboutTitle').value.trim(), content: document.getElementById('aboutContent').value.trim() });
                 showToast('✅ Страница сохранена');
             } catch (e) { showToast('❌ Ошибка'); }
             finally { btn.disabled = false; btn.textContent = originalText; }
@@ -547,8 +537,7 @@
         function showToast(message) { var toast = document.getElementById('toast'); toast.textContent = message; toast.classList.remove('show'); void toast.offsetWidth; toast.classList.add('show'); setTimeout(function() { toast.classList.remove('show'); }, 3000); }
 
         document.addEventListener('DOMContentLoaded', function() {
-            loadConfig().then(function() { if (config.scriptUrl) loadObjects(); });
-        });
+            loadConfig().then(function() { if (config.scriptUrl) loadObjects(); });        });
         document.getElementById('objectModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
     </script>
 </body>
