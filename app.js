@@ -44,10 +44,10 @@ try {
 
 async function loadClientConfig() {
     try {
-        const response = await fetch('client-config.json');        config = await response.json();
+        const response = await fetch('client-config.json');
+        config = await response.json();
     } catch (error) {
-        console.error('Config error:', error);
-        alert('Ошибка загрузки конфигурации!');
+        console.error('Config error:', error);        alert('Ошибка загрузки конфигурации!');
     }
 }
 
@@ -82,37 +82,29 @@ async function loadPropertiesFromScript() {
         console.log('No scriptUrl in config');
         return [];
     }
-
     try {
         const response = await fetch(config.client.scriptUrl);
-
         if (!response.ok) {
             console.error('Script returned error status:', response.status);
             return [];
         }
-
         const data = await response.json();
-
-        if (data.error) {            console.error('Script error:', data.error);
+        if (data.error) {
+            console.error('Script error:', data.error);
             return [];
         }
-
         if (Array.isArray(data) && data.length > 1) {
             const headers = data[0];
             const rows = data.slice(1);
-
-            const result = rows.map(function(row) {
-                const obj = {};
+            const result = rows.map(function(row) {                const obj = {};
                 headers.forEach(function(header, i) {
                     obj[header] = row[i];
                 });
                 return obj;
             });
-
             console.log('Loaded', result.length, 'properties from script');
             return result;
         }
-
         return [];
     } catch (e) {
         console.error('Script load error:', e);
@@ -142,7 +134,8 @@ function parseCSV(csv) {
 }
 
 function parseCSVLine(line) {
-    const result = [];    let current = '';
+    const result = [];
+    let current = '';
     let inQuotes = false;
     for (let i = 0; i < line.length; i++) {
         const char = line[i];
@@ -153,7 +146,6 @@ function parseCSVLine(line) {
     result.push(current);
     return result;
 }
-
 function showBack() {
     const btn = document.getElementById('headerBackBtn');
     if (btn) btn.classList.remove('hidden');
@@ -191,7 +183,8 @@ function showPage(pageId) {
     } else if (pageId === 'contacts') {
         renderContactsPage();
         document.getElementById('page-contacts').classList.remove('hidden');
-        showBack();    } else {
+        showBack();
+    } else {
         const data = pagesData[pageId];
         const targetPage = document.getElementById('page-' + pageId);
         if (data && targetPage) {
@@ -201,8 +194,7 @@ function showPage(pageId) {
                 let imageSrc = config.branding ? config.branding.agentPhoto : null;
                 if (!imageSrc && config.branding && config.branding.logo && config.branding.logo !== 'logo.png') {
                     imageSrc = config.branding.logo;
-                }
-                if (imageSrc) {
+                }                if (imageSrc) {
                     const contentDiv = targetPage.querySelector('.page-content');
                     const img = document.createElement('img');
                     const yandexSrc = getImageUrl(imageSrc);
@@ -240,7 +232,8 @@ function renderContactsPage() {
     if (agentPhoto && agentPhoto.trim() && agentPhoto !== 'logo.png') {
         const img = document.createElement('img');
         const yandexPhoto = getImageUrl(agentPhoto);
-        img.src = yandexPhoto;        img.alt = data.name || 'Агент';
+        img.src = yandexPhoto;
+        img.alt = data.name || 'Агент';
         img.onerror = onImgError;
         avatarEl.appendChild(img);
     } else if (config.branding && config.branding.logo && config.branding.logo !== 'logo.png') {
@@ -250,8 +243,7 @@ function renderContactsPage() {
         img.alt = 'Логотип';
         img.onerror = onImgError;
         avatarEl.appendChild(img);
-    } else {
-        avatarEl.innerHTML = '';
+    } else {        avatarEl.innerHTML = '';
     }
     const hasAgency = data.agencyName || data.agencyAddress;
     document.getElementById('agencyBlock').style.display = hasAgency ? 'block' : 'none';
@@ -289,7 +281,8 @@ function callAgent() {
 
 function toggleFilters() {
     const block = document.getElementById('filtersBlock');
-    const btn = document.querySelector('.filters-toggle-btn');    block.classList.toggle('hidden');
+    const btn = document.querySelector('.filters-toggle-btn');
+    block.classList.toggle('hidden');
     btn.textContent = block.classList.contains('hidden') ? '🔽 Фильтры' : '🔼 Скрыть фильтры';
 }
 
@@ -299,8 +292,7 @@ function switchView(view) {
     const listContainer = document.getElementById('listingsContainer');
     const mapContainer = document.getElementById('mapContainer');
     if (view === 'list') {
-        listBtn.classList.add('active'); mapBtn.classList.remove('active');
-        listContainer.classList.remove('hidden'); mapContainer.classList.add('hidden');
+        listBtn.classList.add('active'); mapBtn.classList.remove('active');        listContainer.classList.remove('hidden'); mapContainer.classList.add('hidden');
         hideBack();
     } else {
         listBtn.classList.remove('active'); mapBtn.classList.add('active');
@@ -317,9 +309,7 @@ async function init() {
         applyBranding();
         await loadAgentData();
         await loadPagesData();
-
         let propertiesData = await loadPropertiesFromScript();
-
         if (!propertiesData || propertiesData.length === 0) {
             propertiesData = [];
         }
@@ -338,6 +328,7 @@ async function init() {
         if (loadingScreen) loadingScreen.classList.add('hidden');
     }
 }
+
 function applyTheme() {
     if (!config.branding) return;
     document.documentElement.style.setProperty('--primary', config.branding.primaryColor || '#3D5266');
@@ -350,8 +341,7 @@ function applyBranding() {
     if (companyEl && config.branding.name) companyEl.textContent = config.branding.name;
     const titleEl = document.getElementById('welcomeTitle');
     if (titleEl && config.branding.welcomeTitle) titleEl.textContent = config.branding.welcomeTitle;
-    const taglineEl = document.getElementById('welcomeTagline');
-    if (taglineEl && config.branding.tagline) taglineEl.textContent = config.branding.tagline;
+    const taglineEl = document.getElementById('welcomeTagline');    if (taglineEl && config.branding.tagline) taglineEl.textContent = config.branding.tagline;
     const btnEl = document.getElementById('welcomeButton');
     if (btnEl && config.branding.buttonText) btnEl.textContent = config.branding.buttonText;
     const headerTitle = document.getElementById('headerTitle');
@@ -387,7 +377,8 @@ function renderFilters() {
     }
     const metros = [...new Set(listings.map(function(l) { return l.metro; }).filter(Boolean))].sort();
     const metroContainer = document.getElementById('metroCheckboxes');
-    if (metroContainer) {        metroContainer.innerHTML = '';
+    if (metroContainer) {
+        metroContainer.innerHTML = '';
         metros.forEach(function(m) {
             const label = document.createElement('label');
             label.className = 'checkbox-label';
@@ -399,8 +390,7 @@ function renderFilters() {
     if (roomsContainer) {
         const allRooms = [];
         listings.forEach(function(l) {
-            if (l.rooms) {
-                String(l.rooms).split(',').map(function(r) { return r.trim(); }).forEach(function(r) { if (r && allRooms.indexOf(r) === -1) allRooms.push(r); });
+            if (l.rooms) {                String(l.rooms).split(',').map(function(r) { return r.trim(); }).forEach(function(r) { if (r && allRooms.indexOf(r) === -1) allRooms.push(r); });
             }
         });
         allRooms.sort();
@@ -436,7 +426,8 @@ function filterListings() {
         if (typeof item.price_from === 'number' && item.price_from > maxPrice) return false;
         if (selectedDistricts.length > 0 && selectedDistricts.indexOf(item.district) === -1) return false;
         if (selectedMetros.length > 0 && selectedMetros.indexOf(item.metro) === -1) return false;
-        if (selectedRooms.length > 0 && item.rooms) {            const itemRooms = String(item.rooms).split(',').map(function(r) { return r.trim(); });
+        if (selectedRooms.length > 0 && item.rooms) {
+            const itemRooms = String(item.rooms).split(',').map(function(r) { return r.trim(); });
             if (!selectedRooms.some(function(r) { return itemRooms.indexOf(r) !== -1; })) return false;
         }
         return true;
@@ -448,8 +439,7 @@ function filterListings() {
 
 function resetFilters() {
     document.querySelectorAll('.price-btn').forEach(function(btn) { btn.classList.remove('active'); });
-    document.querySelectorAll('.filter-checkbox').forEach(function(cb) { cb.checked = false; });
-    renderListings(listings.filter(function(l) { return l.active; }));
+    document.querySelectorAll('.filter-checkbox').forEach(function(cb) { cb.checked = false; });    renderListings(listings.filter(function(l) { return l.active; }));
 }
 
 function renderListings(data) {
@@ -485,7 +475,8 @@ function renderListings(data) {
             '<span>📍 ' + (escapeHtml(item.district) || '') + '</span>' +
             '<span>🚇 ' + (escapeHtml(item.metro) || '') + '</span>' +
             (item.rooms ? '<span>🚪 ' + escapeHtml(item.rooms) + '</span>' : '') +
-            (area ? '<span>📐 ' + escapeHtml(area) + '</span>' : '') +            '</div>' +
+            (area ? '<span>📐 ' + escapeHtml(area) + '</span>' : '') +
+            '</div>' +
             '<div class="listing-price">от ' + priceDisplay + (priceTo ? ' до ' + priceTo + ' млн ₽' : '') + (ppsqm ? '<br><span class="price-per-sqm">~' + ppsqm + ' ₽/м²</span>' : '') + '</div>' +
             '<div class="listing-status status-' + statusKey + '">' + statusText + '</div>' +
             '<button class="tg-btn consult-btn-inline" onclick="openConsultForm(\'' + item.id + '\', event)">📞 Получить консультацию</button>' +
@@ -497,8 +488,7 @@ function renderListings(data) {
 function initMap() {
     if (typeof L === 'undefined') return;
     const mapContainer = document.getElementById('mapContainer');
-    if (!mapContainer) return;
-    if (!map) {
+    if (!mapContainer) return;    if (!map) {
         map = L.map('mapContainer').setView([59.9343, 30.3351], 11);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
     }
@@ -534,7 +524,8 @@ function updateMapMarkers(filteredItems) {
 function openDetails(id) {
     const item = listings.find(function(l) { return l.id === id; });
     if (!item) return;
-    currentModalId = id;    document.getElementById('modalTitle').textContent = item.name || '';
+    currentModalId = id;
+    document.getElementById('modalTitle').textContent = item.name || '';
     let priceDisplay = '?';
     if (typeof item.price_from === 'number') {
         priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
@@ -546,8 +537,7 @@ function openDetails(id) {
     document.getElementById('modalFeatures').innerHTML = item.features ? '<ul>' + item.features.split(',').map(function(f) { return '<li>' + escapeHtml(f.trim()) + '</li>'; }).join('') + '</ul>' : '<p style="color: var(--text-secondary);">Информация уточняется</p>';
     const galleryContainer = document.getElementById('modalGallery');
     galleryContainer.innerHTML = '';
-    let allImages = [];
-    if (item.image_main) allImages.push(item.image_main);
+    let allImages = [];    if (item.image_main) allImages.push(item.image_main);
     if (item.images_gallery) {
         allImages = allImages.concat(item.images_gallery.split(',').map(function(u) { return u.trim(); }).filter(function(u) { return u; }));
     }
@@ -583,7 +573,8 @@ function openDetails(id) {
     const plansContainer = document.getElementById('modalFloorPlans');
     plansContainer.innerHTML = '';
     let plansImages = [];
-    if (item.floor_plans_images) {        plansImages = item.floor_plans_images.split(',').map(function(u) { return u.trim(); }).filter(function(u) { return u; });
+    if (item.floor_plans_images) {
+        plansImages = item.floor_plans_images.split(',').map(function(u) { return u.trim(); }).filter(function(u) { return u; });
     }
     if (plansImages.length > 0) {
         const title = document.createElement('h3');
@@ -595,8 +586,7 @@ function openDetails(id) {
         plansImages.forEach(function(url) {
             const slide = document.createElement('div');
             slide.className = 'slide';
-            slide.style.flex = '0 0 85%';
-            const img = document.createElement('img');
+            slide.style.flex = '0 0 85%';            const img = document.createElement('img');
             const yandexUrl = getImageUrl(url);
             img.src = yandexUrl;
             img.style.height = '200px';
@@ -632,6 +622,7 @@ function closeModal() {
     currentModalId = null;
     if (document.getElementById('mapContainer').classList.contains('hidden')) hideBack();
 }
+
 function openConsultForm(id, event) {
     if (event) event.stopPropagation();
     currentModalId = id;
@@ -644,8 +635,7 @@ function openConsultForm(id, event) {
         const submitBtn = document.querySelector('#consultForm button[type="submit"]');
         if (submitBtn) {
             submitBtn.textContent = 'Отправить заявку';
-            submitBtn.disabled = false;
-        }
+            submitBtn.disabled = false;        }
         document.getElementById('consultModal').classList.remove('hidden');
         showBack();
     }
@@ -682,7 +672,7 @@ function initTelegramMask() {
         e.target.value = val;
     });
 }
-// ✅ ПЕРЕПИСАНО: Отправка через Google Apps Script (НЕ Supabase!)
+
 function submitConsultForm(event) {
     event.preventDefault();
     try {
@@ -694,16 +684,12 @@ function submitConsultForm(event) {
         const name = document.getElementById('consultName').value.trim();
         const phone = document.getElementById('consultPhone').value.trim();
         let telegram = document.getElementById('consultTelegram').value.trim() || '';
-
-        if (!name || name.length < 2) { tg.showAlert('⚠️ Введите имя'); return; }
-        if (phone.replace(/\D/g, '').length < 10) { tg.showAlert('❌ Введите корректный телефон'); return; }
+        if (!name || name.length < 2) { tg.showAlert('⚠️ Введите имя'); return; }        if (phone.replace(/\D/g, '').length < 10) { tg.showAlert('❌ Введите корректный телефон'); return; }
         if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) { tg.showAlert('❌ Telegram только латиницей'); return; }
-
         const submitBtn = event.target.querySelector('button[type="submit"]');
         const originalText = submitBtn.textContent;
         submitBtn.textContent = 'Отправка...';
         submitBtn.disabled = true;
-
         fetch(config.client.scriptUrl, {
             method: 'POST',
             mode: 'no-cors',
@@ -730,7 +716,8 @@ function submitConsultForm(event) {
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
         });
-    } catch (e) {        tg.showAlert('⚠️ Произошла ошибка.');
+    } catch (e) {
+        tg.showAlert('⚠️ Произошла ошибка.');
     }
 }
 
