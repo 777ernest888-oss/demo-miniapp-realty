@@ -7,7 +7,6 @@
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="styles.css">
-
   <style>
     .admin-frame {
       position: fixed;
@@ -19,17 +18,14 @@
       background: white;
       display: none;
     }
-
     .admin-frame.active {
       display: block;
     }
-
     .admin-frame iframe {
       width: 100%;
       height: 100%;
       border: none;
     }
-
     .admin-close-btn {
       position: fixed;
       top: 10px;
@@ -47,14 +43,12 @@
       gap: 5px;
       backdrop-filter: blur(10px);
       box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    }    .admin-close-btn:hover {
+    }
+    .admin-close-btn:hover {
       background: rgba(61, 82, 102, 1);
     }
-  </style>
-
-  <script>
+  </style>  <script>
     const ADMIN_USER_ID = 2038206387;
-
     function checkAdminAccess() {
       if (window.Telegram && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
@@ -67,7 +61,6 @@
       window.isAdmin = false;
       return false;
     }
-
     function openAdminPanel() {
       if (!window.isAdmin) {
         alert('⛔ Доступ запрещён!');
@@ -83,40 +76,35 @@
         }
       }
     }
-
     function closeAdminPanel() {
       const adminFrame = document.getElementById('adminFrame');
       if (adminFrame) {
         adminFrame.classList.remove('active');
       }
     }
-
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', checkAdminAccess);
     } else {
       checkAdminAccess();
     }
-  </script></head>
+  </script>
+</head>
 <body>
-
   <div id="welcomeScreen" class="screen welcome">
     <div id="welcomeBrand" class="welcome-brand">
       <img src="logo.png" alt="Logo" class="brand-logo">
       <span class="brand-company" id="companyName"></span>
     </div>
     <img id="welcomeImage" class="welcome-img" src="welcome-bg.jpg" alt="Welcome">
-    <div class="welcome-bottom">
-      <h1 class="welcome-main-title" id="welcomeTitle">КАТАЛОГ НОВОСТРОЕК</h1>
+    <div class="welcome-bottom">      <h1 class="welcome-main-title" id="welcomeTitle">КАТАЛОГ НОВОСТРОЕК</h1>
       <p class="welcome-sub" id="welcomeTagline">Подберём квартиру под ваш бюджет</p>
       <button class="btn-primary" id="welcomeButton" onclick="startApp()">НАЧАТЬ ПОДБОР</button>
     </div>
   </div>
-
   <div id="loadingScreen" class="screen loading hidden">
     <div class="loading-spinner"></div>
     <p class="loading-text">Загружаем объекты...</p>
   </div>
-
   <div id="mainContent" class="screen hidden">
     <header id="headerBrand" class="header">
       <button class="menu-btn" onclick="openMenu()">☰</button>
@@ -129,7 +117,6 @@
         <h1 class="brand-title" id="headerTitle"></h1>
       </div>
     </header>
-
     <div class="filters-toggle">
       <button class="filters-toggle-btn" onclick="toggleFilters()">🔽 Фильтры</button>
     </div>
@@ -145,7 +132,8 @@
         </div>
       </div>
       <div class="filter-group">
-        <label>📍 Районы</label>        <div id="districtCheckboxes" class="checkbox-group"></div>
+        <label>📍 Районы</label>
+        <div id="districtCheckboxes" class="checkbox-group"></div>
       </div>
       <div class="filter-group">
         <label>🚇 Метро</label>
@@ -156,16 +144,12 @@
         <div id="roomsCheckboxes" class="checkbox-group"></div>
       </div>
     </div>
-
     <div class="view-toggle">
-      <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>
-      <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺️ Карта</button>
+      <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>      <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺️ Карта</button>
     </div>
-
     <div id="listingsContainer" class="listings"></div>
     <div id="mapContainer" class="map-container hidden"></div>
   </div>
-
   <div id="detailsModal" class="modal hidden">
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal()">×</button>
@@ -182,7 +166,6 @@
       <button id="modalConsultBtn" class="tg-btn">Заказать консультацию</button>
     </div>
   </div>
-
   <div id="consultModal" class="modal form-modal hidden">
     <div class="modal-content">
       <button class="modal-close" onclick="closeConsultModal()">×</button>
@@ -194,9 +177,9 @@
         <input id="consultPhone" type="tel" placeholder="+7 (___) ___-__-__" required>
         <input id="consultTelegram" type="text" placeholder="Telegram (необязательно)">
         <button type="submit" class="tg-btn">Отправить заявку</button>
-      </form>    </div>
+      </form>
+    </div>
   </div>
-
   <div id="menuOverlay" class="menu-overlay hidden" onclick="closeMenu()"></div>
   <div id="sideMenu" class="side-menu hidden">
     <button class="menu-close" onclick="closeMenu()">×</button>
@@ -209,11 +192,9 @@
       </button>
     </nav>
   </div>
-
   <div id="page-about" class="page hidden">
     <div class="page-header">
-      <button class="page-back-btn" onclick="appBack()">← Назад</button>
-      <h2>Обо мне</h2>
+      <button class="page-back-btn" onclick="appBack()">← Назад</button>      <h2>Обо мне</h2>
     </div>
     <div class="page-content">
       <p>Привет! Я — брокер по недвижимости. Помогаю подбирать объекты с максимальной доходностью и юридической чистотой.</p>
@@ -225,7 +206,6 @@
       </ul>
     </div>
   </div>
-
   <div id="page-contacts" class="page hidden">
     <div class="page-header">
       <button class="page-back-btn" onclick="appBack()">← Назад</button>
@@ -243,14 +223,13 @@
         <h4>🏢 Агентство</h4>
         <p id="agencyName">Название АН</p>
         <p id="agencyAddress" class="address-text">📍 Адрес офиса</p>
-      </div>      <div class="contact-actions">
+      </div>
+      <div class="contact-actions">
         <button class="btn-tg" onclick="openDirectChat()">✈️ Написать в Telegram</button>
         <button class="btn-phone" onclick="callAgent()">📞 Позвонить</button>
       </div>
     </div>
   </div>
-
-  <!-- IFRAME БЕЗ src — загружается только при клике на "Админ-панель" -->
   <div id="adminFrame" class="admin-frame">
     <button class="admin-close-btn" onclick="closeAdminPanel()">
       <span>←</span>
@@ -258,17 +237,13 @@
     </button>
     <iframe id="adminIframe"></iframe>
   </div>
-
-<!-- СКРИПТЫ (Supabase SDK УДАЛЁН) -->
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="app.js?v=1.0.7"></script>
-
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     if (typeof window.isAdmin === 'undefined') {
       checkAdminAccess();
-    }
-    if (window.isAdmin) {
+    }    if (window.isAdmin) {
       const adminMenuItem = document.getElementById('adminMenuItem');
       if (adminMenuItem) {
         adminMenuItem.style.display = 'block';
