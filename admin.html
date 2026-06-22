@@ -378,7 +378,7 @@
                     <label class="form-label">Главное фото *</label>
                     <div class="photo-preview-area" id="mainPhotoPreview"></div>
                     <label class="upload-btn">
-                        📷 Выбрать фото
+                         Выбрать фото
                         <input type="file" accept="image/*" onchange="uploadPhoto('main', this)">
                     </label>
                     <input type="hidden" id="fieldImageMain">
@@ -455,7 +455,6 @@
             }
         }
 
-        // ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ API CALL
         async function apiCall(action, params) {
             console.log('[API] Calling:', action);
             if (!config.scriptUrl) {
@@ -489,8 +488,7 @@
                 try {
                     errorText = await fetchResult.text();
                 } catch (e) {
-                    // ignore
-                }
+                    // ignore                }
                 console.error('[API] Server error:', fetchResult.status, errorText);
                 throw new Error('Ошибка сервера: ' + fetchResult.status);
             }
@@ -539,9 +537,9 @@
                         headers.forEach(function(header, i) {
                             obj[header] = row[i];
                         });
-                        return obj;
-                    });
-                }                console.log('[FETCH] No data or invalid format');
+                        return obj;                    });
+                }
+                console.log('[FETCH] No data or invalid format');
                 return [];
             } catch (e) {
                 console.error('[FETCH] Error:', e);
@@ -588,9 +586,9 @@
 
                 var card = document.createElement('div');
                 card.className = cardClass;
-                card.onclick = function() {
-                    console.log('[UI] Opening edit modal for ID:', obj.id);
-                    openEditModal(obj.id);                };
+                card.onclick = function() {                    console.log('[UI] Opening edit modal for ID:', obj.id);
+                    openEditModal(obj.id);
+                };
                 card.innerHTML =
                     '<img src="' + escapeHtml(displayThumb) + '" class="card-thumb" onerror="this.onerror=null;this.style.background=\'#E0E6ED\';this.src=\'\';">' +
                     '<div class="card-info">' +
@@ -637,9 +635,9 @@
                 return;
             }
 
-            currentEditId = id;
-            document.getElementById('modalTitle').textContent = 'Редактировать ЖК';
-            document.getElementById('objectId').value = id;            document.getElementById('statusToggle').style.display = 'flex';
+            currentEditId = id;            document.getElementById('modalTitle').textContent = 'Редактировать ЖК';
+            document.getElementById('objectId').value = id;
+            document.getElementById('statusToggle').style.display = 'flex';
             document.getElementById('deleteBtn').style.display = 'block';
             document.getElementById('saveBtn').textContent = 'Сохранить изменения';
 
@@ -686,9 +684,9 @@
         }
 
         function closeModal() {
-            console.log('[MODAL] Closing modal');
-            document.getElementById('objectModal').classList.remove('active');
-            currentEditId = null;        }
+            console.log('[MODAL] Closing modal');            document.getElementById('objectModal').classList.remove('active');
+            currentEditId = null;
+        }
 
         function setStatus(value) {
             currentStatus = value;
@@ -735,9 +733,9 @@
                 };
 
                 console.log('[SAVE] Params:', JSON.stringify(params, null, 2).substring(0, 500) + '...');
-
                 if (currentEditId) {
-                    params.id = currentEditId;                    console.log('[SAVE] Updating object ID:', currentEditId);
+                    params.id = currentEditId;
+                    console.log('[SAVE] Updating object ID:', currentEditId);
                     await apiCall('update', params);
                     showToast('✅ Объект обновлён');
                 } else {
@@ -784,16 +782,18 @@
                 btn.textContent = 'Удалить объект';
             }
         }
-
+        // ✅ ИСПРАВЛЕННАЯ ФУНКЦИЯ ЗАГРУЗКИ ФОТО
         async function uploadPhoto(type, input) {
             console.log('[UPLOAD] Starting upload for type:', type);
+
+            // Ждём, пока файлы точно появятся
             if (!input.files || input.files.length === 0) {
-                console.log('[UPLOAD] No files selected, waiting 100ms...');
-                await new Promise(r => setTimeout(r, 100));
-                if (!input.files || input.files.length === 0) {
-                    console.log('[UPLOAD] Still no files, aborting');
-                    return;
-                }
+                await new Promise(resolve => setTimeout(resolve, 300));
+            }
+
+            if (!input.files || input.files.length === 0) {
+                console.log('[UPLOAD] No files selected');
+                return;
             }
 
             var files = Array.from(input.files);
@@ -801,12 +801,12 @@
 
             var btn = input.parentElement;
             var originalText = btn.innerHTML;
-            btn.innerHTML = '⏳ Загрузка...';
+            btn.innerHTML = ' Загрузка...';
 
             try {
                 for (var i = 0; i < files.length; i++) {
                     var file = files[i];
-                    console.log('[UPLOAD] Processing file:', file.name, 'Size:', file.size, 'Type:', file.type);
+                    console.log('[UPLOAD] Processing file:', file.name);
 
                     var base64 = await fileToBase64(file);
                     console.log('[UPLOAD] Base64 length:', base64.length);
@@ -816,28 +816,29 @@
                         fileName: file.name
                     });
 
-                    console.log('[UPLOAD] Waiting for server to save URL...');
-                    await new Promise(r => setTimeout(r, 2000));
+                    // Ждём, пока сервер сохранит URL
+                    await new Promise(r => setTimeout(r, 1500));
 
-                    console.log('[UPLOAD] Fetching last uploaded URL...');
+                    // Получаем URL последнего загруженного фото
                     var urlResponse = await fetch(config.scriptUrl + '?action=get_last_file_url');
                     var urlData = await urlResponse.json();
-                    console.log('[UPLOAD] Got URL response:', urlData);
+                    console.log('[UPLOAD] Got URL:', urlData);
 
                     if (urlData && urlData.url) {
-                        console.log('[UPLOAD] Adding photo to field:', urlData.url);
                         addPhotoToField(type, urlData.url);
                     } else {
-                        console.error('[UPLOAD] No URL in response');
-                        showToast('⚠️ Фото загружено, но URL не получен. Попробуйте ещё раз.');
+                        showToast('⚠️ Фото загружено, но URL не получен');
                     }
                 }
                 showToast('✅ Фото загружено');
-            } catch (e) {
-                console.error('[UPLOAD] Error:', e);
-                showToast('❌ Ошибка загрузки фото. Попробуйте ещё раз.');            } finally {
+            } catch (e) {                console.error('[UPLOAD] Error:', e);
+                showToast(' Ошибка загрузки фото');
+            } finally {
                 btn.innerHTML = originalText;
-                input.value = '';
+                // Очищаем input ПОСЛЕ загрузки (не до)
+                setTimeout(function() {
+                    input.value = '';
+                }, 500);
             }
         }
 
@@ -879,12 +880,12 @@
                 renderPhotoPreview('plans', photoStore.plans);
             }
         }
-
         function removePhoto(type, index) {
             console.log('[PHOTO] Removing photo from', type, 'at index', index);
             if (type === 'main') {
                 photoStore.main = '';
-                document.getElementById('fieldImageMain').value = '';                renderPhotoPreview('main', []);
+                document.getElementById('fieldImageMain').value = '';
+                renderPhotoPreview('main', []);
             } else if (type === 'gallery') {
                 photoStore.gallery.splice(index, 1);
                 document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(',');
@@ -929,11 +930,11 @@
                 img.onload = function() {
                     console.log('[PREVIEW] Image loaded successfully');
                 };
-
                 var removeBtn = document.createElement('button');
                 removeBtn.className = 'photo-remove';
                 removeBtn.textContent = '✕';
                 removeBtn.onclick = function(e) { e.stopPropagation(); removePhoto(type, index); };
+
                 wrapper.appendChild(img);
                 wrapper.appendChild(removeBtn);
                 container.appendChild(wrapper);
