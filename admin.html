@@ -470,41 +470,45 @@
 
             console.log('[API] Sending payload:', JSON.stringify(payload).substring(0, 200) + '...');
 
+            var fetchResult;
             try {
-                // ВАЖНО: Убираем mode: 'no-cors', используем text/plain для Apps Script
-                var fetchResult = await fetch(config.scriptUrl, {
+                fetchResult = await fetch(config.scriptUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                     body: JSON.stringify(payload)
                 });
-
-                console.log('[API] Fetch completed. Status:', fetchResult.status, 'Type:', fetchResult.type);
-
-                // Проверяем статус
-                if (!fetchResult.ok && fetchResult.status !== 0) {
-                    var errorText = '';
-                    try { errorText = await fetchResult.text(); } catch(e) {}
-                    console.error('[API] Server error:', fetchResult.status, errorText);
-                    throw new Error('Ошибка сервера: ' + fetchResult.status);
-                }
-
-                // Пытаемся прочитать ответ                try {
-                    var data = await fetchResult.json();
-                    console.log('[API] Response:', data);
-                    if (data && data.success === false) {
-                        throw new Error(data.error || 'Неизвестная ошибка сервера');
-                    }
-                    return data || { success: true };
-                } catch (parseError) {
-                    // Opaque response (нормально для Apps Script с redirect)
-                    console.log('[API] Opaque response (normal for Apps Script)');
-                    return { success: true };
-                }
-
-            } catch (e) {
-                console.error('[API] Fetch error:', e);
-                throw e;
+            } catch (networkError) {
+                console.error('[API] Network error:', networkError);
+                throw new Error('Ошибка сети: ' + networkError.message);
             }
+
+            console.log('[API] Fetch completed. Status:', fetchResult.status, 'Type:', fetchResult.type);
+
+            if (!fetchResult.ok && fetchResult.status !== 0) {
+                var errorText = '';
+                try {
+                    errorText = await fetchResult.text();
+                } catch (e) {
+                    // ignore
+                }
+                console.error('[API] Server error:', fetchResult.status, errorText);
+                throw new Error('Ошибка сервера: ' + fetchResult.status);
+            }
+
+            var data;
+            try {
+                data = await fetchResult.json();
+            } catch (parseError) {
+                console.log('[API] Opaque response (normal for Apps Script)');
+                return { success: true };
+            }
+
+            console.log('[API] Response:', data);
+            if (data && data.success === false) {
+                throw new Error(data.error || 'Неизвестная ошибка сервера');
+            }
+
+            return data || { success: true };
         }
 
         async function fetchData() {
