@@ -60,14 +60,13 @@ async function initAgent() {
     var hostname = window.location.hostname;
    
     try {
-        // Если передан agent в URL — используем его
+        // 1. Если передан agent в URL — используем его
         if (agentParam) {
             AGENT_ID = agentParam;
         }
-        // Если это кастомный домен (не prostors.ru)
+        // 2. Если это кастомный домен (не prostors.ru)
         else if (hostname && hostname !== 'prostors.ru' && !hostname.endsWith('.prostors.ru') && !hostname.includes('github.io')) {
             console.log('[initAgent] Кастомный домен:', hostname);
-            // Запрашиваем agent_id по домену
             var response = await fetch(config.client.scriptUrl + '?action=resolve_agent_by_domain&domain=' + encodeURIComponent(hostname));
             var data = await response.json();
            
@@ -79,9 +78,11 @@ async function initAgent() {
                 return false;
             }
         }
+        // 3. Если нет параметров — это главная страница экосистемы "Просторы"
         else {
-            showErrorScreen('Неверная ссылка. Отсутствует параметр agent.');
-            return false;
+            console.log('[initAgent] Главная страница экосистемы');
+            showEcosystemPage();
+            return false; // Возвращаем false, чтобы не загружать приложение
         }
        
         if (!AGENT_ID) {
@@ -95,8 +96,8 @@ async function initAgent() {
        
         if (data.success) {
             AGENT_CONFIG = data.config;
-            applyBrandConfig(AGENT_CONFIG);
-            return true;        } else {
+            applyBrandConfig(AGENT_CONFIG);            return true;
+        } else {
             showErrorScreen('Ошибка: ' + data.error);
             return false;
         }
@@ -107,6 +108,43 @@ async function initAgent() {
     }
 }
 
+// Главная страница экосистемы "Просторы"
+function showEcosystemPage() {
+    var app = document.body;
+    app.innerHTML = `
+        <div style="min-height:100vh;background:linear-gradient(135deg,#3D5266 0%,#3498DB 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;color:white;">
+            <div style="font-size:72px;margin-bottom:20px;">🏙️</div>
+            <h1 style="font-size:48px;font-weight:700;margin-bottom:12px;letter-spacing:2px;">ПРОСТОРЫ</h1>
+            <p style="font-size:20px;margin-bottom:40px;opacity:0.9;">Экосистема решений для рынка недвижимости</p>
+           
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;max-width:900px;width:100%;margin-bottom:40px;">
+                <div style="background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:30px;border-radius:16px;border:1px solid rgba(255,255,255,0.2);">
+                    <div style="font-size:48px;margin-bottom:12px;">🏢</div>
+                    <h3 style="font-size:20px;margin-bottom:8px;">Новостройки</h3>
+                    <p style="font-size:14px;opacity:0.8;">Каталог новостроек Санкт-Петербурга с фильтрами и картой</p>
+                </div>
+                <div style="background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:30px;border-radius:16px;border:1px solid rgba(255,255,255,0.2);">
+                    <div style="font-size:48px;margin-bottom:12px;">🏬</div>
+                    <h3 style="font-size:20px;margin-bottom:8px;">Коммерческая недвижимость</h3>
+                    <p style="font-size:14px;opacity:0.8;">Офисы, торговые помещения, склады</p>
+                </div>
+                <div style="background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:30px;border-radius:16px;border:1px solid rgba(255,255,255,0.2);">
+                    <div style="font-size:48px;margin-bottom:12px;">💰</div>
+                    <h3 style="font-size:20px;margin-bottom:8px;">ГАБ Калькулятор</h3>
+                    <p style="font-size:14px;opacity:0.8;">Готовый арендный бизнес для пассивного дохода</p>
+                </div>
+            </div>
+           
+            <div style="background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:30px;border-radius:16px;border:1px solid rgba(255,255,255,0.2);max-width:600px;">
+                <h3 style="font-size:22px;margin-bottom:12px;">🚀 Для агентов</h3>
+                <p style="font-size:16px;margin-bottom:20px;">Получите персональное приложение для работы с клиентами</p>
+                <a href="https://t.me/prostors_support" style="display:inline-block;background:white;color:#3D5266;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;">Связаться с нами</a>
+            </div>
+           
+            <p style="margin-top:40px;opacity:0.6;font-size:12px;">© 2026 Просторы. Все права защищены.</p>
+        </div>
+    `;
+}
 // Применение брендирования из AGENT_CONFIG
 function applyBrandConfig(brandConfig) {
     if (!brandConfig) return;
@@ -145,7 +183,8 @@ function applyBrandConfig(brandConfig) {
     if (brandConfig.logoUrl) {
         var headerLogo = document.querySelector('#headerBrand .brand-logo');
         if (headerLogo) {
-            headerLogo.src = getImageUrl(brandConfig.logoUrl);            headerLogo.onerror = onImgError;
+            headerLogo.src = getImageUrl(brandConfig.logoUrl);
+            headerLogo.onerror = onImgError;
         }
     }
    
@@ -155,7 +194,6 @@ function applyBrandConfig(brandConfig) {
         if (agentPhoto) agentPhoto.src = getImageUrl(brandConfig.agentPhotoUrl);
     }
 }
-
 // Экран ошибки доступа
 function showErrorScreen(message) {
     var app = document.body;
@@ -194,19 +232,18 @@ async function loadPagesData() {
 }
 
 async function loadPropertiesFromScript() {
-    if (!config.client || !config.client.scriptUrl) {        console.log('No scriptUrl in config');
+    if (!config.client || !config.client.scriptUrl) {
+        console.log('No scriptUrl in config');
         return [];
     }
     try {
-        // Добавляем agent_id в URL
         var url = config.client.scriptUrl;
         if (AGENT_ID) {
             url += (url.includes('?') ? '&' : '?') + 'agent_id=' + AGENT_ID;
         }
        
         const response = await fetch(url);
-        if (!response.ok) {
-            console.error('Script returned error status:', response.status);
+        if (!response.ok) {            console.error('Script returned error status:', response.status);
             return [];
         }
         const data = await response.json();
@@ -243,7 +280,8 @@ function parseCSV(csv) {
         if (!lines[i].trim()) continue;
         const values = parseCSVLine(lines[i]);
         const obj = {};
-        headers.forEach(function(header, index) {            let value = values[index] !== undefined ? values[index].trim() : '';
+        headers.forEach(function(header, index) {
+            let value = values[index] !== undefined ? values[index].trim() : '';
             if (value === 'TRUE') value = true;
             else if (value === 'FALSE') value = false;
             else if (!isNaN(value) && value !== '') value = Number(value);
@@ -254,8 +292,7 @@ function parseCSV(csv) {
     return result;
 }
 
-function parseCSVLine(line) {
-    const result = [];
+function parseCSVLine(line) {    const result = [];
     let current = '';
     let inQuotes = false;
     for (let i = 0; i < line.length; i++) {
@@ -292,6 +329,7 @@ function startApp() {
     window.scrollTo(0, 0);
     hideBack();
 }
+
 function showPage(pageId) {
     currentPage = pageId;
     closeMenu();
@@ -303,8 +341,7 @@ function showPage(pageId) {
         hideBack();
     } else if (pageId === 'contacts') {
         renderContactsPage();
-        document.getElementById('page-contacts').classList.remove('hidden');
-        showBack();
+        document.getElementById('page-contacts').classList.remove('hidden');        showBack();
     } else {
         const data = pagesData[pageId];
         const targetPage = document.getElementById('page-' + pageId);
@@ -341,7 +378,8 @@ function showPage(pageId) {
             }
         }
     }
-    window.scrollTo(0, 0);}
+    window.scrollTo(0, 0);
+}
 
 function renderContactsPage() {
     const data = currentAgentData;
@@ -352,8 +390,7 @@ function renderContactsPage() {
     const agentPhoto = AGENT_CONFIG && AGENT_CONFIG.agentPhotoUrl ? AGENT_CONFIG.agentPhotoUrl : (config.branding ? config.branding.agentPhoto : null);
     if (agentPhoto && agentPhoto.trim() && agentPhoto !== 'logo.png') {
         const img = document.createElement('img');
-        const yandexPhoto = getImageUrl(agentPhoto);
-        img.src = yandexPhoto;
+        const yandexPhoto = getImageUrl(agentPhoto);        img.src = yandexPhoto;
         img.alt = data.name || 'Агент';
         img.onerror = onImgError;
         avatarEl.appendChild(img);
@@ -391,6 +428,7 @@ function openDirectChat() {
         tg.showAlert('❌ Telegram не указан');
     }
 }
+
 function callAgent() {
     let phone = currentAgentData.phone;
     if (!phone) { tg.showAlert('Телефон не указан'); return; }
@@ -401,8 +439,7 @@ function callAgent() {
 }
 
 function toggleFilters() {
-    const block = document.getElementById('filtersBlock');
-    const btn = document.querySelector('.filters-toggle-btn');
+    const block = document.getElementById('filtersBlock');    const btn = document.querySelector('.filters-toggle-btn');
     block.classList.toggle('hidden');
     btn.textContent = block.classList.contains('hidden') ? '🔽 Фильтры' : '🔼 Скрыть фильтры';
 }
@@ -439,7 +476,8 @@ async function init() {
         applyTheme();
         applyBranding();
         await loadAgentData();
-        await loadPagesData();        let propertiesData = await loadPropertiesFromScript();
+        await loadPagesData();
+        let propertiesData = await loadPropertiesFromScript();
         if (!propertiesData || propertiesData.length === 0) {
             propertiesData = [];
         }
@@ -450,8 +488,7 @@ async function init() {
         initPhoneMask();
         initTelegramMask();
         hideBack();
-        const loadingScreen = document.getElementById('loadingScreen');
-        if (loadingScreen) loadingScreen.classList.add('hidden');
+        const loadingScreen = document.getElementById('loadingScreen');        if (loadingScreen) loadingScreen.classList.add('hidden');
     } catch (error) {
         console.error('Init Error:', error);
         const loadingScreen = document.getElementById('loadingScreen');
@@ -488,7 +525,8 @@ function applyBranding() {
 }
 
 function renderWelcome() {
-    if (!config.features || !config.features.showWelcomeScreen) {        document.getElementById('welcomeScreen').classList.add('hidden');
+    if (!config.features || !config.features.showWelcomeScreen) {
+        document.getElementById('welcomeScreen').classList.add('hidden');
         document.getElementById('mainContent').classList.remove('hidden');
     }
 }
@@ -499,8 +537,7 @@ function renderFilters() {
     if (districtContainer) {
         districtContainer.innerHTML = '';
         districts.forEach(function(d) {
-            const label = document.createElement('label');
-            label.className = 'checkbox-label';
+            const label = document.createElement('label');            label.className = 'checkbox-label';
             label.innerHTML = '<input type="checkbox" value="' + escapeHtml(d) + '" class="filter-checkbox" data-filter="district"><span>' + escapeHtml(d) + '</span>';
             districtContainer.appendChild(label);
         });
@@ -537,7 +574,8 @@ function renderFilters() {
         btn.addEventListener('click', function() {
             if (this.classList.contains('active')) this.classList.remove('active');
             else {
-                document.querySelectorAll('.price-btn').forEach(function(b) { b.classList.remove('active'); });                this.classList.add('active');
+                document.querySelectorAll('.price-btn').forEach(function(b) { b.classList.remove('active'); });
+                this.classList.add('active');
             }
             filterListings();
         });
@@ -548,8 +586,7 @@ function renderFilters() {
 function filterListings() {
     const activeBtn = document.querySelector('.price-btn.active');
     const maxPrice = activeBtn ? parseFloat(activeBtn.dataset.price) : Infinity;
-    const selectedDistricts = Array.from(document.querySelectorAll('input[data-filter="district"]:checked')).map(function(cb) { return cb.value; });
-    const selectedMetros = Array.from(document.querySelectorAll('input[data-filter="metro"]:checked')).map(function(cb) { return cb.value; });
+    const selectedDistricts = Array.from(document.querySelectorAll('input[data-filter="district"]:checked')).map(function(cb) { return cb.value; });    const selectedMetros = Array.from(document.querySelectorAll('input[data-filter="metro"]:checked')).map(function(cb) { return cb.value; });
     const selectedRooms = Array.from(document.querySelectorAll('input[data-filter="rooms"]:checked')).map(function(cb) { return cb.value; });
     const filtered = listings.filter(function(item) {
         if (!item.active) return false;
@@ -586,7 +623,8 @@ function renderListings(data) {
         return;
     }
     data.forEach(function(item) {
-        let priceDisplay = '?';        if (typeof item.price_from === 'number') {
+        let priceDisplay = '?';
+        if (typeof item.price_from === 'number') {
             priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) + ' млн ₽' : (item.price_from / 1000000).toFixed(1) + ' млн ₽';
         }
         const priceTo = typeof item.price_to === 'number' ? item.price_to.toFixed(1) : '';
@@ -597,8 +635,7 @@ function renderListings(data) {
         const imageUrl = getImageUrl(item.image_main);
         const card = document.createElement('div');
         card.className = 'listing-card';
-        card.onclick = function(e) { if (!e.target.closest('.consult-btn-inline')) openDetails(item.id); };
-        card.innerHTML = '<img src="' + imageUrl + '" alt="' + escapeHtml(item.name) + '" class="listing-image" onerror="onImgError(event)">' +
+        card.onclick = function(e) { if (!e.target.closest('.consult-btn-inline')) openDetails(item.id); };        card.innerHTML = '<img src="' + imageUrl + '" alt="' + escapeHtml(item.name) + '" class="listing-image" onerror="onImgError(event)">' +
             '<div class="listing-info">' +
             '<h3>' + (escapeHtml(item.name) || 'Без названия') + '</h3>' +
             '<div class="listing-meta">' +
@@ -635,7 +672,8 @@ function updateMapMarkers(filteredItems) {
         if (!item.active || !item.lat || !item.lng) return;
         let priceDisplay = '?';
         if (typeof item.price_from === 'number') {
-            priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);        }
+            priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
+        }
         const marker = L.marker([item.lat, item.lng]).addTo(map);
         const popupContent = '<div class="map-popup" data-id="' + item.id + '" style="cursor:pointer;"><b>' + item.name + '</b><br>от ' + priceDisplay + ' млн ₽</div>';
         marker.bindPopup(popupContent);
@@ -646,8 +684,7 @@ function updateMapMarkers(filteredItems) {
         markers.push(marker);
     });
     if (markers.length > 0) {
-        const group = new L.featureGroup(markers);
-        map.fitBounds(group.getBounds().pad(0.1));
+        const group = new L.featureGroup(markers);        map.fitBounds(group.getBounds().pad(0.1));
     }
 }
 
@@ -684,7 +721,8 @@ function openDetails(id) {
             const yandexUrl = getImageUrl(url);
             img.src = yandexUrl;
             img.onclick = function() { window.open(yandexUrl, '_blank'); };
-            img.onerror = onImgError;            slide.appendChild(img);
+            img.onerror = onImgError;
+            slide.appendChild(img);
             track.appendChild(slide);
             const dot = document.createElement('div');
             dot.className = 'dot ' + (index === 0 ? 'active' : '');
@@ -695,8 +733,7 @@ function openDetails(id) {
         galleryContainer.appendChild(dotsContainer);
         track.addEventListener('scroll', function() {
             const index = Math.round(track.scrollLeft / track.offsetWidth);
-            dotsContainer.querySelectorAll('.dot').forEach(function(d, i) { d.classList.toggle('active', i === index); });
-        });
+            dotsContainer.querySelectorAll('.dot').forEach(function(d, i) { d.classList.toggle('active', i === index); });        });
     } else {
         galleryContainer.innerHTML = '<p style="color: var(--text-secondary); text-align:center; padding: 20px;">Фото нет</p>';
     }
@@ -733,7 +770,8 @@ function openDetails(id) {
     const modalContent = document.querySelector('#detailsModal .modal-content');
     let btn = document.getElementById('modalConsultBtn');
     if (!btn) {
-        btn = document.createElement('button');        btn.id = 'modalConsultBtn';
+        btn = document.createElement('button');
+        btn.id = 'modalConsultBtn';
         btn.className = 'tg-btn';
         btn.style.marginTop = '20px';
         btn.style.marginBottom = '40px';
@@ -745,7 +783,6 @@ function openDetails(id) {
     document.body.style.overflow = 'hidden';
     showBack();
 }
-
 function closeModal() {
     document.getElementById('detailsModal').classList.add('hidden');
     document.body.style.overflow = '';
@@ -782,6 +819,7 @@ function closeConsultModal() {
     }
     if (document.getElementById('detailsModal').classList.contains('hidden') && document.getElementById('mapContainer').classList.contains('hidden')) hideBack();
 }
+
 function initPhoneMask() {
     const input = document.getElementById('consultPhone');
     if (!input) return;
@@ -793,8 +831,7 @@ function initPhoneMask() {
 }
 
 function initTelegramMask() {
-    const input = document.getElementById('consultTelegram');
-    if (!input) return;
+    const input = document.getElementById('consultTelegram');    if (!input) return;
     input.addEventListener('input', function(e) {
         let val = e.target.value.replace(/[^a-zA-Z0-9_@]/g, '');
         if (val.includes('@') && !val.startsWith('@')) val = '@' + val.replace(/@/g, '');
@@ -831,7 +868,8 @@ function submitConsultForm(event) {
                 data: {
                     objectName: item.name,
                     clientName: name,
-                    clientPhone: phone,                    clientTelegram: telegram || 'Не указан'
+                    clientPhone: phone,
+                    clientTelegram: telegram || 'Не указан'
                 }
             })
         })
@@ -842,8 +880,7 @@ function submitConsultForm(event) {
             closeConsultModal();
             setTimeout(function() { tg.showAlert('✅ Заявка отправлена!'); }, 100);
         })
-        .catch(function(err) {
-            tg.showAlert('⚠️ Ошибка отправки.');
+        .catch(function(err) {            tg.showAlert('⚠️ Ошибка отправки.');
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
         });
