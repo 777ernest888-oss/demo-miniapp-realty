@@ -284,18 +284,30 @@
 
         document.getElementById('pinInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') checkPin(); });
 
-        // === ИСПРАВЛЕННЫЙ apiCall (БЕЗ config.adminPin) ===
+        // === ИСПРАВЛЕННЫЙ apiCall С ЛОГИРОВАНИЕМ ===
         async function apiCall(action, params) {
+            console.log('=== ОТПРАВКА ЗАПРОСА ===');
+            console.log('Action:', action);
+            console.log('Params:', params);
+           
             if (!config.scriptUrl) throw new Error('Script URL не настроен');
             var payload = Object.assign({}, params, {
-                action: action,
-                initData: getTelegramInitData()
+                action: action,                 initData: getTelegramInitData()
             });
+           
+            console.log('Full payload:', payload);
+            console.log('initData length:', payload.initData ? payload.initData.length : 0);
+            console.log('========================');
+           
             var fetchResult;
-            try {                fetchResult = await fetch(config.scriptUrl, {
+            try {
+                fetchResult = await fetch(config.scriptUrl, {
                     method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload)
                 });
-            } catch (networkError) { throw new Error('Ошибка сети'); }
+            } catch (networkError) {
+                console.error('Network error:', networkError);
+                throw new Error('Ошибка сети');
+            }
             if (!fetchResult.ok && fetchResult.status !== 0) throw new Error('Ошибка сервера');
             var data; try { data = await fetchResult.json(); } catch (parseError) { return { success: true }; }
             if (data && data.success === false) throw new Error(data.error || 'Ошибка');
@@ -329,8 +341,7 @@
                     var thumbUrl = obj.image_main || '';
                     var displayThumb = thumbUrl.indexOf('lh3.googleusercontent.com/d/') !== -1 ? 'https://drive.google.com/thumbnail?id=' + thumbUrl.split('/d/')[1] + '&sz=w400' : thumbUrl;
                     var statusClass = isActive ? 'status-active' : 'status-hidden'; var statusText = isActive ? 'Активен' : 'Скрыт';
-                    var card = document.createElement('div'); card.className = 'object-card' + (isActive ? '' : ' hidden-object'); card.onclick = function() { openEditModal(obj.id); };
-                    card.innerHTML = '<img src="' + escapeHtml(displayThumb) + '" class="card-thumb" onerror="this.style.background=\'#E0E6ED\'">' + '<div class="card-info"><div class="card-title">' + escapeHtml(obj.name || 'Без названия') + '</div><div class="card-address">📍 ' + escapeHtml(obj.address || '') + '</div><span class="card-status ' + statusClass + '">' + statusText + '</span></div>';
+                    var card = document.createElement('div'); card.className = 'object-card' + (isActive ? '' : ' hidden-object'); card.onclick = function() { openEditModal(obj.id); };                    card.innerHTML = '<img src="' + escapeHtml(displayThumb) + '" class="card-thumb" onerror="this.style.background=\'#E0E6ED\'">' + '<div class="card-info"><div class="card-title">' + escapeHtml(obj.name || 'Без названия') + '</div><div class="card-address">📍 ' + escapeHtml(obj.address || '') + '</div><span class="card-status ' + statusClass + '">' + statusText + '</span></div>';
                     document.getElementById('objectsList').appendChild(card);
                 });
             } catch (e) { document.getElementById('objectsLoading').style.display = 'none'; showToast('❌ Ошибка загрузки объектов'); }
@@ -341,7 +352,8 @@
             document.getElementById('statusToggle').style.display = 'none'; document.getElementById('deleteBtn').style.display = 'none'; document.getElementById('saveBtn').textContent = 'Создать объект';
             photoStore = { main: '', gallery: [], plans: [] };
             ['mainPhotoPreview', 'galleryPreview', 'plansPreview'].forEach(function(id) { document.getElementById(id).innerHTML = ''; });
-            ['fieldImageMain', 'fieldImagesGallery', 'fieldFloorPlansImages'].forEach(function(id) { document.getElementById(id).value = ''; });            document.getElementById('objectModal').classList.add('active');
+            ['fieldImageMain', 'fieldImagesGallery', 'fieldFloorPlansImages'].forEach(function(id) { document.getElementById(id).value = ''; });
+            document.getElementById('objectModal').classList.add('active');
         }
 
         function openEditModal(id) {
@@ -378,8 +390,7 @@
         async function uploadPhoto(type, input) {
             if (!input.files || input.files.length === 0) { await new Promise(function(r) { setTimeout(r, 300); }); }
             if (!input.files || input.files.length === 0) return; var files = Array.from(input.files); var btn = input.parentElement; var originalText = btn.innerHTML; btn.innerHTML = '⏳ Загрузка...';
-            try {
-                for (var i = 0; i < files.length; i++) {
+            try {                for (var i = 0; i < files.length; i++) {
                     var file = files[i]; var base64 = await fileToBase64(file); await apiCall('upload_image', { image: base64, fileName: file.name }); await new Promise(function(r) { setTimeout(r, 1500); });
                     var urlResponse = await fetch(config.scriptUrl + '?action=get_last_file_url'); var urlData = await urlResponse.json();
                     if (urlData && urlData.url) addPhotoToField(type, urlData.url);
@@ -390,7 +401,8 @@
 
         function fileToBase64(file) { return new Promise(function(resolve, reject) { var reader = new FileReader(); reader.onload = function() { resolve(reader.result); }; reader.onerror = function(e) { reject(e); }; reader.readAsDataURL(file); }); }
         function addPhotoToField(type, url) {
-            if (type === 'main') { photoStore.main = url; document.getElementById('fieldImageMain').value = url; renderPhotoPreview('main', [url]); }            else if (type === 'gallery') { if (photoStore.gallery.indexOf(url) === -1) photoStore.gallery.push(url); document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(','); renderPhotoPreview('gallery', photoStore.gallery); }
+            if (type === 'main') { photoStore.main = url; document.getElementById('fieldImageMain').value = url; renderPhotoPreview('main', [url]); }
+            else if (type === 'gallery') { if (photoStore.gallery.indexOf(url) === -1) photoStore.gallery.push(url); document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(','); renderPhotoPreview('gallery', photoStore.gallery); }
             else if (type === 'plans') { if (photoStore.plans.indexOf(url) === -1) photoStore.plans.push(url); document.getElementById('fieldFloorPlansImages').value = photoStore.plans.join(','); renderPhotoPreview('plans', photoStore.plans); }
         }
         function removePhoto(type, index) {
@@ -427,8 +439,7 @@
                     document.getElementById('leadsList').appendChild(card);
                 });
             } catch (e) { document.getElementById('leadsLoading').style.display = 'none'; showToast('❌ Ошибка загрузки заявок'); }
-        }
-        async function updateLeadStatus(id, status) { try { await apiCall('update_lead_status', { id: id, status: status }); showToast('✅ Статус обновлён'); loadLeads(); } catch (e) { showToast('❌ Ошибка'); } }
+        }        async function updateLeadStatus(id, status) { try { await apiCall('update_lead_status', { id: id, status: status }); showToast('✅ Статус обновлён'); loadLeads(); } catch (e) { showToast('❌ Ошибка'); } }
 
         async function loadProfile() {
             document.getElementById('profileLoading').style.display = 'block'; document.getElementById('profileForm').style.display = 'none';
@@ -439,7 +450,8 @@
                 document.getElementById('profileAgencyName').value = currentAgentData.agencyName || ''; document.getElementById('profileAgencyAddress').value = currentAgentData.agencyAddress || '';
                 document.getElementById('profileTelegram').value = currentAgentData.telegramUsername || ''; document.getElementById('profilePhone').value = currentAgentData.phone || '';
                 document.getElementById('profilePhotoUrl').value = currentAgentData.photoUrl || '';
-                if (currentAgentData.photoUrl) renderPhotoPreview('profile', [currentAgentData.photoUrl]);            } catch (e) { document.getElementById('profileLoading').style.display = 'none'; showToast('❌ Ошибка загрузки профиля'); }
+                if (currentAgentData.photoUrl) renderPhotoPreview('profile', [currentAgentData.photoUrl]);
+            } catch (e) { document.getElementById('profileLoading').style.display = 'none'; showToast('❌ Ошибка загрузки профиля'); }
         }
         async function saveProfile(event) {
             event.preventDefault(); var btn = event.target.querySelector('button[type="submit"]'); var originalText = btn.textContent; btn.disabled = true; btn.textContent = 'Сохранение...';
@@ -476,7 +488,6 @@
         function showToast(message) { var toast = document.getElementById('toast'); toast.textContent = message; toast.classList.remove('show'); void toast.offsetWidth; toast.classList.add('show'); setTimeout(function() { toast.classList.remove('show'); }, 3000); }
 
         document.addEventListener('DOMContentLoaded', function() { loadConfig().then(function() { checkAuth(); }); });
-        document.getElementById('objectModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
-    </script>
+        document.getElementById('objectModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });    </script>
 </body>
 </html>
