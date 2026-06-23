@@ -7,6 +7,8 @@ let map = null;
 let markers = [];
 let currentPage = 'home';
 let tg;
+let AGENT_ID = '';           // ← ИЗМЕНЕНО: добавлена глобальная переменная
+let AGENT_CONFIG = null;     // ← ИЗМЕНЕНО: добавлена глобальная переменная
 
 function getImageUrl(sourceUrl) {
     if (!sourceUrl) return '';
@@ -45,17 +47,105 @@ try {
 async function loadClientConfig() {
     try {
         const response = await fetch('client-config.json');
-        config = await response.json();
-    } catch (error) {
+        config = await response.json();    } catch (error) {
         console.error('Config error:', error);        alert('Ошибка загрузки конфигурации!');
     }
 }
 
+// === НОВЫЕ ФУНКЦИИ ДЛЯ МУЛЬТИТЕНАНТНОСТИ ===  // ← ИЗМЕНЕНО: добавлен блок новых функций
+
+// Определение агента из URL
+async function initAgent() {
+    var params = new URLSearchParams(window.location.search);
+    var agentParam = params.get('agent');
+   
+    if (!agentParam) {
+        showErrorScreen('Неверная ссылка. Отсутствует параметр agent.');
+        return false;
+    }
+   
+    AGENT_ID = agentParam;
+   
+    // Проверяем доступ к агенту через бэкенд
+    try {
+        var response = await fetch(config.client.scriptUrl + '?action=get_agent_config&agent_id=' + encodeURIComponent(AGENT_ID));
+        var data = await response.json();
+       
+        if (data.success) {
+            AGENT_CONFIG = data.config;
+            applyBrandConfig(AGENT_CONFIG);
+            return true;
+        } else {
+            showErrorScreen('Ошибка: ' + data.error);
+            return false;
+        }
+    } catch (e) {
+        console.error('[initAgent] Error:', e);
+        showErrorScreen('Ошибка подключения к серверу');
+        return false;
+    }
+}
+
+// Применение брендирования из AGENT_CONFIG
+function applyBrandConfig(brandConfig) {
+    if (!brandConfig) return;
+   
+    // CSS переменные
+    var root = document.documentElement;
+    if (brandConfig.primaryColor) root.style.setProperty('--primary', brandConfig.primaryColor);
+    if (brandConfig.accentColor) root.style.setProperty('--accent', brandConfig.accentColor);
+   
+    // Заголовки
+    if (brandConfig.appName) {        document.title = brandConfig.appName;
+        var headerTitle = document.getElementById('headerTitle');
+        if (headerTitle) headerTitle.textContent = brandConfig.appName.toUpperCase();
+        var companyName = document.getElementById('companyName');
+        if (companyName) companyName.textContent = brandConfig.appName;
+    }
+   
+    // Welcome screen
+    if (brandConfig.welcomeTitle) {
+        var welcomeTitle = document.getElementById('welcomeTitle');
+        if (welcomeTitle) welcomeTitle.textContent = brandConfig.welcomeTitle;
+    }
+   
+    if (brandConfig.tagline) {
+        var taglineEl = document.getElementById('welcomeTagline');
+        if (taglineEl) taglineEl.textContent = brandConfig.tagline;
+    }
+   
+    if (brandConfig.buttonText) {
+        var btnEl = document.getElementById('welcomeButton');
+        if (btnEl) btnEl.textContent = brandConfig.buttonText;
+    }
+   
+    // Логотип
+    if (brandConfig.logoUrl) {
+        var headerLogo = document.querySelector('#headerBrand .brand-logo');
+        if (headerLogo) {
+            headerLogo.src = getImageUrl(brandConfig.logoUrl);
+            headerLogo.onerror = onImgError;
+        }
+    }
+}
+
+// Экран ошибки доступа
+function showErrorScreen(message) {
+    var app = document.body;
+    app.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;text-align:center;">' +
+        '<div style="font-size:48px;margin-bottom:20px;">🔒</div>' +
+        '<h1 style="font-size:24px;margin-bottom:12px;">Доступ ограничен</h1>' +
+        '<p style="color:#7F8C8D;margin-bottom:20px;">' + message + '</p>' +
+        '<p style="color:#95A5A6;font-size:14px;">Обратитесь к администратору</p>' +
+        '</div>';
+}
+
+// === КОНЕЦ БЛОКА НОВЫХ ФУНКЦИЙ ===  // ← ИЗМЕНЕНО
+
 async function loadAgentData() {
     try {
         const res = await fetch(config.sheets.agentData);
-        if (!res.ok) throw new Error('Network error');
-        const csv = await res.text();
+        if (!res.ok) throw new Error('Network error');        const csv = await res.text();
         const parsed = parseCSV(csv);
         if (parsed.length > 0) {
             currentAgentData = parsed[0];
@@ -83,7 +173,13 @@ async function loadPropertiesFromScript() {
         return [];
     }
     try {
-        const response = await fetch(config.client.scriptUrl);
+        // ← ИЗМЕНЕНО: добавлен agent_id в URL запроса
+        var url = config.client.scriptUrl;
+        if (AGENT_ID) {
+            url += (url.indexOf('?') !== -1 ? '&' : '?') + 'agent_id=' + encodeURIComponent(AGENT_ID);
+        }
+       
+        const response = await fetch(url);
         if (!response.ok) {
             console.error('Script returned error status:', response.status);
             return [];
@@ -98,8 +194,7 @@ async function loadPropertiesFromScript() {
             const rows = data.slice(1);
             const result = rows.map(function(row) {                const obj = {};
                 headers.forEach(function(header, i) {
-                    obj[header] = row[i];
-                });
+                    obj[header] = row[i];                });
                 return obj;
             });
             console.log('Loaded', result.length, 'properties from script');
@@ -148,8 +243,7 @@ function parseCSVLine(line) {
 }
 function showBack() {
     const btn = document.getElementById('headerBackBtn');
-    if (btn) btn.classList.remove('hidden');
-}
+    if (btn) btn.classList.remove('hidden');}
 
 function hideBack() {
     const btn = document.getElementById('headerBackBtn');
@@ -191,14 +285,14 @@ function showPage(pageId) {
             targetPage.querySelector('.page-header h2').textContent = data.title;
             targetPage.querySelector('.page-content').innerHTML = data.content;
             if (pageId === 'about') {
-                let imageSrc = config.branding ? config.branding.agentPhoto : null;
+                // ← ИЗМЕНЕНО: приоритет фото из AGENT_CONFIG, затем config.branding
+                let imageSrc = AGENT_CONFIG && AGENT_CONFIG.agentPhotoUrl ? AGENT_CONFIG.agentPhotoUrl : (config.branding ? config.branding.agentPhoto : null);
                 if (!imageSrc && config.branding && config.branding.logo && config.branding.logo !== 'logo.png') {
                     imageSrc = config.branding.logo;
                 }                if (imageSrc) {
                     const contentDiv = targetPage.querySelector('.page-content');
                     const img = document.createElement('img');
-                    const yandexSrc = getImageUrl(imageSrc);
-                    img.src = yandexSrc;
+                    const yandexSrc = getImageUrl(imageSrc);                    img.src = yandexSrc;
                     img.className = 'about-agent-photo';
                     img.alt = 'Фото';
                     img.onerror = onImgError;
@@ -228,7 +322,8 @@ function renderContactsPage() {
     document.getElementById('agentRole').textContent = data.role || 'Эксперт по недвижимости';
     const avatarEl = document.querySelector('.agent-avatar');
     avatarEl.innerHTML = '';
-    const agentPhoto = config.branding ? config.branding.agentPhoto : null;
+    // ← ИЗМЕНЕНО: приоритет фото из AGENT_CONFIG, затем config.branding
+    const agentPhoto = AGENT_CONFIG && AGENT_CONFIG.agentPhotoUrl ? AGENT_CONFIG.agentPhotoUrl : (config.branding ? config.branding.agentPhoto : null);
     if (agentPhoto && agentPhoto.trim() && agentPhoto !== 'logo.png') {
         const img = document.createElement('img');
         const yandexPhoto = getImageUrl(agentPhoto);
@@ -246,8 +341,7 @@ function renderContactsPage() {
     } else {        avatarEl.innerHTML = '';
     }
     const hasAgency = data.agencyName || data.agencyAddress;
-    document.getElementById('agencyBlock').style.display = hasAgency ? 'block' : 'none';
-    document.getElementById('agencyName').textContent = data.agencyName || '';
+    document.getElementById('agencyBlock').style.display = hasAgency ? 'block' : 'none';    document.getElementById('agencyName').textContent = data.agencyName || '';
     document.getElementById('agencyAddress').textContent = data.agencyAddress ? '📍 ' + data.agencyAddress : '';
 }
 
@@ -295,9 +389,8 @@ function switchView(view) {
         listBtn.classList.add('active'); mapBtn.classList.remove('active');        listContainer.classList.remove('hidden'); mapContainer.classList.add('hidden');
         hideBack();
     } else {
-        listBtn.classList.remove('active'); mapBtn.classList.add('active');
-        listContainer.classList.add('hidden'); mapContainer.classList.remove('hidden');
-        showBack();
+        listBtn.classList.remove('active'); mapBtn.classList.add('active');  // ← ИЗМЕНЕНО: исправлена ошибка (было listBtn.remove)
+        listContainer.classList.add('hidden'); mapContainer.classList.remove('hidden');        showBack();
         setTimeout(function() { initMap(); }, 100);
     }
 }
@@ -305,6 +398,15 @@ function switchView(view) {
 async function init() {
     try {
         await loadClientConfig();
+       
+        // ← ИЗМЕНЕНО: добавлена инициализация агента перед остальными загрузками
+        var agentOk = await initAgent();
+        if (!agentOk) {
+            const loadingScreen = document.getElementById('loadingScreen');
+            if (loadingScreen) loadingScreen.classList.add('hidden');
+            return;
+        }
+       
         applyTheme();
         applyBranding();
         await loadAgentData();
@@ -337,8 +439,7 @@ function applyTheme() {
 
 function applyBranding() {
     if (!config.branding) return;
-    const companyEl = document.getElementById('companyName');
-    if (companyEl && config.branding.name) companyEl.textContent = config.branding.name;
+    const companyEl = document.getElementById('companyName');    if (companyEl && config.branding.name) companyEl.textContent = config.branding.name;
     const titleEl = document.getElementById('welcomeTitle');
     if (titleEl && config.branding.welcomeTitle) titleEl.textContent = config.branding.welcomeTitle;
     const taglineEl = document.getElementById('welcomeTagline');    if (taglineEl && config.branding.tagline) taglineEl.textContent = config.branding.tagline;
@@ -387,8 +488,7 @@ function renderFilters() {
         });
     }
     const roomsContainer = document.getElementById('roomsCheckboxes');
-    if (roomsContainer) {
-        const allRooms = [];
+    if (roomsContainer) {        const allRooms = [];
         listings.forEach(function(l) {
             if (l.rooms) {                String(l.rooms).split(',').map(function(r) { return r.trim(); }).forEach(function(r) { if (r && allRooms.indexOf(r) === -1) allRooms.push(r); });
             }
@@ -437,8 +537,7 @@ function filterListings() {
     if (mapContainer && !mapContainer.classList.contains('hidden')) updateMapMarkers(filtered);
 }
 
-function resetFilters() {
-    document.querySelectorAll('.price-btn').forEach(function(btn) { btn.classList.remove('active'); });
+function resetFilters() {    document.querySelectorAll('.price-btn').forEach(function(btn) { btn.classList.remove('active'); });
     document.querySelectorAll('.filter-checkbox').forEach(function(cb) { cb.checked = false; });    renderListings(listings.filter(function(l) { return l.active; }));
 }
 
@@ -487,8 +586,7 @@ function renderListings(data) {
 
 function initMap() {
     if (typeof L === 'undefined') return;
-    const mapContainer = document.getElementById('mapContainer');
-    if (!mapContainer) return;    if (!map) {
+    const mapContainer = document.getElementById('mapContainer');    if (!mapContainer) return;    if (!map) {
         map = L.map('mapContainer').setView([59.9343, 30.3351], 11);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
     }
@@ -537,8 +635,7 @@ function openDetails(id) {
     document.getElementById('modalFeatures').innerHTML = item.features ? '<ul>' + item.features.split(',').map(function(f) { return '<li>' + escapeHtml(f.trim()) + '</li>'; }).join('') + '</ul>' : '<p style="color: var(--text-secondary);">Информация уточняется</p>';
     const galleryContainer = document.getElementById('modalGallery');
     galleryContainer.innerHTML = '';
-    let allImages = [];    if (item.image_main) allImages.push(item.image_main);
-    if (item.images_gallery) {
+    let allImages = [];    if (item.image_main) allImages.push(item.image_main);    if (item.images_gallery) {
         allImages = allImages.concat(item.images_gallery.split(',').map(function(u) { return u.trim(); }).filter(function(u) { return u; }));
     }
     if (allImages.length > 0) {
@@ -587,8 +684,7 @@ function openDetails(id) {
             const slide = document.createElement('div');
             slide.className = 'slide';
             slide.style.flex = '0 0 85%';            const img = document.createElement('img');
-            const yandexUrl = getImageUrl(url);
-            img.src = yandexUrl;
+            const yandexUrl = getImageUrl(url);            img.src = yandexUrl;
             img.style.height = '200px';
             img.onclick = function() { window.open(yandexUrl, '_blank'); };
             img.onerror = onImgError;
@@ -637,8 +733,7 @@ function openConsultForm(id, event) {
             submitBtn.textContent = 'Отправить заявку';
             submitBtn.disabled = false;        }
         document.getElementById('consultModal').classList.remove('hidden');
-        showBack();
-    }
+        showBack();    }
 }
 
 function closeConsultModal() {
@@ -687,8 +782,7 @@ function submitConsultForm(event) {
         if (!name || name.length < 2) { tg.showAlert('⚠️ Введите имя'); return; }        if (phone.replace(/\D/g, '').length < 10) { tg.showAlert('❌ Введите корректный телефон'); return; }
         if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) { tg.showAlert('❌ Telegram только латиницей'); return; }
         const submitBtn = event.target.querySelector('button[type="submit"]');
-        const originalText = submitBtn.textContent;
-        submitBtn.textContent = 'Отправка...';
+        const originalText = submitBtn.textContent;        submitBtn.textContent = 'Отправка...';
         submitBtn.disabled = true;
         fetch(config.client.scriptUrl, {
             method: 'POST',
@@ -696,6 +790,7 @@ function submitConsultForm(event) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'save_lead',
+                agentId: AGENT_ID,  // ← ИЗМЕНЕНО: добавлен agentId в запрос
                 data: {
                     objectName: item.name,
                     clientName: name,
