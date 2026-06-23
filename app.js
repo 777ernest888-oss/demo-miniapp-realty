@@ -7,8 +7,8 @@ let map = null;
 let markers = [];
 let currentPage = 'home';
 let tg;
-let AGENT_ID = '';           // ← ИЗМЕНЕНО: добавлена глобальная переменная
-let AGENT_CONFIG = null;     // ← ИЗМЕНЕНО: добавлена глобальная переменная
+let AGENT_ID = '';
+let AGENT_CONFIG = null;
 
 function getImageUrl(sourceUrl) {
     if (!sourceUrl) return '';
@@ -48,34 +48,55 @@ async function loadClientConfig() {
     try {
         const response = await fetch('client-config.json');
         config = await response.json();    } catch (error) {
-        console.error('Config error:', error);        alert('Ошибка загрузки конфигурации!');
+        console.error('Config error:', error);
+        alert('Ошибка загрузки конфигурации!');
     }
 }
 
-// === НОВЫЕ ФУНКЦИИ ДЛЯ МУЛЬТИТЕНАНТНОСТИ ===  // ← ИЗМЕНЕНО: добавлен блок новых функций
-
-// Определение агента из URL
+// Определение агента из URL или по домену
 async function initAgent() {
     var params = new URLSearchParams(window.location.search);
     var agentParam = params.get('agent');
+    var hostname = window.location.hostname;
    
-    if (!agentParam) {
-        showErrorScreen('Неверная ссылка. Отсутствует параметр agent.');
-        return false;
-    }
-   
-    AGENT_ID = agentParam;
-   
-    // Проверяем доступ к агенту через бэкенд
     try {
+        // Если передан agent в URL — используем его
+        if (agentParam) {
+            AGENT_ID = agentParam;
+        }
+        // Если это кастомный домен (не prostors.ru)
+        else if (hostname && hostname !== 'prostors.ru' && !hostname.endsWith('.prostors.ru') && !hostname.includes('github.io')) {
+            console.log('[initAgent] Кастомный домен:', hostname);
+            // Запрашиваем agent_id по домену
+            var response = await fetch(config.client.scriptUrl + '?action=resolve_agent_by_domain&domain=' + encodeURIComponent(hostname));
+            var data = await response.json();
+           
+            if (data.success && data.agentId) {
+                AGENT_ID = data.agentId;
+                console.log('[initAgent] Найден агент по домену:', AGENT_ID);
+            } else {
+                showErrorScreen('Домен не привязан ни к одному агенту');
+                return false;
+            }
+        }
+        else {
+            showErrorScreen('Неверная ссылка. Отсутствует параметр agent.');
+            return false;
+        }
+       
+        if (!AGENT_ID) {
+            showErrorScreen('Агент не определён');
+            return false;
+        }
+       
+        // Проверяем доступ к агенту через бэкенд
         var response = await fetch(config.client.scriptUrl + '?action=get_agent_config&agent_id=' + encodeURIComponent(AGENT_ID));
         var data = await response.json();
        
         if (data.success) {
             AGENT_CONFIG = data.config;
             applyBrandConfig(AGENT_CONFIG);
-            return true;
-        } else {
+            return true;        } else {
             showErrorScreen('Ошибка: ' + data.error);
             return false;
         }
@@ -96,7 +117,8 @@ function applyBrandConfig(brandConfig) {
     if (brandConfig.accentColor) root.style.setProperty('--accent', brandConfig.accentColor);
    
     // Заголовки
-    if (brandConfig.appName) {        document.title = brandConfig.appName;
+    if (brandConfig.appName) {
+        document.title = brandConfig.appName;
         var headerTitle = document.getElementById('headerTitle');
         if (headerTitle) headerTitle.textContent = brandConfig.appName.toUpperCase();
         var companyName = document.getElementById('companyName');
@@ -123,9 +145,14 @@ function applyBrandConfig(brandConfig) {
     if (brandConfig.logoUrl) {
         var headerLogo = document.querySelector('#headerBrand .brand-logo');
         if (headerLogo) {
-            headerLogo.src = getImageUrl(brandConfig.logoUrl);
-            headerLogo.onerror = onImgError;
+            headerLogo.src = getImageUrl(brandConfig.logoUrl);            headerLogo.onerror = onImgError;
         }
+    }
+   
+    // Фото агента
+    if (brandConfig.agentPhotoUrl) {
+        var agentPhoto = document.querySelector('.agent-photo');
+        if (agentPhoto) agentPhoto.src = getImageUrl(brandConfig.agentPhotoUrl);
     }
 }
 
@@ -140,12 +167,11 @@ function showErrorScreen(message) {
         '</div>';
 }
 
-// === КОНЕЦ БЛОКА НОВЫХ ФУНКЦИЙ ===  // ← ИЗМЕНЕНО
-
 async function loadAgentData() {
     try {
         const res = await fetch(config.sheets.agentData);
-        if (!res.ok) throw new Error('Network error');        const csv = await res.text();
+        if (!res.ok) throw new Error('Network error');
+        const csv = await res.text();
         const parsed = parseCSV(csv);
         if (parsed.length > 0) {
             currentAgentData = parsed[0];
@@ -168,15 +194,14 @@ async function loadPagesData() {
 }
 
 async function loadPropertiesFromScript() {
-    if (!config.client || !config.client.scriptUrl) {
-        console.log('No scriptUrl in config');
+    if (!config.client || !config.client.scriptUrl) {        console.log('No scriptUrl in config');
         return [];
     }
     try {
-        // ← ИЗМЕНЕНО: добавлен agent_id в URL запроса
+        // Добавляем agent_id в URL
         var url = config.client.scriptUrl;
         if (AGENT_ID) {
-            url += (url.indexOf('?') !== -1 ? '&' : '?') + 'agent_id=' + encodeURIComponent(AGENT_ID);
+            url += (url.includes('?') ? '&' : '?') + 'agent_id=' + AGENT_ID;
         }
        
         const response = await fetch(url);
@@ -192,9 +217,11 @@ async function loadPropertiesFromScript() {
         if (Array.isArray(data) && data.length > 1) {
             const headers = data[0];
             const rows = data.slice(1);
-            const result = rows.map(function(row) {                const obj = {};
+            const result = rows.map(function(row) {
+                const obj = {};
                 headers.forEach(function(header, i) {
-                    obj[header] = row[i];                });
+                    obj[header] = row[i];
+                });
                 return obj;
             });
             console.log('Loaded', result.length, 'properties from script');
@@ -216,8 +243,7 @@ function parseCSV(csv) {
         if (!lines[i].trim()) continue;
         const values = parseCSVLine(lines[i]);
         const obj = {};
-        headers.forEach(function(header, index) {
-            let value = values[index] !== undefined ? values[index].trim() : '';
+        headers.forEach(function(header, index) {            let value = values[index] !== undefined ? values[index].trim() : '';
             if (value === 'TRUE') value = true;
             else if (value === 'FALSE') value = false;
             else if (!isNaN(value) && value !== '') value = Number(value);
@@ -241,9 +267,11 @@ function parseCSVLine(line) {
     result.push(current);
     return result;
 }
+
 function showBack() {
     const btn = document.getElementById('headerBackBtn');
-    if (btn) btn.classList.remove('hidden');}
+    if (btn) btn.classList.remove('hidden');
+}
 
 function hideBack() {
     const btn = document.getElementById('headerBackBtn');
@@ -264,7 +292,6 @@ function startApp() {
     window.scrollTo(0, 0);
     hideBack();
 }
-
 function showPage(pageId) {
     currentPage = pageId;
     closeMenu();
@@ -285,14 +312,15 @@ function showPage(pageId) {
             targetPage.querySelector('.page-header h2').textContent = data.title;
             targetPage.querySelector('.page-content').innerHTML = data.content;
             if (pageId === 'about') {
-                // ← ИЗМЕНЕНО: приоритет фото из AGENT_CONFIG, затем config.branding
                 let imageSrc = AGENT_CONFIG && AGENT_CONFIG.agentPhotoUrl ? AGENT_CONFIG.agentPhotoUrl : (config.branding ? config.branding.agentPhoto : null);
                 if (!imageSrc && config.branding && config.branding.logo && config.branding.logo !== 'logo.png') {
                     imageSrc = config.branding.logo;
-                }                if (imageSrc) {
+                }
+                if (imageSrc) {
                     const contentDiv = targetPage.querySelector('.page-content');
                     const img = document.createElement('img');
-                    const yandexSrc = getImageUrl(imageSrc);                    img.src = yandexSrc;
+                    const yandexSrc = getImageUrl(imageSrc);
+                    img.src = yandexSrc;
                     img.className = 'about-agent-photo';
                     img.alt = 'Фото';
                     img.onerror = onImgError;
@@ -313,8 +341,7 @@ function showPage(pageId) {
             }
         }
     }
-    window.scrollTo(0, 0);
-}
+    window.scrollTo(0, 0);}
 
 function renderContactsPage() {
     const data = currentAgentData;
@@ -322,7 +349,6 @@ function renderContactsPage() {
     document.getElementById('agentRole').textContent = data.role || 'Эксперт по недвижимости';
     const avatarEl = document.querySelector('.agent-avatar');
     avatarEl.innerHTML = '';
-    // ← ИЗМЕНЕНО: приоритет фото из AGENT_CONFIG, затем config.branding
     const agentPhoto = AGENT_CONFIG && AGENT_CONFIG.agentPhotoUrl ? AGENT_CONFIG.agentPhotoUrl : (config.branding ? config.branding.agentPhoto : null);
     if (agentPhoto && agentPhoto.trim() && agentPhoto !== 'logo.png') {
         const img = document.createElement('img');
@@ -338,10 +364,12 @@ function renderContactsPage() {
         img.alt = 'Логотип';
         img.onerror = onImgError;
         avatarEl.appendChild(img);
-    } else {        avatarEl.innerHTML = '';
+    } else {
+        avatarEl.innerHTML = '';
     }
     const hasAgency = data.agencyName || data.agencyAddress;
-    document.getElementById('agencyBlock').style.display = hasAgency ? 'block' : 'none';    document.getElementById('agencyName').textContent = data.agencyName || '';
+    document.getElementById('agencyBlock').style.display = hasAgency ? 'block' : 'none';
+    document.getElementById('agencyName').textContent = data.agencyName || '';
     document.getElementById('agencyAddress').textContent = data.agencyAddress ? '📍 ' + data.agencyAddress : '';
 }
 
@@ -363,7 +391,6 @@ function openDirectChat() {
         tg.showAlert('❌ Telegram не указан');
     }
 }
-
 function callAgent() {
     let phone = currentAgentData.phone;
     if (!phone) { tg.showAlert('Телефон не указан'); return; }
@@ -386,11 +413,13 @@ function switchView(view) {
     const listContainer = document.getElementById('listingsContainer');
     const mapContainer = document.getElementById('mapContainer');
     if (view === 'list') {
-        listBtn.classList.add('active'); mapBtn.classList.remove('active');        listContainer.classList.remove('hidden'); mapContainer.classList.add('hidden');
+        listBtn.classList.add('active'); mapBtn.classList.remove('active');
+        listContainer.classList.remove('hidden'); mapContainer.classList.add('hidden');
         hideBack();
     } else {
-        listBtn.classList.remove('active'); mapBtn.classList.add('active');  // ← ИЗМЕНЕНО: исправлена ошибка (было listBtn.remove)
-        listContainer.classList.add('hidden'); mapContainer.classList.remove('hidden');        showBack();
+        listBtn.classList.remove('active'); mapBtn.classList.add('active');
+        listContainer.classList.add('hidden'); mapContainer.classList.remove('hidden');
+        showBack();
         setTimeout(function() { initMap(); }, 100);
     }
 }
@@ -399,7 +428,7 @@ async function init() {
     try {
         await loadClientConfig();
        
-        // ← ИЗМЕНЕНО: добавлена инициализация агента перед остальными загрузками
+        // Инициализация агента
         var agentOk = await initAgent();
         if (!agentOk) {
             const loadingScreen = document.getElementById('loadingScreen');
@@ -410,8 +439,7 @@ async function init() {
         applyTheme();
         applyBranding();
         await loadAgentData();
-        await loadPagesData();
-        let propertiesData = await loadPropertiesFromScript();
+        await loadPagesData();        let propertiesData = await loadPropertiesFromScript();
         if (!propertiesData || propertiesData.length === 0) {
             propertiesData = [];
         }
@@ -439,10 +467,12 @@ function applyTheme() {
 
 function applyBranding() {
     if (!config.branding) return;
-    const companyEl = document.getElementById('companyName');    if (companyEl && config.branding.name) companyEl.textContent = config.branding.name;
+    const companyEl = document.getElementById('companyName');
+    if (companyEl && config.branding.name) companyEl.textContent = config.branding.name;
     const titleEl = document.getElementById('welcomeTitle');
     if (titleEl && config.branding.welcomeTitle) titleEl.textContent = config.branding.welcomeTitle;
-    const taglineEl = document.getElementById('welcomeTagline');    if (taglineEl && config.branding.tagline) taglineEl.textContent = config.branding.tagline;
+    const taglineEl = document.getElementById('welcomeTagline');
+    if (taglineEl && config.branding.tagline) taglineEl.textContent = config.branding.tagline;
     const btnEl = document.getElementById('welcomeButton');
     if (btnEl && config.branding.buttonText) btnEl.textContent = config.branding.buttonText;
     const headerTitle = document.getElementById('headerTitle');
@@ -458,8 +488,7 @@ function applyBranding() {
 }
 
 function renderWelcome() {
-    if (!config.features || !config.features.showWelcomeScreen) {
-        document.getElementById('welcomeScreen').classList.add('hidden');
+    if (!config.features || !config.features.showWelcomeScreen) {        document.getElementById('welcomeScreen').classList.add('hidden');
         document.getElementById('mainContent').classList.remove('hidden');
     }
 }
@@ -488,9 +517,11 @@ function renderFilters() {
         });
     }
     const roomsContainer = document.getElementById('roomsCheckboxes');
-    if (roomsContainer) {        const allRooms = [];
+    if (roomsContainer) {
+        const allRooms = [];
         listings.forEach(function(l) {
-            if (l.rooms) {                String(l.rooms).split(',').map(function(r) { return r.trim(); }).forEach(function(r) { if (r && allRooms.indexOf(r) === -1) allRooms.push(r); });
+            if (l.rooms) {
+                String(l.rooms).split(',').map(function(r) { return r.trim(); }).forEach(function(r) { if (r && allRooms.indexOf(r) === -1) allRooms.push(r); });
             }
         });
         allRooms.sort();
@@ -506,8 +537,7 @@ function renderFilters() {
         btn.addEventListener('click', function() {
             if (this.classList.contains('active')) this.classList.remove('active');
             else {
-                document.querySelectorAll('.price-btn').forEach(function(b) { b.classList.remove('active'); });
-                this.classList.add('active');
+                document.querySelectorAll('.price-btn').forEach(function(b) { b.classList.remove('active'); });                this.classList.add('active');
             }
             filterListings();
         });
@@ -537,8 +567,10 @@ function filterListings() {
     if (mapContainer && !mapContainer.classList.contains('hidden')) updateMapMarkers(filtered);
 }
 
-function resetFilters() {    document.querySelectorAll('.price-btn').forEach(function(btn) { btn.classList.remove('active'); });
-    document.querySelectorAll('.filter-checkbox').forEach(function(cb) { cb.checked = false; });    renderListings(listings.filter(function(l) { return l.active; }));
+function resetFilters() {
+    document.querySelectorAll('.price-btn').forEach(function(btn) { btn.classList.remove('active'); });
+    document.querySelectorAll('.filter-checkbox').forEach(function(cb) { cb.checked = false; });
+    renderListings(listings.filter(function(l) { return l.active; }));
 }
 
 function renderListings(data) {
@@ -554,8 +586,7 @@ function renderListings(data) {
         return;
     }
     data.forEach(function(item) {
-        let priceDisplay = '?';
-        if (typeof item.price_from === 'number') {
+        let priceDisplay = '?';        if (typeof item.price_from === 'number') {
             priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) + ' млн ₽' : (item.price_from / 1000000).toFixed(1) + ' млн ₽';
         }
         const priceTo = typeof item.price_to === 'number' ? item.price_to.toFixed(1) : '';
@@ -586,7 +617,9 @@ function renderListings(data) {
 
 function initMap() {
     if (typeof L === 'undefined') return;
-    const mapContainer = document.getElementById('mapContainer');    if (!mapContainer) return;    if (!map) {
+    const mapContainer = document.getElementById('mapContainer');
+    if (!mapContainer) return;
+    if (!map) {
         map = L.map('mapContainer').setView([59.9343, 30.3351], 11);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
     }
@@ -602,8 +635,7 @@ function updateMapMarkers(filteredItems) {
         if (!item.active || !item.lat || !item.lng) return;
         let priceDisplay = '?';
         if (typeof item.price_from === 'number') {
-            priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
-        }
+            priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);        }
         const marker = L.marker([item.lat, item.lng]).addTo(map);
         const popupContent = '<div class="map-popup" data-id="' + item.id + '" style="cursor:pointer;"><b>' + item.name + '</b><br>от ' + priceDisplay + ' млн ₽</div>';
         marker.bindPopup(popupContent);
@@ -635,7 +667,9 @@ function openDetails(id) {
     document.getElementById('modalFeatures').innerHTML = item.features ? '<ul>' + item.features.split(',').map(function(f) { return '<li>' + escapeHtml(f.trim()) + '</li>'; }).join('') + '</ul>' : '<p style="color: var(--text-secondary);">Информация уточняется</p>';
     const galleryContainer = document.getElementById('modalGallery');
     galleryContainer.innerHTML = '';
-    let allImages = [];    if (item.image_main) allImages.push(item.image_main);    if (item.images_gallery) {
+    let allImages = [];
+    if (item.image_main) allImages.push(item.image_main);
+    if (item.images_gallery) {
         allImages = allImages.concat(item.images_gallery.split(',').map(function(u) { return u.trim(); }).filter(function(u) { return u; }));
     }
     if (allImages.length > 0) {
@@ -650,8 +684,7 @@ function openDetails(id) {
             const yandexUrl = getImageUrl(url);
             img.src = yandexUrl;
             img.onclick = function() { window.open(yandexUrl, '_blank'); };
-            img.onerror = onImgError;
-            slide.appendChild(img);
+            img.onerror = onImgError;            slide.appendChild(img);
             track.appendChild(slide);
             const dot = document.createElement('div');
             dot.className = 'dot ' + (index === 0 ? 'active' : '');
@@ -683,8 +716,10 @@ function openDetails(id) {
         plansImages.forEach(function(url) {
             const slide = document.createElement('div');
             slide.className = 'slide';
-            slide.style.flex = '0 0 85%';            const img = document.createElement('img');
-            const yandexUrl = getImageUrl(url);            img.src = yandexUrl;
+            slide.style.flex = '0 0 85%';
+            const img = document.createElement('img');
+            const yandexUrl = getImageUrl(url);
+            img.src = yandexUrl;
             img.style.height = '200px';
             img.onclick = function() { window.open(yandexUrl, '_blank'); };
             img.onerror = onImgError;
@@ -698,8 +733,7 @@ function openDetails(id) {
     const modalContent = document.querySelector('#detailsModal .modal-content');
     let btn = document.getElementById('modalConsultBtn');
     if (!btn) {
-        btn = document.createElement('button');
-        btn.id = 'modalConsultBtn';
+        btn = document.createElement('button');        btn.id = 'modalConsultBtn';
         btn.className = 'tg-btn';
         btn.style.marginTop = '20px';
         btn.style.marginBottom = '40px';
@@ -731,9 +765,11 @@ function openConsultForm(id, event) {
         const submitBtn = document.querySelector('#consultForm button[type="submit"]');
         if (submitBtn) {
             submitBtn.textContent = 'Отправить заявку';
-            submitBtn.disabled = false;        }
+            submitBtn.disabled = false;
+        }
         document.getElementById('consultModal').classList.remove('hidden');
-        showBack();    }
+        showBack();
+    }
 }
 
 function closeConsultModal() {
@@ -746,7 +782,6 @@ function closeConsultModal() {
     }
     if (document.getElementById('detailsModal').classList.contains('hidden') && document.getElementById('mapContainer').classList.contains('hidden')) hideBack();
 }
-
 function initPhoneMask() {
     const input = document.getElementById('consultPhone');
     if (!input) return;
@@ -779,10 +814,12 @@ function submitConsultForm(event) {
         const name = document.getElementById('consultName').value.trim();
         const phone = document.getElementById('consultPhone').value.trim();
         let telegram = document.getElementById('consultTelegram').value.trim() || '';
-        if (!name || name.length < 2) { tg.showAlert('⚠️ Введите имя'); return; }        if (phone.replace(/\D/g, '').length < 10) { tg.showAlert('❌ Введите корректный телефон'); return; }
+        if (!name || name.length < 2) { tg.showAlert('⚠️ Введите имя'); return; }
+        if (phone.replace(/\D/g, '').length < 10) { tg.showAlert('❌ Введите корректный телефон'); return; }
         if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) { tg.showAlert('❌ Telegram только латиницей'); return; }
         const submitBtn = event.target.querySelector('button[type="submit"]');
-        const originalText = submitBtn.textContent;        submitBtn.textContent = 'Отправка...';
+        const originalText = submitBtn.textContent;
+        submitBtn.textContent = 'Отправка...';
         submitBtn.disabled = true;
         fetch(config.client.scriptUrl, {
             method: 'POST',
@@ -790,12 +827,11 @@ function submitConsultForm(event) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 action: 'save_lead',
-                agentId: AGENT_ID,  // ← ИЗМЕНЕНО: добавлен agentId в запрос
+                agentId: AGENT_ID,
                 data: {
                     objectName: item.name,
                     clientName: name,
-                    clientPhone: phone,
-                    clientTelegram: telegram || 'Не указан'
+                    clientPhone: phone,                    clientTelegram: telegram || 'Не указан'
                 }
             })
         })
