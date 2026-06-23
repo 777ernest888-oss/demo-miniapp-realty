@@ -92,7 +92,7 @@
         <div class="header"><h1>⚙️ Админка</h1><button class="header-btn" onclick="refreshCurrentTab()">↻</button></div>
         <div class="container">
             <div class="tabs">
-                <button class="tab active" onclick="switchTab('objects')">🏢 Объекты</button>
+                <button class="tab active" onclick="switchTab('objects')"> Объекты</button>
                 <button class="tab" onclick="switchTab('leads')">📩 Заявки</button>
                 <button class="tab" onclick="switchTab('profile')">👤 Профиль</button>
                 <button class="tab" onclick="switchTab('about')">ℹ️ Обо мне</button>
@@ -130,7 +130,7 @@
                 <form id="aboutForm" onsubmit="saveAboutPage(event)" style="display:none;">
                     <div class="form-group"><label class="form-label">Заголовок</label><input type="text" class="form-input" id="aboutTitle"></div>
                     <div class="form-group"><label class="form-label">Содержание</label><textarea class="form-textarea" id="aboutContent"></textarea></div>
-                    <button type="submit" class="btn btn-primary">💾 Сохранить страницу</button>
+                    <button type="submit" class="btn btn-primary"> Сохранить страницу</button>
                 </form>
             </div>
         </div>
@@ -226,7 +226,7 @@
                 var data = await response.json();
                 config.scriptUrl = data.client.scriptUrl;
                 config.ownerId = data.client.ownerId || '';
-            } catch (e) { console.error('[CONFIG] Error:', e); showToast('❌ Ошибка конфигурации'); }
+            } catch (e) { console.error('[CONFIG] Error:', e); showToast(' Ошибка конфигурации'); }
         }
 
         function checkAuth() {
@@ -237,7 +237,7 @@
             document.getElementById('pinInput').focus();
         }
 
-        // === ИСПРАВЛЕННАЯ ПРОВЕРКА PIN ЧЕРЕЗ СЕРВЕР ===
+        // === ПРОВЕРКА PIN ЧЕРЕЗ СЕРВЕР + СОХРАНЕНИЕ В SESSION ===
         function checkPin() {
             var input = document.getElementById('pinInput').value.trim();
             if (!input) return;
@@ -259,6 +259,7 @@
                 if (data && data.success) {
                     isAuthorized = true;
                     sessionStorage.setItem('adminAuth', 'true');
+                    sessionStorage.setItem('adminPin', input); // СОХРАНЯЕМ PIN
                     document.getElementById('pinError').style.display = 'none';
                     showApp();
                 } else {
@@ -284,19 +285,22 @@
 
         document.getElementById('pinInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') checkPin(); });
 
-        // === ИСПРАВЛЕННЫЙ apiCall С ЛОГИРОВАНИЕМ ===
+        // === apiCall С ЛОГИРОВАНИЕМ И ПЕРЕДАЧЕЙ PIN ===
         async function apiCall(action, params) {
             console.log('=== ОТПРАВКА ЗАПРОСА ===');
             console.log('Action:', action);
             console.log('Params:', params);
            
             if (!config.scriptUrl) throw new Error('Script URL не настроен');
-            var payload = Object.assign({}, params, {
-                action: action,                 initData: getTelegramInitData()
+                        var payload = Object.assign({}, params, {
+                action: action,
+                initData: getTelegramInitData(),
+                pin: sessionStorage.getItem('adminPin') || '' // ПЕРЕДАЁМ PIN
             });
            
             console.log('Full payload:', payload);
             console.log('initData length:', payload.initData ? payload.initData.length : 0);
+            console.log('Has pin:', payload.pin ? 'YES' : 'NO');
             console.log('========================');
            
             var fetchResult;
@@ -337,11 +341,11 @@
                 document.getElementById('objectsLoading').style.display = 'none';
                 if (objects.length === 0) { document.getElementById('objectsList').innerHTML = '<div class="empty-state"><div class="empty-icon">🏗️</div><h3>Нет объектов</h3><p>Нажмите + чтобы добавить первый ЖК</p></div>'; return; }
                 objects.forEach(function(obj) {
-                    var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
-                    var thumbUrl = obj.image_main || '';
+                    var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';                    var thumbUrl = obj.image_main || '';
                     var displayThumb = thumbUrl.indexOf('lh3.googleusercontent.com/d/') !== -1 ? 'https://drive.google.com/thumbnail?id=' + thumbUrl.split('/d/')[1] + '&sz=w400' : thumbUrl;
                     var statusClass = isActive ? 'status-active' : 'status-hidden'; var statusText = isActive ? 'Активен' : 'Скрыт';
-                    var card = document.createElement('div'); card.className = 'object-card' + (isActive ? '' : ' hidden-object'); card.onclick = function() { openEditModal(obj.id); };                    card.innerHTML = '<img src="' + escapeHtml(displayThumb) + '" class="card-thumb" onerror="this.style.background=\'#E0E6ED\'">' + '<div class="card-info"><div class="card-title">' + escapeHtml(obj.name || 'Без названия') + '</div><div class="card-address">📍 ' + escapeHtml(obj.address || '') + '</div><span class="card-status ' + statusClass + '">' + statusText + '</span></div>';
+                    var card = document.createElement('div'); card.className = 'object-card' + (isActive ? '' : ' hidden-object'); card.onclick = function() { openEditModal(obj.id); };
+                    card.innerHTML = '<img src="' + escapeHtml(displayThumb) + '" class="card-thumb" onerror="this.style.background=\'#E0E6ED\'">' + '<div class="card-info"><div class="card-title">' + escapeHtml(obj.name || 'Без названия') + '</div><div class="card-address"> ' + escapeHtml(obj.address || '') + '</div><span class="card-status ' + statusClass + '">' + statusText + '</span></div>';
                     document.getElementById('objectsList').appendChild(card);
                 });
             } catch (e) { document.getElementById('objectsLoading').style.display = 'none'; showToast('❌ Ошибка загрузки объектов'); }
@@ -386,11 +390,11 @@
             if (!currentEditId || !confirm('Удалить объект?')) return; var btn = document.getElementById('deleteBtn'); btn.disabled = true; btn.textContent = 'Удаление...';
             try { await apiCall('delete', { id: currentEditId }); showToast('✅ Удалён'); closeModal(); setTimeout(loadObjects, 2000); } catch (e) { showToast('❌ Ошибка'); } finally { btn.disabled = false; btn.textContent = 'Удалить объект'; }
         }
-
         async function uploadPhoto(type, input) {
             if (!input.files || input.files.length === 0) { await new Promise(function(r) { setTimeout(r, 300); }); }
             if (!input.files || input.files.length === 0) return; var files = Array.from(input.files); var btn = input.parentElement; var originalText = btn.innerHTML; btn.innerHTML = '⏳ Загрузка...';
-            try {                for (var i = 0; i < files.length; i++) {
+            try {
+                for (var i = 0; i < files.length; i++) {
                     var file = files[i]; var base64 = await fileToBase64(file); await apiCall('upload_image', { image: base64, fileName: file.name }); await new Promise(function(r) { setTimeout(r, 1500); });
                     var urlResponse = await fetch(config.scriptUrl + '?action=get_last_file_url'); var urlData = await urlResponse.json();
                     if (urlData && urlData.url) addPhotoToField(type, urlData.url);
@@ -435,11 +439,11 @@
                     var phoneDisplay = lead.clientPhone && String(lead.clientPhone).indexOf('#ERROR') === -1 ? escapeHtml(lead.clientPhone) : 'Не указан';
                     var telegramDisplay = lead.clientTelegram && lead.clientTelegram !== 'Не указан' && String(lead.clientTelegram).indexOf('#ERROR') === -1 ? '<div class="lead-info">💬 ' + escapeHtml(lead.clientTelegram) + '</div>' : '';
                     var timestampDisplay = lead.timestamp ? escapeHtml(lead.timestamp) : 'Не указано';
-                    card.innerHTML = '<div class="lead-header"><div class="lead-object">🏢 ' + escapeHtml(lead.objectName || 'Не указан') + '</div><div class="lead-status ' + statusClass + '">' + statusText + '</div></div><div class="lead-info">👤 ' + escapeHtml(lead.clientName || 'Не указано') + '</div><div class="lead-info">📞 ' + phoneDisplay + '</div>' + telegramDisplay + '<div class="lead-info">🕐 ' + timestampDisplay + '</div><div class="lead-actions"><button class="status-btn ' + (lead.status === 'Новая' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + lead.id + '\', \'new\')">🆕 Новая</button><button class="status-btn ' + (lead.status === 'Обзвонена' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + lead.id + '\', \'contacted\')">📞 Обзвонена</button><button class="status-btn ' + (lead.status === 'Завершена' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + lead.id + '\', \'completed\')">✅ Завершена</button><button class="status-btn ' + (lead.status === 'Отменена' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + lead.id + '\', \'cancelled\')">❌ Отменена</button></div>';
-                    document.getElementById('leadsList').appendChild(card);
+                    card.innerHTML = '<div class="lead-header"><div class="lead-object"> ' + escapeHtml(lead.objectName || 'Не указан') + '</div><div class="lead-status ' + statusClass + '">' + statusText + '</div></div><div class="lead-info">👤 ' + escapeHtml(lead.clientName || 'Не указано') + '</div><div class="lead-info"> ' + phoneDisplay + '</div>' + telegramDisplay + '<div class="lead-info">🕐 ' + timestampDisplay + '</div><div class="lead-actions"><button class="status-btn ' + (lead.status === 'Новая' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + lead.id + '\', \'new\')">🆕 Новая</button><button class="status-btn ' + (lead.status === 'Обзвонена' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + lead.id + '\', \'contacted\')">📞 Обзвонена</button><button class="status-btn ' + (lead.status === 'Завершена' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + lead.id + '\', \'completed\')">✅ Завершена</button><button class="status-btn ' + (lead.status === 'Отменена' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + lead.id + '\', \'cancelled\')">❌ Отменена</button></div>';                    document.getElementById('leadsList').appendChild(card);
                 });
-            } catch (e) { document.getElementById('leadsLoading').style.display = 'none'; showToast('❌ Ошибка загрузки заявок'); }
-        }        async function updateLeadStatus(id, status) { try { await apiCall('update_lead_status', { id: id, status: status }); showToast('✅ Статус обновлён'); loadLeads(); } catch (e) { showToast('❌ Ошибка'); } }
+            } catch (e) { document.getElementById('leadsLoading').style.display = 'none'; showToast(' Ошибка загрузки заявок'); }
+        }
+        async function updateLeadStatus(id, status) { try { await apiCall('update_lead_status', { id: id, status: status }); showToast('✅ Статус обновлён'); loadLeads(); } catch (e) { showToast('❌ Ошибка'); } }
 
         async function loadProfile() {
             document.getElementById('profileLoading').style.display = 'block'; document.getElementById('profileForm').style.display = 'none';
@@ -484,10 +488,10 @@
             catch (e) { showToast('❌ Ошибка'); } finally { btn.disabled = false; btn.textContent = originalText; }
         }
 
-        function escapeHtml(text) { if (!text) return ''; var div = document.createElement('div'); div.textContent = String(text); return div.innerHTML; }
-        function showToast(message) { var toast = document.getElementById('toast'); toast.textContent = message; toast.classList.remove('show'); void toast.offsetWidth; toast.classList.add('show'); setTimeout(function() { toast.classList.remove('show'); }, 3000); }
+        function escapeHtml(text) { if (!text) return ''; var div = document.createElement('div'); div.textContent = String(text); return div.innerHTML; }        function showToast(message) { var toast = document.getElementById('toast'); toast.textContent = message; toast.classList.remove('show'); void toast.offsetWidth; toast.classList.add('show'); setTimeout(function() { toast.classList.remove('show'); }, 3000); }
 
         document.addEventListener('DOMContentLoaded', function() { loadConfig().then(function() { checkAuth(); }); });
-        document.getElementById('objectModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });    </script>
+        document.getElementById('objectModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
+    </script>
 </body>
 </html>
