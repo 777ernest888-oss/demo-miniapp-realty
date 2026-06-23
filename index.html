@@ -25,26 +25,24 @@
       window.isAdmin = false; return false;
     }
     function openAdminPanel() {
-      if (!window.isAdmin) { alert('⛔ Доступ запрещён!'); return; }
-      closeMenu();
-      const adminFrame = document.getElementById('adminFrame');
-      if (adminFrame) {
-        adminFrame.classList.add('active');
-        const iframe = document.getElementById('adminIframe');
-        if (iframe) {
-          iframe.src = 'admin.html?v=1.1.0';
-          iframe.onload = function() {
-            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
-              // БЕЗОПАСНО: отправляем initData только на свой домен
-              iframe.contentWindow.postMessage({
-                type: 'TELEGRAM_INIT_DATA',
-                initData: window.Telegram.WebApp.initData
-              }, window.location.origin);
-            }
-          };
-        }
-      }
+  if (!window.isAdmin) {
+    alert('⛔ Доступ запрещён!');
+    return;
+  }
+  closeMenu();
+  const adminFrame = document.getElementById('adminFrame');
+  if (adminFrame) {
+    adminFrame.classList.add('active');
+    const iframe = document.getElementById('adminIframe');
+    if (iframe) {
+      // Передаём initData прямо в URL — это надёжнее чем postMessage в Telegram
+      const initData = window.Telegram && window.Telegram.WebApp
+        ? encodeURIComponent(window.Telegram.WebApp.initData)
+        : '';
+      iframe.src = 'admin.html?v=1.1.1&tg=' + initData;
     }
+  }
+}
     function closeAdminPanel() {
       const adminFrame = document.getElementById('adminFrame');
       if (adminFrame) adminFrame.classList.remove('active');    }
