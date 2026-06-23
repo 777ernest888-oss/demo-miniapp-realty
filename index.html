@@ -8,85 +8,48 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="styles.css">
   <style>
-    .admin-frame {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      z-index: 9999;
-      background: white;
-      display: none;
-    }
-    .admin-frame.active {
-      display: block;
-    }
-    .admin-frame iframe {
-      width: 100%;
-      height: 100%;
-      border: none;
-    }
-    .admin-close-btn {
-      position: fixed;
-      top: 10px;
-      left: 10px;
-      z-index: 10000;
-      background: rgba(61, 82, 102, 0.9);
-      color: white;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      backdrop-filter: blur(10px);
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    }
-    .admin-close-btn:hover {
-      background: rgba(61, 82, 102, 1);
-    }
-  </style>  <script>
+    .admin-frame { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: white; display: none; }
+    .admin-frame.active { display: block; }
+    .admin-frame iframe { width: 100%; height: 100%; border: none; }
+    .admin-close-btn { position: fixed; top: 10px; left: 10px; z-index: 10000; background: rgba(61, 82, 102, 0.9); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 5px; backdrop-filter: blur(10px); box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+    .admin-close-btn:hover { background: rgba(61, 82, 102, 1); }
+  </style>
+  <script>
     const ADMIN_USER_ID = 2038206387;
     function checkAdminAccess() {
       if (window.Telegram && window.Telegram.WebApp) {
         const tg = window.Telegram.WebApp;
         const user = tg.initDataUnsafe?.user;
-        if (user && user.id === ADMIN_USER_ID) {
-          window.isAdmin = true;
-          return true;
-        }
+        if (user && user.id === ADMIN_USER_ID) { window.isAdmin = true; return true; }
       }
-      window.isAdmin = false;
-      return false;
+      window.isAdmin = false; return false;
     }
     function openAdminPanel() {
-      if (!window.isAdmin) {
-        alert('⛔ Доступ запрещён!');
-        return;
-      }
+      if (!window.isAdmin) { alert('⛔ Доступ запрещён!'); return; }
       closeMenu();
       const adminFrame = document.getElementById('adminFrame');
       if (adminFrame) {
         adminFrame.classList.add('active');
         const iframe = document.getElementById('adminIframe');
         if (iframe) {
-          iframe.src = 'admin.html?v=1.0.7';
+          iframe.src = 'admin.html?v=1.1.0';
+          iframe.onload = function() {
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+              // БЕЗОПАСНО: отправляем initData только на свой домен
+              iframe.contentWindow.postMessage({
+                type: 'TELEGRAM_INIT_DATA',
+                initData: window.Telegram.WebApp.initData
+              }, window.location.origin);
+            }
+          };
         }
       }
     }
     function closeAdminPanel() {
       const adminFrame = document.getElementById('adminFrame');
-      if (adminFrame) {
-        adminFrame.classList.remove('active');
-      }
-    }
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', checkAdminAccess);
-    } else {
-      checkAdminAccess();
-    }
+      if (adminFrame) adminFrame.classList.remove('active');    }
+    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', checkAdminAccess); }
+    else { checkAdminAccess(); }
   </script>
 </head>
 <body>
@@ -96,7 +59,8 @@
       <span class="brand-company" id="companyName"></span>
     </div>
     <img id="welcomeImage" class="welcome-img" src="welcome-bg.jpg" alt="Welcome">
-    <div class="welcome-bottom">      <h1 class="welcome-main-title" id="welcomeTitle">КАТАЛОГ НОВОСТРОЕК</h1>
+    <div class="welcome-bottom">
+      <h1 class="welcome-main-title" id="welcomeTitle">КАТАЛОГ НОВОСТРОЕК</h1>
       <p class="welcome-sub" id="welcomeTagline">Подберём квартиру под ваш бюджет</p>
       <button class="btn-primary" id="welcomeButton" onclick="startApp()">НАЧАТЬ ПОДБОР</button>
     </div>
@@ -109,8 +73,7 @@
     <header id="headerBrand" class="header">
       <button class="menu-btn" onclick="openMenu()">☰</button>
       <button id="headerBackBtn" class="header-back-btn hidden" onclick="appBack()">
-        <span class="back-arrow">←</span>
-        <span>Назад</span>
+        <span class="back-arrow">←</span><span>Назад</span>
       </button>
       <div class="header-brand">
         <img src="logo.png" alt="Logo" class="brand-logo">
@@ -118,7 +81,7 @@
       </div>
     </header>
     <div class="filters-toggle">
-      <button class="filters-toggle-btn" onclick="toggleFilters()">🔽 Фильтры</button>
+      <button class="filters-toggle-btn" onclick="toggleFilters()"> Фильтры</button>
     </div>
     <div id="filtersBlock" class="filters-block hidden">
       <div class="filter-group">
@@ -131,21 +94,12 @@
           <button class="price-btn" data-price="100000000">До 100 млн</button>
         </div>
       </div>
-      <div class="filter-group">
-        <label>📍 Районы</label>
-        <div id="districtCheckboxes" class="checkbox-group"></div>
-      </div>
-      <div class="filter-group">
-        <label>🚇 Метро</label>
-        <div id="metroCheckboxes" class="checkbox-group"></div>
-      </div>
-      <div class="filter-group">
-        <label>🚪 Комнаты</label>
-        <div id="roomsCheckboxes" class="checkbox-group"></div>
-      </div>
-    </div>
+      <div class="filter-group"><label> Районы</label><div id="districtCheckboxes" class="checkbox-group"></div></div>
+      <div class="filter-group"><label> Метро</label><div id="metroCheckboxes" class="checkbox-group"></div></div>
+      <div class="filter-group"><label>🚪 Комнаты</label><div id="roomsCheckboxes" class="checkbox-group"></div></div>    </div>
     <div class="view-toggle">
-      <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>      <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺️ Карта</button>
+      <button id="listViewBtn" class="view-btn active" onclick="switchView('list')"> Список</button>
+      <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺️ Карта</button>
     </div>
     <div id="listingsContainer" class="listings"></div>
     <div id="mapContainer" class="map-container hidden"></div>
@@ -157,12 +111,9 @@
       <h2 id="modalTitle"></h2>
       <div id="modalPrice" class="modal-price"></div>
       <div id="modalMeta" class="modal-meta"></div>
-      <h3>📖 Описание</h3>
-      <div id="modalDescription" class="modal-desc"></div>
-      <h3>✨ Преимущества</h3>
-      <div id="modalFeatures" class="modal-features"></div>
-      <h3>📐 Планировки</h3>
-      <div id="modalFloorPlans" class="floor-plans"></div>
+      <h3>📖 Описание</h3><div id="modalDescription" class="modal-desc"></div>
+      <h3>✨ Преимущества</h3><div id="modalFeatures" class="modal-features"></div>
+      <h3>📐 Планировки</h3><div id="modalFloorPlans" class="floor-plans"></div>
       <button id="modalConsultBtn" class="tg-btn">Заказать консультацию</button>
     </div>
   </div>
@@ -184,70 +135,39 @@
   <div id="sideMenu" class="side-menu hidden">
     <button class="menu-close" onclick="closeMenu()">×</button>
     <nav class="menu-nav">
-      <button onclick="showPage('home')">🏠 Каталог</button>
+      <button onclick="showPage('home')"> Каталог</button>
       <button onclick="showPage('about')">👤 Обо мне</button>
       <button onclick="showPage('contacts')">📞 Контакты</button>
-      <button id="adminMenuItem" onclick="openAdminPanel()" style="display: none; border-top: 2px solid #ddd; margin-top: 15px; padding-top: 15px; color: #667eea; font-weight: 600;">
-        ⚙️ Админ-панель
-      </button>
+      <button id="adminMenuItem" onclick="openAdminPanel()" style="display: none; border-top: 2px solid #ddd; margin-top: 15px; padding-top: 15px; color: #667eea; font-weight: 600;">️ Админ-панель</button>
     </nav>
   </div>
   <div id="page-about" class="page hidden">
-    <div class="page-header">
-      <button class="page-back-btn" onclick="appBack()">← Назад</button>      <h2>Обо мне</h2>
-    </div>
+    <div class="page-header"><button class="page-back-btn" onclick="appBack()">← Назад</button><h2>Обо мне</h2></div>
     <div class="page-content">
       <p>Привет! Я — брокер по недвижимости. Помогаю подбирать объекты с максимальной доходностью и юридической чистотой.</p>
-      <h3>🔍 Как я работаю:</h3>
-      <ul>
-        <li>Проверяю документы и историю застройщика.</li>
-        <li>Торгуюсь за скидку (часто до 5-10%).</li>
-        <li>Помогаю с ипотекой и одобрением.</li>
-      </ul>
+      <h3>🔍 Как я работаю:</h3>      <ul><li>Проверяю документы и историю застройщика.</li><li>Торгуюсь за скидку (часто до 5-10%).</li><li>Помогаю с ипотекой и одобрением.</li></ul>
     </div>
   </div>
   <div id="page-contacts" class="page hidden">
-    <div class="page-header">
-      <button class="page-back-btn" onclick="appBack()">← Назад</button>
-      <h2>Контакты</h2>
-    </div>
+    <div class="page-header"><button class="page-back-btn" onclick="appBack()">← Назад</button><h2>Контакты</h2></div>
     <div class="page-content">
-      <div class="contact-card">
-        <div class="agent-avatar"></div>
-        <div class="agent-info">
-          <h3 id="agentName">Имя Агента</h3>
-          <p id="agentRole">Эксперт по недвижимости</p>
-        </div>
-      </div>
-      <div id="agencyBlock" class="agency-block">
-        <h4>🏢 Агентство</h4>
-        <p id="agencyName">Название АН</p>
-        <p id="agencyAddress" class="address-text">📍 Адрес офиса</p>
-      </div>
-      <div class="contact-actions">
-        <button class="btn-tg" onclick="openDirectChat()">✈️ Написать в Telegram</button>
-        <button class="btn-phone" onclick="callAgent()">📞 Позвонить</button>
-      </div>
+      <div class="contact-card"><div class="agent-avatar"></div><div class="agent-info"><h3 id="agentName">Имя Агента</h3><p id="agentRole">Эксперт по недвижимости</p></div></div>
+      <div id="agencyBlock" class="agency-block"><h4>🏢 Агентство</h4><p id="agencyName">Название АН</p><p id="agencyAddress" class="address-text">📍 Адрес офиса</p></div>
+      <div class="contact-actions"><button class="btn-tg" onclick="openDirectChat()">✈️ Написать в Telegram</button><button class="btn-phone" onclick="callAgent()"> Позвонить</button></div>
     </div>
   </div>
   <div id="adminFrame" class="admin-frame">
-    <button class="admin-close-btn" onclick="closeAdminPanel()">
-      <span>←</span>
-      <span>Назад</span>
-    </button>
+    <button class="admin-close-btn" onclick="closeAdminPanel()"><span>←</span><span>Назад</span></button>
     <iframe id="adminIframe"></iframe>
   </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=1.0.7"></script>
+<script src="app.js?v=1.1.0"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-    if (typeof window.isAdmin === 'undefined') {
-      checkAdminAccess();
-    }    if (window.isAdmin) {
+    if (typeof window.isAdmin === 'undefined') checkAdminAccess();
+    if (window.isAdmin) {
       const adminMenuItem = document.getElementById('adminMenuItem');
-      if (adminMenuItem) {
-        adminMenuItem.style.display = 'block';
-      }
+      if (adminMenuItem) adminMenuItem.style.display = 'block';
     }
   });
 </script>
