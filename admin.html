@@ -92,7 +92,7 @@
         <div class="header"><h1>⚙️ Админка</h1><button class="header-btn" onclick="refreshCurrentTab()">↻</button></div>
         <div class="container">
             <div class="tabs">
-                <button class="tab active" onclick="switchTab('objects')"> Объекты</button>
+                <button class="tab active" onclick="switchTab('objects')">🏢 Объекты</button>
                 <button class="tab" onclick="switchTab('leads')">📩 Заявки</button>
                 <button class="tab" onclick="switchTab('profile')">👤 Профиль</button>
                 <button class="tab" onclick="switchTab('about')">ℹ️ Обо мне</button>
@@ -130,7 +130,7 @@
                 <form id="aboutForm" onsubmit="saveAboutPage(event)" style="display:none;">
                     <div class="form-group"><label class="form-label">Заголовок</label><input type="text" class="form-input" id="aboutTitle"></div>
                     <div class="form-group"><label class="form-label">Содержание</label><textarea class="form-textarea" id="aboutContent"></textarea></div>
-                    <button type="submit" class="btn btn-primary"> Сохранить страницу</button>
+                    <button type="submit" class="btn btn-primary">💾 Сохранить страницу</button>
                 </form>
             </div>
         </div>
@@ -219,6 +219,10 @@
         var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
         if (tg) { tg.ready(); tg.expand(); }
         var isAuthorized = false;
+       
+        // ← ИЗМЕНЕНО: добавлены глобальные переменные для мультитенантности
+        var AGENT_ID = '';
+        var AGENT_CONFIG = null;
 
         async function loadConfig() {
             try {
@@ -226,8 +230,70 @@
                 var data = await response.json();
                 config.scriptUrl = data.client.scriptUrl;
                 config.ownerId = data.client.ownerId || '';
-            } catch (e) { console.error('[CONFIG] Error:', e); showToast(' Ошибка конфигурации'); }
+            } catch (e) { console.error('[CONFIG] Error:', e); showToast('❌ Ошибка конфигурации'); }
         }
+
+        // === НОВЫЕ ФУНКЦИИ ДЛЯ МУЛЬТИТЕНАНТНОСТИ ===  // ← ИЗМЕНЕНО: добавлен блок новых функций
+       
+        // Определение агента из URL
+        async function initAgent() {
+            var params = new URLSearchParams(window.location.search);
+            var agentParam = params.get('agent');
+           
+            if (!agentParam) {
+                showErrorScreen('Неверная ссылка. Отсутствует параметр agent.');
+                return false;
+            }           
+            AGENT_ID = agentParam;
+           
+            // Проверяем доступ к агенту через бэкенд
+            try {
+                var response = await fetch(config.scriptUrl + '?action=get_agent_config&agent_id=' + encodeURIComponent(AGENT_ID));
+                var data = await response.json();
+               
+                if (data.success) {
+                    AGENT_CONFIG = data.config;
+                    applyBrandConfig(AGENT_CONFIG);
+                    return true;
+                } else {
+                    showErrorScreen('Ошибка: ' + data.error);
+                    return false;
+                }
+            } catch (e) {
+                console.error('[initAgent] Error:', e);
+                showErrorScreen('Ошибка подключения к серверу');
+                return false;
+            }
+        }
+
+        // Применение брендирования из AGENT_CONFIG
+        function applyBrandConfig(brandConfig) {
+            if (!brandConfig) return;
+           
+            // CSS переменные
+            var root = document.documentElement;
+            if (brandConfig.primaryColor) root.style.setProperty('--primary', brandConfig.primaryColor);
+            if (brandConfig.accentColor) root.style.setProperty('--accent', brandConfig.accentColor);
+           
+            // Заголовки
+            if (brandConfig.appName) {
+                document.title = brandConfig.appName + ' - Админка';
+                var headerTitle = document.querySelector('.header h1');
+                if (headerTitle) headerTitle.textContent = '⚙️ ' + brandConfig.appName;
+            }
+        }
+
+        // Экран ошибки доступа
+        function showErrorScreen(message) {
+            var app = document.body;
+            app.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;text-align:center;">' +
+                '<div style="font-size:48px;margin-bottom:20px;">🔒</div>' +
+                '<h1 style="font-size:24px;margin-bottom:12px;">Доступ ограничен</h1>' +
+                '<p style="color:#7F8C8D;margin-bottom:20px;">' + message + '</p>' +
+                '<p style="color:#95A5A6;font-size:14px;">Обратитесь к администратору</p>' +
+                '</div>';
+        }
+        // === КОНЕЦ БЛОКА НОВЫХ ФУНКЦИЙ ===  // ← ИЗМЕНЕНО
 
         function checkAuth() {
             if (sessionStorage.getItem('adminAuth') === 'true') { isAuthorized = true; showApp(); return; }
@@ -243,13 +309,19 @@
             if (!input) return;
            
             var btn = document.querySelector('#pinScreen button');
-            var originalText = btn.textContent;            btn.textContent = 'Проверка...';
+            var originalText = btn.textContent;
+            btn.textContent = 'Проверка...';
             btn.disabled = true;
 
+            // ← ИЗМЕНЕНО: добавлен agentId в запрос
             fetch(config.scriptUrl, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-                body: JSON.stringify({ action: 'verify_pin', pin: input })
+                body: JSON.stringify({
+                    action: 'verify_pin',
+                    pin: input,
+                    agentId: AGENT_ID  // ← ИЗМЕНЕНО
+                })
             })
             .then(function(response) { return response.json(); })
             .then(function(data) {
@@ -259,7 +331,7 @@
                 if (data && data.success) {
                     isAuthorized = true;
                     sessionStorage.setItem('adminAuth', 'true');
-                    sessionStorage.setItem('adminPin', input); // СОХРАНЯЕМ PIN
+                    sessionStorage.setItem('adminPin', input);
                     document.getElementById('pinError').style.display = 'none';
                     showApp();
                 } else {
@@ -269,8 +341,7 @@
                 }
             })
             .catch(function() {
-                btn.textContent = originalText;
-                btn.disabled = false;
+                btn.textContent = originalText;                btn.disabled = false;
                 document.getElementById('pinError').textContent = 'Ошибка сети';
                 document.getElementById('pinError').style.display = 'block';
             });
@@ -292,15 +363,19 @@
             console.log('Params:', params);
            
             if (!config.scriptUrl) throw new Error('Script URL не настроен');
-                        var payload = Object.assign({}, params, {
+           
+            // ← ИЗМЕНЕНО: добавлен agentId в payload
+            var payload = Object.assign({}, params, {
                 action: action,
+                agentId: AGENT_ID,  // ← ИЗМЕНЕНО
                 initData: getTelegramInitData(),
-                pin: sessionStorage.getItem('adminPin') || '' // ПЕРЕДАЁМ PIN
+                pin: sessionStorage.getItem('adminPin') || ''
             });
            
             console.log('Full payload:', payload);
             console.log('initData length:', payload.initData ? payload.initData.length : 0);
             console.log('Has pin:', payload.pin ? 'YES' : 'NO');
+            console.log('Agent ID:', payload.agentId);  // ← ИЗМЕНЕНО
             console.log('========================');
            
             var fetchResult;
@@ -315,8 +390,7 @@
             if (!fetchResult.ok && fetchResult.status !== 0) throw new Error('Ошибка сервера');
             var data; try { data = await fetchResult.json(); } catch (parseError) { return { success: true }; }
             if (data && data.success === false) throw new Error(data.error || 'Ошибка');
-            return data || { success: true };
-        }
+            return data || { success: true };        }
         // ================================================
 
         function switchTab(tabName) {
@@ -333,7 +407,8 @@
             document.getElementById('objectsLoading').style.display = 'block'; document.getElementById('objectsList').innerHTML = '';
             if (!config.scriptUrl) await loadConfig();
             try {
-                var url = config.scriptUrl + '?type=listings&includeHidden=true&initData=' + encodeURIComponent(getTelegramInitData());
+                // ← ИЗМЕНЕНО: добавлен agent_id в URL
+                var url = config.scriptUrl + '?type=listings&includeHidden=true&agent_id=' + encodeURIComponent(AGENT_ID) + '&initData=' + encodeURIComponent(getTelegramInitData());
                 var response = await fetch(url); var data = await response.json();
                 if (Array.isArray(data) && data.length > 1) {
                     var headers = data[0]; objects = data.slice(1).map(function(row) { var obj = {}; headers.forEach(function(header, i) { obj[header] = row[i]; }); return obj; });
@@ -341,11 +416,12 @@
                 document.getElementById('objectsLoading').style.display = 'none';
                 if (objects.length === 0) { document.getElementById('objectsList').innerHTML = '<div class="empty-state"><div class="empty-icon">🏗️</div><h3>Нет объектов</h3><p>Нажмите + чтобы добавить первый ЖК</p></div>'; return; }
                 objects.forEach(function(obj) {
-                    var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';                    var thumbUrl = obj.image_main || '';
+                    var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
+                    var thumbUrl = obj.image_main || '';
                     var displayThumb = thumbUrl.indexOf('lh3.googleusercontent.com/d/') !== -1 ? 'https://drive.google.com/thumbnail?id=' + thumbUrl.split('/d/')[1] + '&sz=w400' : thumbUrl;
                     var statusClass = isActive ? 'status-active' : 'status-hidden'; var statusText = isActive ? 'Активен' : 'Скрыт';
                     var card = document.createElement('div'); card.className = 'object-card' + (isActive ? '' : ' hidden-object'); card.onclick = function() { openEditModal(obj.id); };
-                    card.innerHTML = '<img src="' + escapeHtml(displayThumb) + '" class="card-thumb" onerror="this.style.background=\'#E0E6ED\'">' + '<div class="card-info"><div class="card-title">' + escapeHtml(obj.name || 'Без названия') + '</div><div class="card-address"> ' + escapeHtml(obj.address || '') + '</div><span class="card-status ' + statusClass + '">' + statusText + '</span></div>';
+                    card.innerHTML = '<img src="' + escapeHtml(displayThumb) + '" class="card-thumb" onerror="this.style.background=\'#E0E6ED\'">' + '<div class="card-info"><div class="card-title">' + escapeHtml(obj.name || 'Без названия') + '</div><div class="card-address">📍 ' + escapeHtml(obj.address || '') + '</div><span class="card-status ' + statusClass + '">' + statusText + '</span></div>';
                     document.getElementById('objectsList').appendChild(card);
                 });
             } catch (e) { document.getElementById('objectsLoading').style.display = 'none'; showToast('❌ Ошибка загрузки объектов'); }
@@ -363,8 +439,7 @@
         function openEditModal(id) {
             var obj = objects.find(function(o) { return o.id === id; }); if (!obj) return;
             currentEditId = id; document.getElementById('modalTitle').textContent = 'Редактировать ЖК'; document.getElementById('objectId').value = id;
-            document.getElementById('statusToggle').style.display = 'flex'; document.getElementById('deleteBtn').style.display = 'block'; document.getElementById('saveBtn').textContent = 'Сохранить изменения';
-            ['fieldName','fieldAddress','fieldDistrict','fieldMetro','fieldPriceFrom','fieldPriceTo','fieldPriceSqm','fieldAreaMin','fieldAreaMax','fieldRooms','fieldClass','fieldCompletionSoonest','fieldCompletionAll','fieldFinishing','fieldStatus','fieldDescription','fieldFeatures','fieldLat','fieldLng'].forEach(function(fieldId) {
+            document.getElementById('statusToggle').style.display = 'flex'; document.getElementById('deleteBtn').style.display = 'block'; document.getElementById('saveBtn').textContent = 'Сохранить изменения';            ['fieldName','fieldAddress','fieldDistrict','fieldMetro','fieldPriceFrom','fieldPriceTo','fieldPriceSqm','fieldAreaMin','fieldAreaMax','fieldRooms','fieldClass','fieldCompletionSoonest','fieldCompletionAll','fieldFinishing','fieldStatus','fieldDescription','fieldFeatures','fieldLat','fieldLng'].forEach(function(fieldId) {
                 var key = fieldId.replace('field', '').toLowerCase(); if (key === 'class') key = 'class'; document.getElementById(fieldId).value = obj[key] || '';
             });
             var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE'; setStatus(isActive ? 'true' : 'false');
@@ -390,6 +465,7 @@
             if (!currentEditId || !confirm('Удалить объект?')) return; var btn = document.getElementById('deleteBtn'); btn.disabled = true; btn.textContent = 'Удаление...';
             try { await apiCall('delete', { id: currentEditId }); showToast('✅ Удалён'); closeModal(); setTimeout(loadObjects, 2000); } catch (e) { showToast('❌ Ошибка'); } finally { btn.disabled = false; btn.textContent = 'Удалить объект'; }
         }
+
         async function uploadPhoto(type, input) {
             if (!input.files || input.files.length === 0) { await new Promise(function(r) { setTimeout(r, 300); }); }
             if (!input.files || input.files.length === 0) return; var files = Array.from(input.files); var btn = input.parentElement; var originalText = btn.innerHTML; btn.innerHTML = '⏳ Загрузка...';
@@ -412,8 +488,7 @@
         function removePhoto(type, index) {
             if (type === 'main') { photoStore.main = ''; document.getElementById('fieldImageMain').value = ''; renderPhotoPreview('main', []); }
             else if (type === 'gallery') { photoStore.gallery.splice(index, 1); document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(','); renderPhotoPreview('gallery', photoStore.gallery); }
-            else if (type === 'plans') { photoStore.plans.splice(index, 1); document.getElementById('fieldFloorPlansImages').value = photoStore.plans.join(','); renderPhotoPreview('plans', photoStore.plans); }
-        }
+            else if (type === 'plans') { photoStore.plans.splice(index, 1); document.getElementById('fieldFloorPlansImages').value = photoStore.plans.join(','); renderPhotoPreview('plans', photoStore.plans); }        }
         function renderPhotoPreview(type, urls) {
             var containerId = type === 'main' ? 'mainPhotoPreview' : type === 'gallery' ? 'galleryPreview' : 'plansPreview';
             var container = document.getElementById(containerId); container.innerHTML = '';
@@ -439,9 +514,10 @@
                     var phoneDisplay = lead.clientPhone && String(lead.clientPhone).indexOf('#ERROR') === -1 ? escapeHtml(lead.clientPhone) : 'Не указан';
                     var telegramDisplay = lead.clientTelegram && lead.clientTelegram !== 'Не указан' && String(lead.clientTelegram).indexOf('#ERROR') === -1 ? '<div class="lead-info">💬 ' + escapeHtml(lead.clientTelegram) + '</div>' : '';
                     var timestampDisplay = lead.timestamp ? escapeHtml(lead.timestamp) : 'Не указано';
-                    card.innerHTML = '<div class="lead-header"><div class="lead-object"> ' + escapeHtml(lead.objectName || 'Не указан') + '</div><div class="lead-status ' + statusClass + '">' + statusText + '</div></div><div class="lead-info">👤 ' + escapeHtml(lead.clientName || 'Не указано') + '</div><div class="lead-info"> ' + phoneDisplay + '</div>' + telegramDisplay + '<div class="lead-info">🕐 ' + timestampDisplay + '</div><div class="lead-actions"><button class="status-btn ' + (lead.status === 'Новая' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + lead.id + '\', \'new\')">🆕 Новая</button><button class="status-btn ' + (lead.status === 'Обзвонена' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + lead.id + '\', \'contacted\')">📞 Обзвонена</button><button class="status-btn ' + (lead.status === 'Завершена' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + lead.id + '\', \'completed\')">✅ Завершена</button><button class="status-btn ' + (lead.status === 'Отменена' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + lead.id + '\', \'cancelled\')">❌ Отменена</button></div>';                    document.getElementById('leadsList').appendChild(card);
+                    card.innerHTML = '<div class="lead-header"><div class="lead-object">🏢 ' + escapeHtml(lead.objectName || 'Не указан') + '</div><div class="lead-status ' + statusClass + '">' + statusText + '</div></div><div class="lead-info">👤 ' + escapeHtml(lead.clientName || 'Не указано') + '</div><div class="lead-info">📞 ' + phoneDisplay + '</div>' + telegramDisplay + '<div class="lead-info">🕐 ' + timestampDisplay + '</div><div class="lead-actions"><button class="status-btn ' + (lead.status === 'Новая' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + lead.id + '\', \'new\')">🆕 Новая</button><button class="status-btn ' + (lead.status === 'Обзвонена' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + lead.id + '\', \'contacted\')">📞 Обзвонена</button><button class="status-btn ' + (lead.status === 'Завершена' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + lead.id + '\', \'completed\')">✅ Завершена</button><button class="status-btn ' + (lead.status === 'Отменена' ? 'active' : '') + '" onclick="updateLeadStatus(\'' + lead.id + '\', \'cancelled\')">❌ Отменена</button></div>';
+                    document.getElementById('leadsList').appendChild(card);
                 });
-            } catch (e) { document.getElementById('leadsLoading').style.display = 'none'; showToast(' Ошибка загрузки заявок'); }
+            } catch (e) { document.getElementById('leadsLoading').style.display = 'none'; showToast('❌ Ошибка загрузки заявок'); }
         }
         async function updateLeadStatus(id, status) { try { await apiCall('update_lead_status', { id: id, status: status }); showToast('✅ Статус обновлён'); loadLeads(); } catch (e) { showToast('❌ Ошибка'); } }
 
@@ -461,8 +537,7 @@
             event.preventDefault(); var btn = event.target.querySelector('button[type="submit"]'); var originalText = btn.textContent; btn.disabled = true; btn.textContent = 'Сохранение...';
             try {
                 await apiCall('update_agent_profile', { name: document.getElementById('profileName').value.trim(), role: document.getElementById('profileRole').value.trim(), agencyName: document.getElementById('profileAgencyName').value.trim(), agencyAddress: document.getElementById('profileAgencyAddress').value.trim(), telegramUsername: document.getElementById('profileTelegram').value.trim(), phone: document.getElementById('profilePhone').value.trim(), photoUrl: document.getElementById('profilePhotoUrl').value.trim() });
-                showToast('✅ Профиль сохранён');
-            } catch (e) { showToast('❌ Ошибка'); } finally { btn.disabled = false; btn.textContent = originalText; }
+                showToast('✅ Профиль сохранён');            } catch (e) { showToast('❌ Ошибка'); } finally { btn.disabled = false; btn.textContent = originalText; }
         }
         async function uploadProfilePhoto(input) {
             if (!input.files || input.files.length === 0) return; var file = input.files[0]; var btn = input.parentElement; var originalText = btn.innerHTML; btn.innerHTML = '⏳ Загрузка...';
@@ -488,9 +563,17 @@
             catch (e) { showToast('❌ Ошибка'); } finally { btn.disabled = false; btn.textContent = originalText; }
         }
 
-        function escapeHtml(text) { if (!text) return ''; var div = document.createElement('div'); div.textContent = String(text); return div.innerHTML; }        function showToast(message) { var toast = document.getElementById('toast'); toast.textContent = message; toast.classList.remove('show'); void toast.offsetWidth; toast.classList.add('show'); setTimeout(function() { toast.classList.remove('show'); }, 3000); }
+        function escapeHtml(text) { if (!text) return ''; var div = document.createElement('div'); div.textContent = String(text); return div.innerHTML; }
+        function showToast(message) { var toast = document.getElementById('toast'); toast.textContent = message; toast.classList.remove('show'); void toast.offsetWidth; toast.classList.add('show'); setTimeout(function() { toast.classList.remove('show'); }, 3000); }
 
-        document.addEventListener('DOMContentLoaded', function() { loadConfig().then(function() { checkAuth(); }); });
+        // ← ИЗМЕНЕНО: модифицирована инициализация для вызова initAgent()
+        document.addEventListener('DOMContentLoaded', async function() {
+            await loadConfig();
+            var agentOk = await initAgent();  // ← ИЗМЕНЕНО
+            if (agentOk) {
+                checkAuth();
+            }
+        });
         document.getElementById('objectModal').addEventListener('click', function(e) { if (e.target === this) closeModal(); });
     </script>
 </body>
