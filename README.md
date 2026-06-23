@@ -1119,3 +1119,672 @@ function encryptData(data) {
 **Документ составлен:** 22.06.2026 
 **Версия:** 1.0 
 **Статус:** Утверждён
+
+
+ФИНАЛЬНАЯ ВЕРСИЯ ПЕРЕД ТЕСТОМ "рАЗВЕРТЫВАНИЕ АГЕНТОМ СВОЕГО ПРИЛОЖЕНИЯ"
+
+# 📘 ПАСПОРТ ПРОЕКТА: ProStors - Каталог Новостроек
+
+**Версия:** 1.4.0 
+**Дата:** 23 июня 2026 
+**Статус:** ✅ MVP готов. Безопасность закрыта. Готов к тесту развертывания для агента.
+
+---
+
+## 📋 СОДЕРЖАНИЕ
+
+1. [Общая информация](#1-общая-информация)
+2. [Архитектура системы](#2-архитектура-системы)
+3. [Связка клиентского приложения и админки](#3-связка-клиентского-приложения-и-админки)
+4. [Механизм авторизации и безопасности](#4-механизм-авторизации-и-безопасности)
+5. [Двухботовая система уведомлений](#5-двухботовая-система-уведомлений)
+6. [Инструкция по развертыванию для агента](#6-инструкция-по-развертыванию-для-агента)
+7. [План тестирования развертывания](#7-план-тестирования-развертывания)
+8. [Чек-листы готовности](#8-чек-листы-готовности)
+
+---
+
+## 1. ОБЩАЯ ИНФОРМАЦИЯ
+
+### 1.1 Назначение продукта
+Telegram Mini App для агентов по недвижимости с каталогом новостроек, админ-панелью и автоматической обработкой заявок.
+
+### 1.2 Целевая аудитория
+Агенты по недвижимости, работающие с новостройками.
+
+### 1.3 Технологический стек
+- **Frontend:** HTML5 + CSS3 + Vanilla JavaScript
+- **Backend:** Google Apps Script
+- **База данных:** Google Sheets
+- **Хостинг:** GitHub Pages
+- **Платформа:** Telegram Mini Apps
+- **Уведомления:** Telegram Bot API (два бота)
+
+---
+
+## 2. АРХИТЕКТУРА СИСТЕМЫ
+
+### 2.1 Общая схема
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    TELEGRAM MINI APP                        │
+│                                                             │
+│  ┌─────────────────┐           ┌─────────────────────┐   │
+│  │  КЛИЕНТСКАЯ     │◄─────────►│   АДМИН-ПАНЕЛЬ      │   │
+│  │  ЧАСТЬ          │   iframe  │   (в iframe)        │   │
+│  │  (index.html)   │           │   (admin.html)      │   │
+│  └────────────────┘           └──────────┬──────────┘   │
+│           │                                │               │
+└───────────┼────────────────────────────────┼──────────────┘
+            │                                │
+            ▼                                ▼
+┌──────────────────┐              ┌──────────────────────┐
+│   GitHub Pages   │              │  Google Apps Script  │
+│   prostors.ru    │              │  (Code.gs)           │
+└──────────────────┘              └──────────┬───────────┘
+                                             │
+                                             ▼
+                                  ┌─────────────────────┐
+                                  │   Google Sheets     │
+                                  │  - Listings         │
+                                  │  - Leads            │
+                                  │  - AgentData        │
+                                  │  - Pages            │
+                                  └─────────────────────┘
+                                             │
+                                             ▼
+                                  ┌─────────────────────┐
+                                  │   Telegram Bots     │
+                                  │  - Main Bot         │
+                                  │  - Notification Bot │
+                                  └─────────────────────┘
+```
+
+### 2.2 Компоненты системы
+
+| Компонент | Файл/Сервис | Назначение |
+|-----------|-------------|------------|
+| **Клиентское приложение** | `index.html`, `app.js` | Показ каталога, фильтры, карта, отправка заявок |
+| **Админ-панель** | `admin.html` | CRUD объектов, управление заявками, профиль агента |
+| **Бэкенд** | `Code.gs` (Apps Script) | API, авторизация, работа с данными, уведомления |
+| **База данных** | Google Sheets | Хранение объектов, заявок, профиля, страниц |
+| **Хостинг** | GitHub Pages | Публикация фронтенда |
+| **Бот-приложение** | Telegram Bot | Точка входа в Mini App, проверка initData |
+| **Бот-почтальон** | Telegram Bot | Отправка уведомлений о заявках |
+
+---
+
+## 3. СВЯЗКА КЛИЕНТСКОГО ПРИЛОЖЕНИЯ И АДМИНКИ
+
+### 3.1 Механизм взаимодействия
+
+**Клиентское приложение и админка — это два интерфейса, работающих в рамках одного Telegram Mini App:**
+
+1. **Клиентская часть** (`index.html`) — это публичный каталог, который видят все пользователи
+2. **Админ-панель** (`admin.html`) — открывается в iframe поверх клиентской части при нажатии на кнопку меню "Админка"
+
+### 3.2 Передача данных между частями
+
+**Через URL-параметр (для Telegram initData):**
+
+```javascript
+// index.html передает initData в iframe
+function openAdminPanel() {
+  const initData = encodeURIComponent(window.Telegram.WebApp.initData);
+  iframe.src = 'admin.html?v=1.1.1&tg=' + initData;
+}
+
+// admin.html получает initData из URL
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var tgParam = params.get('tg');
+  if (tgParam) {
+    sessionStorage.setItem('tg_initData', decodeURIComponent(tgParam));
+  }
+})();
+```
+
+**Через sessionStorage (для PIN и авторизации):**
+
+```javascript
+// После успешного ввода PIN
+sessionStorage.setItem('adminAuth', 'true');
+sessionStorage.setItem('adminPin', input);
+
+// При каждом запросе к API
+var payload = {
+  action: action,
+  initData: sessionStorage.getItem('tg_initData'),
+  pin: sessionStorage.getItem('adminPin')
+};
+```
+
+### 3.3 Единая точка входа
+
+Оба интерфейса используют **один и тот же `client-config.json`**:
+
+```json
+{
+  "client": {
+    "scriptUrl": "https://script.google.com/macros/s/.../exec",
+    "ownerId": "2038206387"
+  },
+  "sheets": {
+    "agentData": "https://docs.google.com/.../pub?output=csv",
+    "pages": "https://docs.google.com/.../pub?output=csv"
+  }
+}
+```
+
+**Это обеспечивает:**
+- ✅ Единые настройки для клиента и админки
+- ✅ Синхронизацию данных
+- ✅ Простоту конфигурации (один файл)
+
+---
+
+## 4. МЕХАНИЗМ АВТОРИЗАЦИИ И БЕЗОПАСНОСТИ
+
+### 4.1 Два способа авторизации
+
+| Способ | Где работает | Как работает |
+|--------|--------------|--------------|
+| **Telegram initData** | В Telegram (телефон) | Криптографическая подпись HMAC-SHA256 |
+| **PIN-код** | На ПК (браузер) | Проверка через сервер (не в конфиге!) |
+
+### 4.2 Авторизация через Telegram (основная)
+
+**Процесс:**
+1. Telegram передает `initData` приложению
+2. `initData` содержит данные пользователя + подпись
+3. Подпись создана с использованием токена бота
+4. Сервер проверяет подпись тем же токеном
+5. Если подпись верна и `user.id` совпадает с `TELEGRAM_CHAT_ID` — доступ разрешен
+
+**Код проверки (`Code.gs`):**
+```javascript
+function isValidTelegramInitData(initData, expectedUserId) {
+  var botToken = PropertiesService.getScriptProperties().getProperty('TELEGRAM_BOT_TOKEN');
+  var data = parseTelegramInitData(initData);
+ 
+  // Проверка подписи HMAC-SHA256
+  var secretKey = Utilities.computeHmacSha256Digest('WebAppData', botToken);
+  var computedHash = Utilities.computeHmacSha256Digest(dataCheckString, secretKey);
+ 
+  return computedHashHex.toLowerCase() === data.hash.toLowerCase();
+}
+```
+
+**Безопасность:**
+- ✅ Невозможно подделать без токена бота
+- ✅ Привязка к конкретному Telegram аккаунту
+- ✅ Срок действия 24 часа
+
+### 4.3 Авторизация через PIN (резервная)
+
+**Процесс:**
+1. Пользователь открывает `admin.html` на ПК
+2. Видит экран ввода PIN
+3. Вводит PIN (например, `2026`)
+4. PIN отправляется на сервер (`action: 'verify_pin'`)
+5. Сервер сверяет с `PropertiesService.ADMIN_PIN`
+6. При успехе — возвращает `success: true`
+7. Клиент сохраняет PIN в `sessionStorage`
+8. PIN передается в каждом последующем запросе
+
+**Код проверки (`admin.html`):**
+```javascript
+function checkPin() {
+  fetch(config.scriptUrl, {
+    method: 'POST',
+    body: JSON.stringify({ action: 'verify_pin', pin: input })
+  })
+  .then(function(data) {
+    if (data.success) {
+      sessionStorage.setItem('adminPin', input); // Сохраняем
+      sessionStorage.setItem('adminAuth', 'true');
+      showApp();
+    }
+  });
+}
+```
+
+**Безопасность:**
+- ✅ PIN **не хранится** в публичном `client-config.json`
+- ✅ PIN хранится только в **закрытом** `PropertiesService` на сервере
+- ✅ PIN передается по HTTPS
+- ✅ PIN сохраняется в `sessionStorage` (исчезает при закрытии вкладки)
+
+### 4.4 Защита данных агента
+
+**Изоляция:**
+- Каждый агент разворачивает свою копию на **своих аккаунтах**
+- У каждого агента свои:
+  - Google Таблица
+  - Google Apps Script
+  - GitHub репозиторий
+  - Telegram боты
+- **Нет пересечения данных** между агентами
+
+**Публичные vs Приватные данные:**
+| Данные | Где хранятся | Кто видит |
+|--------|--------------|-----------|
+| `client-config.json` | GitHub (публично) | Все (но нет секретов!) |
+| `TELEGRAM_BOT_TOKEN` | Apps Script Properties | Только владелец скрипта |
+| `TELEGRAM_NOTIFICATION_BOT_TOKEN` | Apps Script Properties | Только владелец скрипта |
+| `ADMIN_PIN` | Apps Script Properties | Только владелец скрипта |
+| Google Sheets данные | Google Sheets | Только владелец + опубликованные CSV (read-only) |
+
+---
+
+## 5. ДВУХБОТОВАЯ СИСТЕМА УВЕДОМЛЕНИЙ
+
+### 5.1 Зачем два бота?
+
+**Проблема:**
+- Для проверки `initData` нужен токен **бота-приложения** (того, через которое открывается Mini App)
+- Для отправки уведомлений лучше использовать **отдельного бота** (чтобы не смешивать логику)
+
+**Решение:**
+- **Бот-приложение** (`TELEGRAM_BOT_TOKEN`) — только для проверки подписи `initData`
+- **Бот-почтальон** (`TELEGRAM_NOTIFICATION_BOT_TOKEN`) — только для отправки уведомлений
+
+### 5.2 Настройка переменных
+
+В **Script Properties** должно быть **три переменные**:
+
+```
+TELEGRAM_BOT_TOKEN = 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11 (токен бота-приложения)
+TELEGRAM_NOTIFICATION_BOT_TOKEN = 789012:GHI-JKL3456mnoPQR-stu89VWX (токен бота-почтальона)
+TELEGRAM_CHAT_ID = 2038206387 (твой личный Telegram ID)
+ADMIN_PIN = 2026
+```
+
+### 5.3 Процесс отправки уведомления
+
+**Когда:** При сохранении заявки (`saveLead`)
+
+**Код (`Code.gs`):**
+```javascript
+function sendTelegramNotification(data) {
+  // Используем токен БОТА-ПОЧТАЛЬОНА
+  var token = PropertiesService.getScriptProperties()
+    .getProperty('TELEGRAM_NOTIFICATION_BOT_TOKEN');
+  var chatId = PropertiesService.getScriptProperties()
+    .getProperty('TELEGRAM_CHAT_ID');
+ 
+  var message = '🔔 Новая заявка!\n\n';
+  message += '🏢 Объект: ' + data.objectName + '\n';
+  message += '👤 Имя: ' + data.clientName + '\n';
+  message += '📞 Телефон: ' + data.clientPhone + '\n';
+ 
+  UrlFetchApp.fetch('https://api.telegram.org/bot' + token + '/sendMessage', {
+    method: 'post',
+    payload: JSON.stringify({ chat_id: chatId, text: message })
+  });
+}
+```
+
+**Результат:**
+- Уведомление приходит от **бота-почтальона**
+- В личный Telegram агента (`TELEGRAM_CHAT_ID`)
+- С данными о заявке
+
+---
+
+## 6. ИНСТРУКЦИЯ ПО РАЗВЕРТЫВАНИЮ ДЛЯ АГЕНТА
+
+### 6.1 Что получает агент
+
+**Пакет передачи включает:**
+1. ✅ ZIP-архив с файлами фронтенда (`index.html`, `admin.html`, `app.js`, `styles.css`, ассеты)
+2. ✅ Файл `Code.gs` для Google Apps Script
+3. ✅ Шаблоны CSV для Google Sheets
+4. ✅ Пошаговую инструкцию (этот документ)
+5. ✅ Видео-инструкцию (5 минут)
+6. ✅ Доступ к чату поддержки
+
+### 6.2 Пошаговая инструкция (15-20 минут)
+
+#### ШАГ 1: Google Sheets (3 минуты)
+
+1. **Создай новую Google Таблицу**
+   - Название: например, "Realty Database"
+
+2. **Создай 4 листа:**
+   - `Listings` (объекты недвижимости)
+   - `Leads` (заявки клиентов)
+   - `AgentData` (данные агента)
+   - `Pages` (статические страницы)
+
+3. **Настрой заголовки листов:**
+
+**Listings** (26 колонок):
+```
+id, name, address, district, metro, price_from, price_to,
+area_min, area_max, price_per_sqm, rooms, class,
+completion_soonest, completion_all, finishing, status,
+description, features, image_main, images_gallery,
+floor_plans_images, lat, lng, active, created_at, updated_at
+```
+
+**Leads** (7 колонок):
+```
+id, timestamp, objectName, clientName, clientPhone,
+clientTelegram, status
+```
+
+**AgentData** (7 колонок):
+```
+name, role, agencyName, agencyAddress, telegramUsername,
+phone, photoUrl
+```
+
+**Pages** (3 колонки):
+```
+page, title, content
+```
+
+4. **Опубликуй таблицы:**
+   - File → Share → Publish to web
+   - Для каждого листа выбери:
+     - Entire Document → Web page → Publish
+   - Скопируй ссылки для `agentData` и `pages`
+   - **Важно:** Ссылки должны заканчиваться на `output=csv`
+
+#### ШАГ 2: Google Apps Script (5 минут)
+
+1. **Создай новый проект:**
+   - script.google.com → New Project
+   - Название: например, "Realty Backend"
+
+2. **Вставь код `Code.gs`:**
+   - Удали весь код из `Code.gs`
+   - Вставь предоставленный код
+   - Сохрани (Ctrl+S)
+
+3. **Настрой Script Properties:**
+   - Project Settings (шестеренка ⚙️ слева)
+   - Script Properties → Add new property
+   - Добавь **4 переменные**:
+
+```
+TELEGRAM_BOT_TOKEN = [токен твоего бота-приложения]
+TELEGRAM_NOTIFICATION_BOT_TOKEN = [токен твоего бота-почтальона]
+TELEGRAM_CHAT_ID = [твой Telegram ID]
+ADMIN_PIN = 2026
+```
+
+4. **Разверни как Web App:**
+   - Deploy → New deployment
+   - Type: Web app
+   - Description: v1
+   - Execute as: Me
+   - Who has access: Anyone
+   - Deploy
+   - **Скопируй URL** (выглядит как `https://script.google.com/macros/s/.../exec`)
+
+#### ШАГ 3: Telegram Bot (2 минуты)
+
+1. **Создай бота-приложение:**
+   - Открой @BotFather
+   - `/newbot`
+   - Придумай имя (например, "My Realty Catalog")
+   - Придумай username (например, "my_realty_bot")
+   - **Скопируй токен** → это `TELEGRAM_BOT_TOKEN`
+
+2. **Создай бота-почтальона (опционально):**
+   - Повтори шаг 1 для второго бота
+   - **Скопируй токен** → это `TELEGRAM_NOTIFICATION_BOT_TOKEN`
+   - **Или** используй того же бота для всего
+
+3. **Получи свой Chat ID:**
+   - Открой @userinfobot
+   - Start
+   - **Скопируй ID** (например: 2038206387) → это `TELEGRAM_CHAT_ID`
+
+4. **Обнови Script Properties:**
+   - Вставь токены и Chat ID
+   - Сохрани
+
+5. **Настрой Mini App:**
+   - В @BotFather выбери своего бота
+   - Bot Settings → Menu Button → Configure Menu Button
+   - Отправь ссылку (пока пустую, вернешься после Шага 4)
+
+#### ШАГ 4: GitHub (5 минут)
+
+1. **Создай репозиторий:**
+   - github.com → New repository
+   - Name: например, `realty-catalog`
+   - Public
+   - Create repository
+
+2. **Загрузи файлы:**
+   - Upload files
+   - Перетащи:
+     - `index.html`
+     - `admin.html`
+     - `app.js`
+     - `styles.css`
+     - `logo.png`
+     - `welcome-bg.jpg`
+   - Commit changes
+
+3. **Создай `client-config.json`:**
+
+```json
+{
+  "client": {
+    "projectId": "realty-catalog",
+    "scriptUrl": "https://script.google.com/macros/s/ТВОЙ_URL/exec",
+    "ownerId": "ТВОЙ_CHAT_ID"
+  },
+  "sheets": {
+    "agentData": "ССЫЛКА_ИЗ_ШАГА_1?gid=XXX&output=csv",
+    "pages": "ССЫЛКА_ИЗ_ШАГА_1?gid=YYY&output=csv"
+  },
+  "branding": {
+    "primaryColor": "#3D5266",
+    "accentColor": "#3498DB",
+    "logo": "logo.png",
+    "agentPhoto": "",
+    "welcomeTitle": "КАТАЛОГ НОВОСТРОЕК",
+    "name": "Моё Агентство",
+    "tagline": "Подберём квартиру под ваш бюджет",
+    "buttonText": "НАЧАТЬ ПОДБОР"
+  },
+  "features": {
+    "showWelcomeScreen": true,
+    "enableMap": true,
+    "enableFilters": true
+  }
+}
+```
+
+4. **Включи GitHub Pages:**
+   - Settings → Pages
+   - Source: Deploy from branch → main → / (root)
+   - Save
+   - Подожди 2-3 минуты
+   - Скопируй ссылку (например: `https://username.github.io/realty-catalog`)
+
+5. **Вернись в @BotFather:**
+   - Bot Settings → Menu Button → Configure Menu Button
+   - Отправь ссылку: `https://username.github.io/realty-catalog/index.html`
+
+#### ШАГ 5: Тестирование (3 минуты)
+
+1. **Открой бота в Telegram**
+2. **Нажми кнопку меню** (должно открыться Mini App)
+3. **Проверь клиентскую часть:**
+   - Загружается ли каталог?
+   - Работают ли фильтры?
+4. **Проверь админку:**
+   - Открой меню (☰)
+   - Нажми "Админка"
+   - Введи PIN `2026`
+   - Попробуй создать тестовый объект
+5. **Проверь уведомления:**
+   - Отправь тестовую заявку из клиентской части
+   - Проверь, пришло ли уведомление от бота-почтальона
+
+---
+
+## 7. ПЛАН ТЕСТИРОВАНИЯ РАЗВЕРТЫВАНИЯ
+
+### 7.1 Цель теста
+
+**Смоделировать ситуацию**, будто ты — новый агент, который:
+- Купил продукт
+- Получил только инструкцию и файлы
+- **Не знает** внутренних деталей реализации
+- Хочет развернуть приложение **самостоятельно**
+
+### 7.2 Критерии успеха
+
+- [ ] Развертывание заняло **не более 30 минут**
+- [ ] Все шаги выполнены **без обращения к исходному коду**
+- [ ] Приложение **работает** (клиентская часть + админка)
+- [ ] Авторизация работает (**initData** в Telegram, **PIN** на ПК)
+- [ ] Уведомления приходят в **бота-почтальона**
+- [ ] Можно **создать объект** и **отправить заявку**
+
+### 7.3 Этапы теста
+
+**Этап 1: Подготовка (15 минут)**
+- [ ] Создать Google Таблицу с 4 листами
+- [ ] Опубликовать таблицы
+- [ ] Создать Google Apps Script
+- [ ] Вставить код `Code.gs`
+- [ ] Настроить Script Properties (4 переменные)
+- [ ] Развернуть Web App
+
+**Этап 2: Telegram (10 минут)**
+- [ ] Создать бота-приложение
+- [ ] Создать бота-почтальона (или использовать одного)
+- [ ] Получить Chat ID
+- [ ] Настроить Menu Button
+
+**Этап 3: GitHub (15 минут)**
+- [ ] Создать репозиторий
+- [ ] Загрузить файлы
+- [ ] Создать `client-config.json`
+- [ ] Включить GitHub Pages
+- [ ] Привязать ссылку к боту
+
+**Этап 4: Финальное тестирование (10 минут)**
+- [ ] Открыть Mini App
+- [ ] Проверить клиентскую часть
+- [ ] Войти в админку (PIN)
+- [ ] Создать тестовый объект
+- [ ] Отправить тестовую заявку
+- [ ] Проверить уведомление
+
+### 7.4 Фиксация проблем
+
+**В процессе теста записывай:**
+1. На каком шаге возникла проблема?
+2. Что именно было непонятно?
+3. Сколько времени занял шаг?
+4. Какое решение нашел?
+
+**После теста:**
+- Проанализируй записи
+- Внеси правки в инструкцию
+- Обнови файлы (если нужно)
+- Повтори тест (если критичные проблемы)
+
+---
+
+## 8. ЧЕК-ЛИСТЫ ГОТОВНОСТИ
+
+### 8.1 Чек-лист перед передачей агенту
+
+**Фронтенд:**
+- [ ] Все файлы загружены в репозиторий
+- [ ] `client-config.json` содержит правильные ссылки
+- [ ] GitHub Pages включен
+- [ ] Сайт открывается по HTTPS
+
+**Бэкенд:**
+- [ ] `Code.gs` загружен
+- [ ] Script Properties настроены (4 переменные)
+- [ ] Web App развернут
+- [ ] URL скопирован
+
+**Telegram:**
+- [ ] Бот-приложение создан
+- [ ] Бот-почтальон создан
+- [ ] Chat ID получен
+- [ ] Menu Button настроен
+- [ ] Mini App открывается
+
+**Google Sheets:**
+- [ ] 4 листа созданы
+- [ ] Заголовки настроены
+- [ ] Таблицы опубликованы
+- [ ] Ссылки на CSV работают
+
+**Функциональность:**
+- [ ] Клиентская часть загружается
+- [ ] Админка открывается (Telegram + PIN)
+- [ ] Можно создать объект
+- [ ] Можно загрузить фото
+- [ ] Можно отправить заявку
+- [ ] Уведомление приходит
+
+### 8.2 Чек-лист для агента (после развертывания)
+
+**День 1: Первичная настройка**
+- [ ] Google Таблица создана
+- [ ] Apps Script настроен
+- [ ] Telegram боты созданы
+- [ ] GitHub Pages включен
+- [ ] `client-config.json` обновлен
+
+**День 2: Проверка работы**
+- [ ] Mini App открывается
+- [ ] Объекты загружаются
+- [ ] Админка открывается
+- [ ] Можно создать объект
+- [ ] Можно загрузить фото
+- [ ] Заявка отправляется
+- [ ] Уведомление приходит
+
+**День 3: Наполнение контентом**
+- [ ] Загружено минимум 5 объектов
+- [ ] Заполнен профиль агента
+- [ ] Загружено фото агента
+- [ ] Заполнена страница "Обо мне"
+
+---
+
+## ПРИЛОЖЕНИЯ
+
+### A. Глоссарий
+
+- **Mini App** — приложение внутри Telegram
+- **initData** — данные пользователя от Telegram с криптографической подписью
+- **GitHub Pages** — бесплатный хостинг статических сайтов
+- **Google Apps Script** — платформа для создания веб-приложений на Google
+- **Web App** — развернутое приложение Apps Script с URL
+- **Chat ID** — уникальный идентификатор пользователя Telegram
+- **Bot Token** — токен доступа к Telegram Bot API
+- **PropertiesService** — хранилище секретных переменных в Apps Script
+- **sessionStorage** — временное хранилище в браузере (исчезает при закрытии вкладки)
+
+### B. Полезные ссылки
+
+- [Telegram Bot API](https://core.telegram.org/bots/api)
+- [Telegram Mini Apps](https://core.telegram.org/bots/webapps)
+- [Google Apps Script](https://script.google.com)
+- [GitHub Pages](https://pages.github.com)
+- [Leaflet.js (карты)](https://leafletjs.com)
+
+---
+
+**Конец документа**
+
+*Версия: 1.4.0 | Обновлено: 23 июня 2026 | © ProStors*
