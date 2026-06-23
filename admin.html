@@ -202,6 +202,14 @@
         <div class="toast" id="toast"></div>
     </div>
     <script>
+        // Получаем initData из URL-параметра (надёжный способ для Telegram)
+(function() {
+  var params = new URLSearchParams(window.location.search);
+  var tgParam = params.get('tg');
+  if (tgParam) {
+    sessionStorage.setItem('tg_initData', decodeURIComponent(tgParam));
+  }
+})();
         // === БЕЗОПАСНЫЙ СЛУШАТЕЛЬ POSTMESSAGE ===
         window.addEventListener('message', function(event) {
             if (event.origin !== window.location.origin) return; // Защита от чужих сайтов
