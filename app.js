@@ -47,7 +47,8 @@ try {
 async function loadClientConfig() {
     try {
         const response = await fetch('client-config.json');
-        config = await response.json();    } catch (error) {
+        config = await response.json();        console.log('[loadClientConfig] Config загружен:', config);
+    } catch (error) {
         console.error('Config error:', error);
         alert('Ошибка загрузки конфигурации!');
     }
@@ -58,6 +59,13 @@ async function initAgent() {
     var params = new URLSearchParams(window.location.search);
     var agentParam = params.get('agent');
     var hostname = window.location.hostname;
+
+    // ← ПРОВЕРКА: config загружен?
+    if (!config.client || !config.client.scriptUrl) {
+        console.error('[initAgent] Config не загружен:', config);
+        showErrorScreen('Ошибка загрузки конфигурации. Обновите страницу (Ctrl+Shift+R).');
+        return false;
+    }
 
     try {
         // 1. Если передан agent в URL — используем его
@@ -89,15 +97,26 @@ async function initAgent() {
             showErrorScreen('Агент не определён');
             return false;
         }
-
         // Получаем Telegram ID текущего пользователя для проверки isOwner
         var userId = '';
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
             userId = window.Telegram.WebApp.initDataUnsafe.user.id;
         }
 
-        // Проверяем доступ к агенту через бэкенд        var response = await fetch(config.client.scriptUrl + '?action=get_agent_config&agent_id=' + encodeURIComponent(AGENT_ID) + '&user_id=' + userId);
+        console.log('[initAgent] Запрос get_agent_config для agent_id:', AGENT_ID, 'user_id:', userId);
+
+        // Проверяем доступ к агенту через бэкенд
+        var response = await fetch(config.client.scriptUrl + '?action=get_agent_config&agent_id=' + encodeURIComponent(AGENT_ID) + '&user_id=' + userId);
+       
+        // ← ПРОВЕРКА: ответ сервера
+        if (!response.ok) {
+            console.error('[initAgent] HTTP error:', response.status);
+            showErrorScreen('Ошибка сервера: ' + response.status);
+            return false;
+        }
+       
         var data = await response.json();
+        console.log('[initAgent] Ответ сервера:', data);
 
         if (data.success) {
             AGENT_CONFIG = data.config;
@@ -107,10 +126,12 @@ async function initAgent() {
             var adminBtn = document.getElementById('adminMenuItem');
             if (adminBtn) {
                 adminBtn.style.display = data.isOwner ? 'block' : 'none';
+                console.log('[initAgent] Кнопка админки:', data.isOwner ? 'показана' : 'скрыта');
             }
 
             return true;
         } else {
+            console.error('[initAgent] Ошибка:', data.error);
             showErrorScreen('Ошибка: ' + data.error);
             return false;
         }
@@ -124,8 +145,7 @@ async function initAgent() {
 // === ГЛАВНАЯ СТРАНИЦА ЭКОСИСТЕМЫ «ПРОСТОРЫ» ===
 function showEcosystemPage() {
     // Скрываем все экраны приложения
-    var welcomeScreen = document.getElementById('welcomeScreen');
-    var loadingScreen = document.getElementById('loadingScreen');
+    var welcomeScreen = document.getElementById('welcomeScreen');    var loadingScreen = document.getElementById('loadingScreen');
     var mainContent = document.getElementById('mainContent');
     if (welcomeScreen) welcomeScreen.style.display = 'none';
     if (loadingScreen) loadingScreen.style.display = 'none';
@@ -146,6 +166,7 @@ function applyBrandConfig(brandConfig) {
     var root = document.documentElement;
     if (brandConfig.primaryColor) root.style.setProperty('--primary', brandConfig.primaryColor);
     if (brandConfig.accentColor) root.style.setProperty('--accent', brandConfig.accentColor);
+
     if (brandConfig.appName) {
         document.title = brandConfig.appName;
         var headerTitle = document.getElementById('headerTitle');
@@ -173,8 +194,7 @@ function applyBrandConfig(brandConfig) {
         var headerLogo = document.querySelector('#headerBrand .brand-logo');
         if (headerLogo) {
             headerLogo.src = getImageUrl(brandConfig.logoUrl);
-            headerLogo.onerror = onImgError;
-        }
+            headerLogo.onerror = onImgError;        }
     }
 
     if (brandConfig.agentPhotoUrl) {
@@ -194,7 +214,8 @@ function showErrorScreen(message) {
         '</div>';
 }
 
-async function loadAgentData() {    try {
+async function loadAgentData() {
+    try {
         const res = await fetch(config.sheets.agentData);
         if (!res.ok) throw new Error('Network error');
         const csv = await res.text();
@@ -222,8 +243,7 @@ async function loadPagesData() {
 async function loadPropertiesFromScript() {
     if (!config.client || !config.client.scriptUrl) {
         console.log('No scriptUrl in config');
-        return [];
-    }
+        return [];    }
     try {
         var url = config.client.scriptUrl;
         if (AGENT_ID) {
@@ -243,7 +263,8 @@ async function loadPropertiesFromScript() {
         if (Array.isArray(data) && data.length > 1) {
             const headers = data[0];
             const rows = data.slice(1);
-            const result = rows.map(function(row) {                const obj = {};
+            const result = rows.map(function(row) {
+                const obj = {};
                 headers.forEach(function(header, i) {
                     obj[header] = row[i];
                 });
@@ -271,8 +292,7 @@ function parseCSV(csv) {
         headers.forEach(function(header, index) {
             let value = values[index] !== undefined ? values[index].trim() : '';
             if (value === 'TRUE') value = true;
-            else if (value === 'FALSE') value = false;
-            else if (!isNaN(value) && value !== '') value = Number(value);
+            else if (value === 'FALSE') value = false;            else if (!isNaN(value) && value !== '') value = Number(value);
             obj[header] = value;
         });
         result.push(obj);
@@ -293,6 +313,7 @@ function parseCSVLine(line) {
     result.push(current);
     return result;
 }
+
 function showBack() {
     const btn = document.getElementById('headerBackBtn');
     if (btn) btn.classList.remove('hidden');
@@ -320,8 +341,7 @@ function startApp() {
 
 function showPage(pageId) {
     currentPage = pageId;
-    closeMenu();
-    document.getElementById('mainContent').classList.add('hidden');
+    closeMenu();    document.getElementById('mainContent').classList.add('hidden');
     document.getElementById('page-about').classList.add('hidden');
     document.getElementById('page-contacts').classList.add('hidden');
     if (pageId === 'home') {
@@ -341,7 +361,8 @@ function showPage(pageId) {
                 let imageSrc = AGENT_CONFIG && AGENT_CONFIG.agentPhotoUrl ? AGENT_CONFIG.agentPhotoUrl : (config.branding ? config.branding.agentPhoto : null);
                 if (!imageSrc && config.branding && config.branding.logo && config.branding.logo !== 'logo.png') {
                     imageSrc = config.branding.logo;
-                }                if (imageSrc) {
+                }
+                if (imageSrc) {
                     const contentDiv = targetPage.querySelector('.page-content');
                     const img = document.createElement('img');
                     const yandexSrc = getImageUrl(imageSrc);
@@ -369,8 +390,7 @@ function showPage(pageId) {
     window.scrollTo(0, 0);
 }
 
-function renderContactsPage() {
-    const data = currentAgentData;
+function renderContactsPage() {    const data = currentAgentData;
     document.getElementById('agentName').textContent = data.name || 'Имя Агента';
     document.getElementById('agentRole').textContent = data.role || 'Эксперт по недвижимости';
     const avatarEl = document.querySelector('.agent-avatar');
@@ -390,7 +410,8 @@ function renderContactsPage() {
         img.alt = 'Логотип';
         img.onerror = onImgError;
         avatarEl.appendChild(img);
-    } else {        avatarEl.innerHTML = '';
+    } else {
+        avatarEl.innerHTML = '';
     }
     const hasAgency = data.agencyName || data.agencyAddress;
     document.getElementById('agencyBlock').style.display = hasAgency ? 'block' : 'none';
@@ -418,8 +439,7 @@ function openDirectChat() {
 }
 
 function callAgent() {
-    let phone = currentAgentData.phone;
-    if (!phone) { tg.showAlert('Телефон не указан'); return; }
+    let phone = currentAgentData.phone;    if (!phone) { tg.showAlert('Телефон не указан'); return; }
     let cleanPhone = phone.toString().replace(/[^\d+]/g, '');
     if (cleanPhone.length === 11 && (cleanPhone.startsWith('7') || cleanPhone.startsWith('8'))) cleanPhone = '+' + cleanPhone;
     if (!cleanPhone.startsWith('+') && cleanPhone.length >= 11) cleanPhone = '+' + cleanPhone;
@@ -439,7 +459,8 @@ function switchView(view) {
     const listContainer = document.getElementById('listingsContainer');
     const mapContainer = document.getElementById('mapContainer');
     if (view === 'list') {
-        listBtn.classList.add('active'); mapBtn.classList.remove('active');        listContainer.classList.remove('hidden'); mapContainer.classList.add('hidden');
+        listBtn.classList.add('active'); mapBtn.classList.remove('active');
+        listContainer.classList.remove('hidden'); mapContainer.classList.add('hidden');
         hideBack();
     } else {
         listBtn.classList.remove('active'); mapBtn.classList.add('active');
@@ -451,7 +472,9 @@ function switchView(view) {
 
 async function init() {
     try {
+        console.log('[init] Начинаю загрузку...');
         await loadClientConfig();
+        console.log('[init] Config загружен:', config);
 
         var agentOk = await initAgent();
         if (!agentOk) {
@@ -465,8 +488,7 @@ async function init() {
         await loadAgentData();
         await loadPagesData();
         let propertiesData = await loadPropertiesFromScript();
-        if (!propertiesData || propertiesData.length === 0) {
-            propertiesData = [];
+        if (!propertiesData || propertiesData.length === 0) {            propertiesData = [];
         }
         listings = propertiesData;
         renderWelcome();
@@ -478,7 +500,7 @@ async function init() {
         const loadingScreen = document.getElementById('loadingScreen');
         if (loadingScreen) loadingScreen.classList.add('hidden');
     } catch (error) {
-        console.error('Init Error:', error);
+        console.error('[init] Init Error:', error);
         const loadingScreen = document.getElementById('loadingScreen');
         if (loadingScreen) loadingScreen.classList.add('hidden');
     }
@@ -489,6 +511,7 @@ function applyTheme() {
     document.documentElement.style.setProperty('--primary', config.branding.primaryColor || '#3D5266');
     document.documentElement.style.setProperty('--accent', config.branding.accentColor || '#3498DB');
 }
+
 function applyBranding() {
     if (!config.branding) return;
     const companyEl = document.getElementById('companyName');
@@ -514,8 +537,7 @@ function applyBranding() {
 function renderWelcome() {
     if (!config.features || !config.features.showWelcomeScreen) {
         document.getElementById('welcomeScreen').classList.add('hidden');
-        document.getElementById('mainContent').classList.remove('hidden');
-    }
+        document.getElementById('mainContent').classList.remove('hidden');    }
 }
 
 function renderFilters() {
@@ -537,7 +559,8 @@ function renderFilters() {
         metros.forEach(function(m) {
             const label = document.createElement('label');
             label.className = 'checkbox-label';
-            label.innerHTML = '<input type="checkbox" value="' + escapeHtml(m) + '" class="filter-checkbox" data-filter="metro"><span>' + escapeHtml(m) + '</span>';            metroContainer.appendChild(label);
+            label.innerHTML = '<input type="checkbox" value="' + escapeHtml(m) + '" class="filter-checkbox" data-filter="metro"><span>' + escapeHtml(m) + '</span>';
+            metroContainer.appendChild(label);
         });
     }
     const roomsContainer = document.getElementById('roomsCheckboxes');
@@ -563,8 +586,7 @@ function renderFilters() {
             else {
                 document.querySelectorAll('.price-btn').forEach(function(b) { b.classList.remove('active'); });
                 this.classList.add('active');
-            }
-            filterListings();
+            }            filterListings();
         });
     });
     document.querySelectorAll('.filter-checkbox').forEach(function(cb) { cb.addEventListener('change', filterListings); });
@@ -586,7 +608,8 @@ function filterListings() {
             if (!selectedRooms.some(function(r) { return itemRooms.indexOf(r) !== -1; })) return false;
         }
         return true;
-    });    renderListings(filtered);
+    });
+    renderListings(filtered);
     const mapContainer = document.getElementById('mapContainer');
     if (mapContainer && !mapContainer.classList.contains('hidden')) updateMapMarkers(filtered);
 }
@@ -612,8 +635,7 @@ function renderListings(data) {
     data.forEach(function(item) {
         let priceDisplay = '?';
         if (typeof item.price_from === 'number') {
-            priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) + ' млн ₽' : (item.price_from / 1000000).toFixed(1) + ' млн ₽';
-        }
+            priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) + ' млн ₽' : (item.price_from / 1000000).toFixed(1) + ' млн ₽';        }
         const priceTo = typeof item.price_to === 'number' ? item.price_to.toFixed(1) : '';
         const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
         const area = (typeof item.area_min === 'number' && typeof item.area_max === 'number') ? item.area_min + '–' + item.area_max + ' м²' : '';
@@ -635,7 +657,8 @@ function renderListings(data) {
             '<div class="listing-price">от ' + priceDisplay + (priceTo ? ' до ' + priceTo + ' млн ₽' : '') + (ppsqm ? '<br><span class="price-per-sqm">~' + ppsqm + ' ₽/м²</span>' : '') + '</div>' +
             '<div class="listing-status status-' + statusKey + '">' + statusText + '</div>' +
             '<button class="tg-btn consult-btn-inline" onclick="openConsultForm(\'' + item.id + '\', event)">📞 Получить консультацию</button>' +
-            '</div>';        container.appendChild(card);
+            '</div>';
+        container.appendChild(card);
     });
 }
 
@@ -661,8 +684,7 @@ function updateMapMarkers(filteredItems) {
         if (typeof item.price_from === 'number') {
             priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
         }
-        const marker = L.marker([item.lat, item.lng]).addTo(map);
-        const popupContent = '<div class="map-popup" data-id="' + item.id + '" style="cursor:pointer;"><b>' + item.name + '</b><br>от ' + priceDisplay + ' млн ₽</div>';
+        const marker = L.marker([item.lat, item.lng]).addTo(map);        const popupContent = '<div class="map-popup" data-id="' + item.id + '" style="cursor:pointer;"><b>' + item.name + '</b><br>от ' + priceDisplay + ' млн ₽</div>';
         marker.bindPopup(popupContent);
         marker.on('popupopen', function() {
             const popupEl = document.querySelector('.map-popup[data-id="' + item.id + '"]');
@@ -684,7 +706,8 @@ function openDetails(id) {
     let priceDisplay = '?';
     if (typeof item.price_from === 'number') {
         priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
-    }    const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
+    }
+    const ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
     document.getElementById('modalPrice').innerHTML = 'от <b>' + priceDisplay + '</b> млн ₽' + (ppsqm ? '<span class="price-per-sqm">~' + ppsqm + ' ₽/м²</span>' : '');
     document.getElementById('modalMeta').innerHTML = '<div class="meta-row"><span>📍 ' + (escapeHtml(item.address) || '') + '</span></div><div class="meta-row"><span>🚇 м. ' + (escapeHtml(item.metro) || '') + '</span></div><div class="meta-row"><span>🏗️ Класс: ' + (escapeHtml(item.class) || '') + '</span></div><div class="meta-row"><span>🎨 Отделка: ' + (escapeHtml(item.finishing) || '') + '</span></div><div class="meta-row"><span>📅 Срок сдачи: ' + (escapeHtml(item.completion_soonest) || '') + (item.completion_soonest && item.completion_all ? ' - ' : '') + (escapeHtml(item.completion_all) || '') + '</span></div>';
     document.getElementById('modalDescription').textContent = item.description || 'Описание отсутствует';
@@ -710,8 +733,7 @@ function openDetails(id) {
             img.onclick = function() { window.open(yandexUrl, '_blank'); };
             img.onerror = onImgError;
             slide.appendChild(img);
-            track.appendChild(slide);
-            const dot = document.createElement('div');
+            track.appendChild(slide);            const dot = document.createElement('div');
             dot.className = 'dot ' + (index === 0 ? 'active' : '');
             dot.onclick = function() { track.scrollTo({ left: slide.offsetLeft, behavior: 'smooth' }); };
             dotsContainer.appendChild(dot);
@@ -733,7 +755,8 @@ function openDetails(id) {
     }
     if (plansImages.length > 0) {
         const title = document.createElement('h3');
-        title.className = 'plans-section-title';        title.textContent = '📐 Планировки';
+        title.className = 'plans-section-title';
+        title.textContent = '📐 Планировки';
         plansContainer.appendChild(title);
         const plansTrack = document.createElement('div');
         plansTrack.className = 'carousel-track';
@@ -759,8 +782,7 @@ function openDetails(id) {
     if (!btn) {
         btn = document.createElement('button');
         btn.id = 'modalConsultBtn';
-        btn.className = 'tg-btn';
-        btn.style.marginTop = '20px';
+        btn.className = 'tg-btn';        btn.style.marginTop = '20px';
         btn.style.marginBottom = '40px';
         modalContent.appendChild(btn);
     }
@@ -782,7 +804,8 @@ function openConsultForm(id, event) {
     if (event) event.stopPropagation();
     currentModalId = id;
     const item = listings.find(function(l) { return l.id === id; });
-    if (item) {        document.getElementById('consultObjectName').textContent = '🏢 ' + item.name;
+    if (item) {
+        document.getElementById('consultObjectName').textContent = '🏢 ' + item.name;
         document.getElementById('consultName').value = '';
         document.getElementById('consultPhone').value = '+7 (';
         document.getElementById('consultTelegram').value = '';
@@ -808,8 +831,7 @@ function closeConsultModal() {
 }
 
 function initPhoneMask() {
-    const input = document.getElementById('consultPhone');
-    if (!input) return;
+    const input = document.getElementById('consultPhone');    if (!input) return;
     input.addEventListener('input', function(e) {
         let x = e.target.value.replace(/\D/g, '').match(/(\d{0,1})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
         e.target.value = !x[2] ? '+7 (' : '+7 (' + x[2] + (x[3] ? ') ' + x[3] : '') + (x[4] ? '-' + x[4] : '') + (x[5] ? '-' + x[5] : '');
@@ -831,7 +853,8 @@ function initTelegramMask() {
 function submitConsultForm(event) {
     event.preventDefault();
     try {
-        const item = listings.find(function(l) { return l.id === currentModalId; });        if (!item) {
+        const item = listings.find(function(l) { return l.id === currentModalId; });
+        if (!item) {
             tg.showAlert('❌ Ошибка: объект не найден');
             return;
         }
@@ -857,8 +880,7 @@ function submitConsultForm(event) {
                     clientName: name,
                     clientPhone: phone,
                     clientTelegram: telegram || 'Не указан'
-                }
-            })
+                }            })
         })
         .then(function() {
             submitBtn.textContent = originalText;
@@ -880,7 +902,8 @@ function submitConsultForm(event) {
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
-    div.textContent = text;    return div.innerHTML;
+    div.textContent = text;
+    return div.innerHTML;
 }
 
 if (document.readyState === 'loading') {
