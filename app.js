@@ -660,7 +660,6 @@ function submitConsultForm(event) {
         tg.showAlert('️ Произошла ошибка.');
     }
 }
-
 function escapeHtml(text) { if (!text) return ''; var div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
 
 if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
