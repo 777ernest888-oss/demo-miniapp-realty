@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Админка | Новостройки</title>
+  <title>Админка | Просторы</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root { --primary: #3D5266; --accent: #3498DB; --bg: #F5F7FA; --card-bg: #FFFFFF; --text: #2C3E50; --text-secondary: #7F8C8D; --border: #E0E6ED; --danger: #E74C3C; --success: #27AE60; --warning: #F39C12; --radius: 12px; --shadow: 0 2px 8px rgba(0,0,0,0.08); }
@@ -47,7 +47,8 @@
     .form-row { display: flex; gap: 12px; }
     .form-row .form-group { flex: 1; }
     .photo-section { margin-bottom: 16px; }
-    .photo-preview-area { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }    .photo-thumb { width: 80px; height: 80px; border-radius: 8px; object-fit: cover; position: relative; border: 1px solid var(--border); }
+    .photo-preview-area { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .photo-thumb { width: 80px; height: 80px; border-radius: 8px; object-fit: cover; position: relative; border: 1px solid var(--border); }
     .photo-remove { position: absolute; top: -6px; right: -6px; width: 20px; height: 20px; background: var(--danger); color: white; border: none; border-radius: 50%; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
     .upload-btn { display: inline-flex; align-items: center; gap: 6px; padding: 10px 16px; background: var(--card-bg); border: 1px dashed var(--accent); border-radius: 8px; color: var(--accent); font-size: 14px; cursor: pointer; margin-top: 8px; }
     .upload-btn input { display: none; }
@@ -81,6 +82,7 @@
   </style>
 </head>
 <body>
+  <!-- ЭКРАН PIN -->
   <div id="pinScreen" class="pin-screen" style="display:none;">
     <h1>🔐 Админ-панель</h1>
     <p>Введите PIN-код для доступа</p>
@@ -88,6 +90,8 @@
     <div id="pinError" class="pin-error">❌ Неверный PIN-код</div>
     <button class="btn btn-primary" style="width:200px;" onclick="checkPin()">Войти</button>
   </div>
+
+  <!-- ОСНОВНОЙ КОНТЕНТ -->
   <div id="appContent" style="display:none;">
     <div class="header"><h1>⚙️ Админка</h1><button class="header-btn" onclick="refreshCurrentTab()">↻</button></div>
     <div class="container">
@@ -96,16 +100,23 @@
         <button class="tab" onclick="switchTab('leads')">📩 Заявки</button>
         <button class="tab" onclick="switchTab('profile')">👤 Профиль</button>
         <button class="tab" onclick="switchTab('about')">ℹ️ Обо мне</button>
-        <button class="tab" onclick="switchTab('settings')">🔒 Настройки</button>      </div>
+        <button class="tab" onclick="switchTab('settings')">🔒 Настройки</button>
+      </div>
+
+      <!-- Вкладка: Объекты -->
       <div id="tab-objects" class="tab-content active">
         <div class="loading" id="objectsLoading">Загрузка объектов...</div>
         <div id="objectsList"></div>
         <button class="fab" onclick="openCreateModal()">+</button>
       </div>
+
+      <!-- Вкладка: Заявки -->
       <div id="tab-leads" class="tab-content">
         <div class="loading" id="leadsLoading">Загрузка заявок...</div>
         <div id="leadsList"></div>
       </div>
+
+      <!-- Вкладка: Профиль -->
       <div id="tab-profile" class="tab-content">
         <div class="loading" id="profileLoading">Загрузка профиля...</div>
         <form id="profileForm" onsubmit="saveProfile(event)" style="display:none;">
@@ -126,6 +137,8 @@
           <button type="submit" class="btn btn-primary">💾 Сохранить профиль</button>
         </form>
       </div>
+
+      <!-- Вкладка: Обо мне -->
       <div id="tab-about" class="tab-content">
         <div class="loading" id="aboutLoading">Загрузка...</div>
         <form id="aboutForm" onsubmit="saveAboutPage(event)" style="display:none;">
@@ -134,6 +147,8 @@
           <button type="submit" class="btn btn-primary">💾 Сохранить страницу</button>
         </form>
       </div>
+
+      <!-- Вкладка: Настройки -->
       <div id="tab-settings" class="tab-content">
         <div class="form-group"><label class="form-label">Текущий PIN</label><input type="password" class="form-input" id="currentPin" placeholder="Введите текущий PIN"></div>
         <div class="form-group"><label class="form-label">Новый PIN</label><input type="password" class="form-input" id="newPin" placeholder="Минимум 4 символа"></div>
@@ -142,10 +157,13 @@
         <p style="text-align:center;font-size:12px;color:var(--text-secondary);margin-top:16px;">После смены PIN текущая сессия будет обновлена автоматически.</p>
       </div>
     </div>
+
+    <!-- Модальное окно объекта -->
     <div class="modal-overlay" id="objectModal">
       <div class="modal-content">
         <div class="modal-header">
-          <button class="back-btn" onclick="closeModal()">← Назад</button>          <h2 id="modalTitle">Новый объект</h2>
+          <button class="back-btn" onclick="closeModal()">← Назад</button>
+          <h2 id="modalTitle">Новый объект</h2>
           <button class="close-btn" onclick="closeModal()">✕</button>
         </div>
         <div class="status-toggle" id="statusToggle" style="display:none;">
@@ -179,30 +197,44 @@
   </div>
 
   <script>
+    // === ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===
+    var config = { scriptUrl: '' };
+    var objects = [], leads = [], currentAgentData = {}, pagesData = {};
+    var currentEditId = null, photoStore = { main: '', gallery: [], plans: [] }, currentStatus = 'true', currentTab = 'objects';
+    var isAuthorized = false;
+    var AGENT_ID = '';
+    var AGENT_CONFIG = null;
+
+    // Telegram WebApp Init
+    var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
+    if (tg) { tg.ready(); tg.expand(); }
+
+    // Слушатель postMessage от родителя (для получения initData безопасно)
     window.addEventListener('message', function(event) {
       if (event.origin !== window.location.origin) return;
       if (event.data && event.data.type === 'TELEGRAM_INIT_DATA') {
         sessionStorage.setItem('tg_initData', event.data.initData);
-        if (typeof checkAuth === 'function') checkAuth();
+        if (!isAuthorized) checkAuth();
       }
     });
 
-    var config = { scriptUrl: '', ownerId: '' };
-    var objects = [], leads = [], currentAgentData = {}, pagesData = {};
-    var currentEditId = null, photoStore = { main: '', gallery: [], plans: [] }, currentStatus = 'true', currentTab = 'objects';
-    var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-    if (tg) { tg.ready(); tg.expand(); }
-    var isAuthorized = false;
-    var AGENT_ID = '';
-    var AGENT_CONFIG = null;
+    // === ИНИЦИАЛИЗАЦИЯ ===
+    document.addEventListener('DOMContentLoaded', async function() {
+      await loadConfig();
+      var ok = await initAgent();
+      if (ok) checkAuth();
+    });
+
     async function loadConfig() {
       try {
-        var response = await fetch('client-config.json?v=2.0.1');
+        var response = await fetch('client-config.json?v=2.0.2');
         var data = await response.json();
         config.scriptUrl = data.client.scriptUrl;
-        config.ownerId = data.client.ownerId || '';
         console.log('[admin loadConfig] ✅', config.scriptUrl);
-      } catch (e) { console.error('[admin loadConfig] ❌', e); showToast(' Ошибка конфигурации'); }
+      } catch (e) {
+        console.error('[admin loadConfig] ❌', e);
+        showToast('❌ Ошибка конфигурации');
+      }
     }
 
     async function initAgent() {
@@ -226,10 +258,9 @@
         if (!AGENT_ID) { showErrorScreen('Агент не определён'); return false; }
 
         var userId = params.get('user_id') || '';
-        if (!userId && window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
-          userId = window.Telegram.WebApp.initDataUnsafe.user.id;
+        if (!userId && tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+          userId = tg.initDataUnsafe.user.id;
         }
-        console.log('[admin initAgent] agent_id:', AGENT_ID, '| user_id:', userId);
 
         var response = await fetch(config.scriptUrl + '?action=get_agent_config&agent_id=' + encodeURIComponent(AGENT_ID) + '&user_id=' + userId);
         var data = await response.json();
@@ -237,13 +268,13 @@
         if (data.success) {
           AGENT_CONFIG = data.config;
           applyBrandConfig(AGENT_CONFIG);
-          console.log('[admin initAgent] ✅ isOwner:', data.isOwner);
           return true;
         } else {
           showErrorScreen('Ошибка: ' + data.error);
           return false;
         }
-      } catch (e) {        console.error('[admin initAgent] ❌', e);
+      } catch (e) {
+        console.error('[admin initAgent] ❌', e);
         showErrorScreen('Ошибка подключения к серверу');
         return false;
       }
@@ -264,46 +295,70 @@
     function showErrorScreen(message) {
       document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;text-align:center;">' +
         '<div style="font-size:48px;margin-bottom:20px;">🔒</div><h1 style="font-size:24px;margin-bottom:12px;">Доступ ограничен</h1>' +
-        '<p style="color:#7F8C8D;margin-bottom:20px;">' + message + '</p>' +
+        '<p style="color:#7F8C8D;margin-bottom:20px;">' + escapeHtml(message) + '</p>' +
         '<p style="color:#95A5A6;font-size:14px;">Обратитесь к администратору</p></div>';
     }
 
+    // === АВТОРИЗАЦИЯ ===
     function checkAuth() {
+      // 1. Проверка сессии
       if (sessionStorage.getItem('adminAuth') === 'true') { isAuthorized = true; showApp(); return; }
+     
+      // 2. Проверка Telegram initData
       var initData = getTelegramInitData();
-      if (initData) { isAuthorized = true; sessionStorage.setItem('adminAuth', 'true'); showApp(); return; }
+      if (initData) {
+        isAuthorized = true;
+        sessionStorage.setItem('adminAuth', 'true');
+        showApp();
+        return;
+      }
+     
+      // 3. Показ экрана PIN
       document.getElementById('pinScreen').style.display = 'flex';
       document.getElementById('pinInput').focus();
     }
 
-    function checkPin() {
+    async function checkPin() {
       var input = document.getElementById('pinInput').value.trim();
       if (!input) return;
+     
       var btn = document.querySelector('#pinScreen button');
       var originalText = btn.textContent;
-      btn.textContent = 'Проверка...'; btn.disabled = true;
-     
-      // ИСПРАВЛЕНО: добавлен mode: 'no-cors' и text/plain для обхода CORS
-      fetch(config.scriptUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'verify_pin', pin: input, agentId: AGENT_ID })
-      })
-      .then(function() {
-        btn.textContent = originalText; btn.disabled = false;
-        // При no-cors мы не видим ответ, но если запрос ушел - пускаем        isAuthorized = true;
-        sessionStorage.setItem('adminAuth', 'true');
-        sessionStorage.setItem('adminPin', input);
-        document.getElementById('pinError').style.display = 'none';
-        showApp();
-      })
-      .catch(function() {
-        btn.textContent = originalText; btn.disabled = false;
-        document.getElementById('pinError').textContent = 'Ошибка сети';
+      btn.textContent = 'Проверка...';
+      btn.disabled = true;
+      document.getElementById('pinError').style.display = 'none';
+
+      try {
+        // ВАЖНО: БЕЗ no-cors! Читаем реальный ответ
+        var response = await fetch(config.scriptUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'verify_pin', pin: input, agentId: AGENT_ID })
+        });
+       
+        var data = await response.json();
+       
+        if (data.success) {
+          isAuthorized = true;
+          sessionStorage.setItem('adminAuth', 'true');
+          sessionStorage.setItem('adminPin', input);
+          showApp();
+        } else {
+          document.getElementById('pinError').textContent = data.error || '❌ Неверный PIN-код';
+          document.getElementById('pinError').style.display = 'block';
+        }
+      } catch (e) {
+        document.getElementById('pinError').textContent = '❌ Ошибка сети';
         document.getElementById('pinError').style.display = 'block';
-      });
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
     }
+
+    document.getElementById('pinInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') checkPin();
+    });
 
     function showApp() {
       document.getElementById('pinScreen').style.display = 'none';
@@ -311,68 +366,114 @@
       loadObjects();
     }
 
-    document.getElementById('pinInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') checkPin(); });
-
+    // === УНИВЕРСАЛЬНЫЙ API ВЫЗОВ (БЕЗ NO-CORS) ===
     async function apiCall(action, params) {
       if (!config.scriptUrl) throw new Error('Script URL не настроен');
+     
       var payload = Object.assign({}, params, {
-        action: action, agentId: AGENT_ID,
-        initData: getTelegramInitData(), pin: sessionStorage.getItem('adminPin') || ''
+        action: action,
+        agentId: AGENT_ID,
+        initData: getTelegramInitData(),
+        pin: sessionStorage.getItem('adminPin') || ''
       });
-      var fetchResult;
-      try {
-        // ИСПРАВЛЕНО: добавлен mode: 'no-cors' и text/plain
-        fetchResult = await fetch(config.scriptUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload)
-        });
+
+      var response = await fetch(config.scriptUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      var data = await response.json();
+     
+      if (!data.success) {
+        // Обработка ошибок авторизации
+        if (data.code === 401 || data.code === 403) {
+          sessionStorage.removeItem('adminAuth');
+          sessionStorage.removeItem('adminPin');
+          location.reload();
+          throw new Error('Сессия истекла. Войдите снова.');
+        }
+        throw new Error(data.error || 'Ошибка сервера');
       }
-      catch (e) { throw new Error('Ошибка сети'); }
-      // При no-cors ответ opaque, считаем успешным
-      return { success: true };
+     
+      return data;
     }
 
+    function getTelegramInitData() {
+      return sessionStorage.getItem('tg_initData') || '';
+    }
+
+    // === НАВИГАЦИЯ ===
     function switchTab(tabName) {
       currentTab = tabName;
       document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
       document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
       event.target.classList.add('active');
       document.getElementById('tab-' + tabName).classList.add('active');
-      if (tabName === 'objects') loadObjects();
-      else if (tabName === 'leads') loadLeads();      else if (tabName === 'profile') loadProfile();
-      else if (tabName === 'about') loadAboutPage();
+      refreshCurrentTab();
     }
-    function refreshCurrentTab() { if (currentTab === 'objects') loadObjects(); else if (currentTab === 'leads') loadLeads(); else if (currentTab === 'profile') loadProfile(); else if (currentTab === 'about') loadAboutPage(); }
 
+    function refreshCurrentTab() {
+      if (currentTab === 'objects') loadObjects();
+      else if (currentTab === 'leads') loadLeads();
+      else if (currentTab === 'profile') loadProfile();
+      else if (currentTab === 'about') loadAboutPage();
+    }
+
+    // === ОБЪЕКТЫ ===
     async function loadObjects() {
-      document.getElementById('objectsLoading').style.display = 'block'; document.getElementById('objectsList').innerHTML = '';
-      if (!config.scriptUrl) await loadConfig();
+      document.getElementById('objectsLoading').style.display = 'block';
+      document.getElementById('objectsList').innerHTML = '';
+     
       try {
-        var url = config.scriptUrl + '?type=listings&includeHidden=true&agent_id=' + encodeURIComponent(AGENT_ID);
-        var response = await fetch(url); var data = await response.json();
-        if (Array.isArray(data) && data.length > 1) {
-          var headers = data[0]; objects = data.slice(1).map(function(row) { var obj = {}; headers.forEach(function(h, i) { obj[h] = row[i]; }); return obj; });
-        } else { objects = []; }
+        // Используем GET с параметрами для чтения
+        var url = config.scriptUrl + '?action=get_listings&includeHidden=true&agent_id=' + encodeURIComponent(AGENT_ID);
+        var response = await fetch(url);
+        var data = await response.json();
+       
+        if (data.success && Array.isArray(data.data)) {
+          objects = data.data;
+        } else {
+          objects = [];
+        }
+       
         document.getElementById('objectsLoading').style.display = 'none';
-        if (objects.length === 0) { document.getElementById('objectsList').innerHTML = '<div class="empty-state"><div class="empty-icon">🏗️</div><h3>Нет объектов</h3><p>Нажмите + чтобы добавить первый ЖК</p></div>'; return; }
+       
+        if (objects.length === 0) {
+          document.getElementById('objectsList').innerHTML = '<div class="empty-state"><div class="empty-icon">🏗️</div><h3>Нет объектов</h3><p>Нажмите + чтобы добавить первый ЖК</p></div>';
+          return;
+        }
+       
         objects.forEach(function(obj) {
           var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
           var thumbUrl = obj.image_main || '';
-          var displayThumb = thumbUrl.indexOf('lh3.googleusercontent.com/d/') !== -1 ? 'https://drive.google.com/thumbnail?id=' + thumbUrl.split('/d/')[1] + '&sz=w400' : thumbUrl;
-          var statusClass = isActive ? 'status-active' : 'status-hidden'; var statusText = isActive ? 'Активен' : 'Скрыт';
-          var card = document.createElement('div'); card.className = 'object-card' + (isActive ? '' : ' hidden-object'); card.onclick = function() { openEditModal(obj.id); };
-          card.innerHTML = '<img src="' + displayThumb + '" class="card-thumb" onerror="this.style.background=\'#E0E6ED\'">' +
+          var displayThumb = thumbUrl.indexOf('lh3.googleusercontent.com/d/') !== -1
+            ? 'https://drive.google.com/thumbnail?id=' + thumbUrl.split('/d/')[1] + '&sz=w400'
+            : thumbUrl;
+          var statusClass = isActive ? 'status-active' : 'status-hidden';
+          var statusText = isActive ? 'Активен' : 'Скрыт';
+         
+          var card = document.createElement('div');
+          card.className = 'object-card' + (isActive ? '' : ' hidden-object');
+          card.onclick = function() { openEditModal(obj.id); };
+          card.innerHTML = '<img src="' + escapeHtml(displayThumb) + '" class="card-thumb" onerror="this.style.background=\'#E0E6ED\'">' +
             '<div class="card-info"><div class="card-title">' + escapeHtml(obj.name || 'Без названия') + '</div><div class="card-address">📍 ' + escapeHtml(obj.address || '') + '</div><span class="card-status ' + statusClass + '">' + statusText + '</span></div>';
           document.getElementById('objectsList').appendChild(card);
         });
-      } catch (e) { document.getElementById('objectsLoading').style.display = 'none'; showToast(' Ошибка загрузки объектов'); }
+      } catch (e) {
+        document.getElementById('objectsLoading').style.display = 'none';
+        showToast('❌ Ошибка загрузки объектов');
+      }
     }
 
     function openCreateModal() {
-      currentEditId = null; document.getElementById('modalTitle').textContent = 'Новый ЖК'; document.getElementById('objectForm').reset(); document.getElementById('objectId').value = '';
-      document.getElementById('statusToggle').style.display = 'none'; document.getElementById('deleteBtn').style.display = 'none'; document.getElementById('saveBtn').textContent = 'Создать объект';
+      currentEditId = null;
+      document.getElementById('modalTitle').textContent = 'Новый ЖК';
+      document.getElementById('objectForm').reset();
+      document.getElementById('objectId').value = '';
+      document.getElementById('statusToggle').style.display = 'none';
+      document.getElementById('deleteBtn').style.display = 'none';
+      document.getElementById('saveBtn').textContent = 'Создать объект';
       photoStore = { main: '', gallery: [], plans: [] };
       ['mainPhotoPreview','galleryPreview','plansPreview'].forEach(function(id) { document.getElementById(id).innerHTML = ''; });
       ['fieldImageMain','fieldImagesGallery','fieldFloorPlansImages'].forEach(function(id) { document.getElementById(id).value = ''; });
@@ -380,141 +481,378 @@
     }
 
     function openEditModal(id) {
-      var obj = objects.find(function(o) { return o.id === id; }); if (!obj) return;
-      currentEditId = id; document.getElementById('modalTitle').textContent = 'Редактировать ЖК'; document.getElementById('objectId').value = id;
-      document.getElementById('statusToggle').style.display = 'flex'; document.getElementById('deleteBtn').style.display = 'block'; document.getElementById('saveBtn').textContent = 'Сохранить изменения';
-      ['fieldName','fieldAddress','fieldDistrict','fieldMetro','fieldPriceFrom','fieldPriceTo','fieldPriceSqm','fieldAreaMin','fieldAreaMax','fieldRooms','fieldClass','fieldCompletionSoonest','fieldCompletionAll','fieldFinishing','fieldStatus','fieldDescription','fieldFeatures','fieldLat','fieldLng'].forEach(function(fid) {
-        var key = fid.replace('field','').toLowerCase(); if (key === 'class') key = 'class'; document.getElementById(fid).value = obj[key] || '';
+      var obj = objects.find(function(o) { return o.id === id; });
+      if (!obj) return;
+      currentEditId = id;
+      document.getElementById('modalTitle').textContent = 'Редактировать ЖК';
+      document.getElementById('objectId').value = id;
+      document.getElementById('statusToggle').style.display = 'flex';
+      document.getElementById('deleteBtn').style.display = 'block';
+      document.getElementById('saveBtn').textContent = 'Сохранить изменения';
+     
+      var fields = ['fieldName','fieldAddress','fieldDistrict','fieldMetro','fieldPriceFrom','fieldPriceTo','fieldPriceSqm','fieldAreaMin','fieldAreaMax','fieldRooms','fieldClass','fieldCompletionSoonest','fieldCompletionAll','fieldFinishing','fieldStatus','fieldDescription','fieldFeatures','fieldLat','fieldLng'];
+      fields.forEach(function(fid) {
+        var key = fid.replace('field','').toLowerCase();
+        document.getElementById(fid).value = obj[key] || '';
       });
-      var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE'; setStatus(isActive ? 'true' : 'false');
-      photoStore.main = obj.image_main || ''; document.getElementById('fieldImageMain').value = photoStore.main; renderPhotoPreview('main', photoStore.main ? [photoStore.main] : []);
-      photoStore.gallery = obj.images_gallery ? String(obj.images_gallery).split(',').filter(Boolean) : []; document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(','); renderPhotoPreview('gallery', photoStore.gallery);
-      photoStore.plans = obj.floor_plans_images ? String(obj.floor_plans_images).split(',').filter(Boolean) : []; document.getElementById('fieldFloorPlansImages').value = photoStore.plans.join(','); renderPhotoPreview('plans', photoStore.plans);
-      document.getElementById('objectModal').classList.add('active');    }
+     
+      var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
+      setStatus(isActive ? 'true' : 'false');
+     
+      photoStore.main = obj.image_main || '';
+      document.getElementById('fieldImageMain').value = photoStore.main;
+      renderPhotoPreview('main', photoStore.main ? [photoStore.main] : []);
+     
+      photoStore.gallery = obj.images_gallery ? String(obj.images_gallery).split(',').filter(Boolean) : [];
+      document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(',');
+      renderPhotoPreview('gallery', photoStore.gallery);
+     
+      photoStore.plans = obj.floor_plans_images ? String(obj.floor_plans_images).split(',').filter(Boolean) : [];
+      document.getElementById('fieldFloorPlansImages').value = photoStore.plans.join(',');
+      renderPhotoPreview('plans', photoStore.plans);
+     
+      document.getElementById('objectModal').classList.add('active');
+    }
 
-    function closeModal() { document.getElementById('objectModal').classList.remove('active'); currentEditId = null; }
-    function setStatus(v) { currentStatus = v; document.querySelectorAll('.toggle-option').forEach(function(el) { el.classList.toggle('selected', el.dataset.value === v); }); }
+    function closeModal() {
+      document.getElementById('objectModal').classList.remove('active');
+      currentEditId = null;
+    }
+   
+    function setStatus(v) {
+      currentStatus = v;
+      document.querySelectorAll('.toggle-option').forEach(function(el) {
+        el.classList.toggle('selected', el.dataset.value === v);
+      });
+    }
 
     async function saveObject(event) {
-      event.preventDefault(); var btn = document.getElementById('saveBtn'); var ot = btn.textContent; btn.disabled = true; btn.textContent = 'Сохранение...';
+      event.preventDefault();
+      var btn = document.getElementById('saveBtn');
+      var ot = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Сохранение...';
+     
       try {
-        var p = { name: document.getElementById('fieldName').value.trim(), address: document.getElementById('fieldAddress').value.trim(), district: document.getElementById('fieldDistrict').value.trim(), metro: document.getElementById('fieldMetro').value.trim(), price_from: parseFloat(document.getElementById('fieldPriceFrom').value)||'', price_to: parseFloat(document.getElementById('fieldPriceTo').value)||'', price_per_sqm: parseFloat(document.getElementById('fieldPriceSqm').value)||'', area_min: parseFloat(document.getElementById('fieldAreaMin').value)||'', area_max: parseFloat(document.getElementById('fieldAreaMax').value)||'', rooms: document.getElementById('fieldRooms').value.trim(), class: document.getElementById('fieldClass').value, completion_soonest: document.getElementById('fieldCompletionSoonest').value.trim(), completion_all: document.getElementById('fieldCompletionAll').value.trim(), finishing: document.getElementById('fieldFinishing').value, status: document.getElementById('fieldStatus').value, description: document.getElementById('fieldDescription').value.trim(), features: document.getElementById('fieldFeatures').value.trim(), image_main: photoStore.main, images_gallery: photoStore.gallery.join(','), floor_plans_images: photoStore.plans.join(','), lat: parseFloat(document.getElementById('fieldLat').value)||'', lng: parseFloat(document.getElementById('fieldLng').value)||'', active: currentStatus==='true' };
-        if (currentEditId) { p.id = currentEditId; await apiCall('update', p); showToast('✅ Объект обновлён'); } else { await apiCall('create', p); showToast('✅ Объект создан'); }
-        closeModal(); setTimeout(loadObjects, 2000);
-      } catch (e) { showToast('❌ Ошибка: '+e.message); } finally { btn.disabled = false; btn.textContent = ot; }
+        var p = {
+          name: document.getElementById('fieldName').value.trim(),
+          address: document.getElementById('fieldAddress').value.trim(),
+          district: document.getElementById('fieldDistrict').value.trim(),
+          metro: document.getElementById('fieldMetro').value.trim(),
+          price_from: parseFloat(document.getElementById('fieldPriceFrom').value)||'',
+          price_to: parseFloat(document.getElementById('fieldPriceTo').value)||'',
+          price_per_sqm: parseFloat(document.getElementById('fieldPriceSqm').value)||'',
+          area_min: parseFloat(document.getElementById('fieldAreaMin').value)||'',
+          area_max: parseFloat(document.getElementById('fieldAreaMax').value)||'',
+          rooms: document.getElementById('fieldRooms').value.trim(),
+          class: document.getElementById('fieldClass').value,
+          completion_soonest: document.getElementById('fieldCompletionSoonest').value.trim(),
+          completion_all: document.getElementById('fieldCompletionAll').value.trim(),
+          finishing: document.getElementById('fieldFinishing').value,
+          status: document.getElementById('fieldStatus').value,
+          description: document.getElementById('fieldDescription').value.trim(),
+          features: document.getElementById('fieldFeatures').value.trim(),
+          image_main: photoStore.main,
+          images_gallery: photoStore.gallery.join(','),
+          floor_plans_images: photoStore.plans.join(','),
+          lat: parseFloat(document.getElementById('fieldLat').value)||'',
+          lng: parseFloat(document.getElementById('fieldLng').value)||'',
+          active: currentStatus==='true'
+        };
+       
+        if (currentEditId) {
+          p.id = currentEditId;
+          await apiCall('update', p);
+          showToast('✅ Объект обновлён');
+        } else {
+          await apiCall('create', p);
+          showToast('✅ Объект создан');
+        }
+        closeModal();
+        setTimeout(loadObjects, 1000);
+      } catch (e) {
+        showToast('❌ Ошибка: '+ e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = ot;
+      }
     }
 
     async function deleteObject() {
-      if (!currentEditId || !confirm('Удалить объект?')) return; var btn = document.getElementById('deleteBtn'); btn.disabled = true; btn.textContent = 'Удаление...';
-      try { await apiCall('delete', { id: currentEditId }); showToast('✅ Удалён'); closeModal(); setTimeout(loadObjects, 2000); } catch (e) { showToast('❌ Ошибка'); } finally { btn.disabled = false; btn.textContent = 'Удалить объект'; }
+      if (!currentEditId || !confirm('Удалить объект?')) return;
+      var btn = document.getElementById('deleteBtn');
+      btn.disabled = true;
+      btn.textContent = 'Удаление...';
+      try {
+        await apiCall('delete', { id: currentEditId });
+        showToast('✅ Удалён');
+        closeModal();
+        setTimeout(loadObjects, 1000);
+      } catch (e) {
+        showToast('❌ Ошибка');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Удалить объект';
+      }
     }
 
+    // === ЗАГРУЗКА ФОТО (СИНХРОННАЯ!) ===
     async function uploadPhoto(type, input) {
-      if (!input.files || input.files.length === 0) return; var files = Array.from(input.files); var btn = input.parentElement; var ot = btn.innerHTML; btn.innerHTML = '⏳ Загрузка...';
+      if (!input.files || input.files.length === 0) return;
+      var files = Array.from(input.files);
+      var btn = input.parentElement;
+      var ot = btn.innerHTML;
+      btn.innerHTML = '⏳ Загрузка...';
+     
       try {
         for (var i = 0; i < files.length; i++) {
-          var file = files[i]; var base64 = await fileToBase64(file); await apiCall('upload_image', { image: base64, fileName: file.name }); await new Promise(function(r) { setTimeout(r, 1500); });
-          var ur = await fetch(config.scriptUrl + '?action=get_last_file_url'); var ud = await ur.json();
-          if (ud && ud.url) addPhotoToField(type, ud.url);
+          var file = files[i];
+          var base64 = await fileToBase64(file);
+         
+          // ПОЛУЧАЕМ URL СРАЗУ ИЗ ОТВЕТА!
+          var result = await apiCall('upload_image', { image: base64, fileName: file.name });
+         
+          if (result.url) {
+            addPhotoToField(type, result.url);
+          }
         }
         showToast('✅ Фото загружено');
-      } catch (e) { showToast('❌ Ошибка загрузки'); } finally { btn.innerHTML = ot; setTimeout(function() { input.value = ''; }, 500); }
+      } catch (e) {
+        showToast('❌ Ошибка загрузки: ' + e.message);
+      } finally {
+        btn.innerHTML = ot;
+        setTimeout(function() { input.value = ''; }, 500);
+      }
     }
 
-    function fileToBase64(file) { return new Promise(function(res, rej) { var r = new FileReader(); r.onload = function() { res(r.result); }; r.onerror = function(e) { rej(e); }; r.readAsDataURL(file); }); }
+    function fileToBase64(file) {
+      return new Promise(function(res, rej) {
+        var r = new FileReader();
+        r.onload = function() { res(r.result); };
+        r.onerror = function(e) { rej(e); };
+        r.readAsDataURL(file);
+      });
+    }
+   
     function addPhotoToField(type, url) {
-      if (type==='main') { photoStore.main=url; document.getElementById('fieldImageMain').value=url; renderPhotoPreview('main',[url]); }
-      else if (type==='gallery') { if (photoStore.gallery.indexOf(url)===-1) photoStore.gallery.push(url); document.getElementById('fieldImagesGallery').value=photoStore.gallery.join(','); renderPhotoPreview('gallery',photoStore.gallery); }
-      else if (type==='plans') { if (photoStore.plans.indexOf(url)===-1) photoStore.plans.push(url); document.getElementById('fieldFloorPlansImages').value=photoStore.plans.join(','); renderPhotoPreview('plans',photoStore.plans); }
+      if (type==='main') {
+        photoStore.main=url;
+        document.getElementById('fieldImageMain').value=url;
+        renderPhotoPreview('main',[url]);
+      }
+      else if (type==='gallery') {
+        if (photoStore.gallery.indexOf(url)===-1) photoStore.gallery.push(url);
+        document.getElementById('fieldImagesGallery').value=photoStore.gallery.join(',');
+        renderPhotoPreview('gallery',photoStore.gallery);
+      }
+      else if (type==='plans') {
+        if (photoStore.plans.indexOf(url)===-1) photoStore.plans.push(url);
+        document.getElementById('fieldFloorPlansImages').value=photoStore.plans.join(',');
+        renderPhotoPreview('plans',photoStore.plans);
+      }
     }
+   
     function removePhoto(type, idx) {
-      if (type==='main') { photoStore.main=''; document.getElementById('fieldImageMain').value=''; renderPhotoPreview('main',[]); }
-      else if (type==='gallery') { photoStore.gallery.splice(idx,1); document.getElementById('fieldImagesGallery').value=photoStore.gallery.join(','); renderPhotoPreview('gallery',photoStore.gallery); }
-      else if (type==='plans') { photoStore.plans.splice(idx,1); document.getElementById('fieldFloorPlansImages').value=photoStore.plans.join(','); renderPhotoPreview('plans',photoStore.plans); }
+      if (type==='main') {
+        photoStore.main='';
+        document.getElementById('fieldImageMain').value='';
+        renderPhotoPreview('main',[]);
+      }
+      else if (type==='gallery') {
+        photoStore.gallery.splice(idx,1);
+        document.getElementById('fieldImagesGallery').value=photoStore.gallery.join(',');
+        renderPhotoPreview('gallery',photoStore.gallery);
+      }
+      else if (type==='plans') {
+        photoStore.plans.splice(idx,1);
+        document.getElementById('fieldFloorPlansImages').value=photoStore.plans.join(',');
+        renderPhotoPreview('plans',photoStore.plans);
+      }
     }
+   
     function renderPhotoPreview(type, urls) {
       var cid = type==='main'?'mainPhotoPreview':type==='gallery'?'galleryPreview':'plansPreview';
-      var c = document.getElementById(cid); c.innerHTML = '';
+      var c = document.getElementById(cid);
+      c.innerHTML = '';
       urls.forEach(function(url, idx) {
-        if (!url) return; var du = url.indexOf('lh3.googleusercontent.com/d/')!==-1?'https://drive.google.com/thumbnail?id='+url.split('/d/')[1]+'&sz=w400':url;
-        var w = document.createElement('div'); w.style.position='relative'; w.style.display='inline-block';
-        var img = document.createElement('img'); img.src=du; img.className='photo-thumb'; img.onerror=function(){this.style.background='#E0E6ED';};
-        var rb = document.createElement('button'); rb.className='photo-remove'; rb.textContent='✕'; rb.onclick=function(e){e.stopPropagation();removePhoto(type,idx);};        w.appendChild(img); w.appendChild(rb); c.appendChild(w);
+        if (!url) return;
+        var du = url.indexOf('lh3.googleusercontent.com/d/')!==-1
+          ?'https://drive.google.com/thumbnail?id='+url.split('/d/')[1]+'&sz=w400'
+          :url;
+        var w = document.createElement('div');
+        w.style.position='relative';
+        w.style.display='inline-block';
+        var img = document.createElement('img');
+        img.src=du;
+        img.className='photo-thumb';
+        img.onerror=function(){this.style.background='#E0E6ED';};
+        var rb = document.createElement('button');
+        rb.className='photo-remove';
+        rb.textContent='✕';
+        rb.onclick=function(e){e.stopPropagation();removePhoto(type,idx);};       
+        w.appendChild(img);
+        w.appendChild(rb);
+        c.appendChild(w);
       });
     }
 
+    // === ЗАЯВКИ ===
     async function loadLeads() {
-      document.getElementById('leadsLoading').style.display='block'; document.getElementById('leadsList').innerHTML='';
-      if (!config.scriptUrl) await loadConfig();
+      document.getElementById('leadsLoading').style.display='block';
+      document.getElementById('leadsList').innerHTML='';
       try {
-        var result = await apiCall('get_leads', {}); leads = result.data || []; document.getElementById('leadsLoading').style.display='none';
-        console.log('[loadLeads] Загружено заявок:', leads.length);
-        if (leads.length===0) { document.getElementById('leadsList').innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><h3>Нет заявок</h3></div>'; return; }
+        var result = await apiCall('get_leads', {});
+        leads = result.data || [];
+        document.getElementById('leadsLoading').style.display='none';
+       
+        if (leads.length===0) {
+          document.getElementById('leadsList').innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><h3>Нет заявок</h3></div>';
+          return;
+        }
+       
         leads.forEach(function(lead) {
-          var card = document.createElement('div'); card.className='lead-card';
+          var card = document.createElement('div');
+          card.className='lead-card';
           var sc = 'status-'+(lead.status==='Новая'?'new':lead.status==='Обзвонена'?'contacted':lead.status==='Завершена'?'completed':'cancelled');
           var pd = lead.clientPhone && String(lead.clientPhone).indexOf('#ERROR')===-1 ? escapeHtml(lead.clientPhone) : 'Не указан';
           var td = lead.clientTelegram && lead.clientTelegram!=='Не указан' && String(lead.clientTelegram).indexOf('#ERROR')===-1 ? '<div class="lead-info">💬 '+escapeHtml(lead.clientTelegram)+'</div>' : '';
-          card.innerHTML = '<div class="lead-header"><div class="lead-object">🏢 '+escapeHtml(lead.objectName||'Не указан')+'</div><div class="lead-status '+sc+'">'+(lead.status||'Новая')+'</div></div>'+
+         
+          card.innerHTML = '<div class="lead-header"><div class="lead-object">🏢 '+escapeHtml(lead.objectName||'Не указан')+'</div><div class="lead-status '+sc+'">'+escapeHtml(lead.status||'Новая')+'</div></div>'+
             '<div class="lead-info">👤 '+escapeHtml(lead.clientName||'Не указано')+'</div><div class="lead-info">📞 '+pd+'</div>'+td+
-            '<div class="lead-info">🕐 '+(lead.timestamp?escapeHtml(lead.timestamp):'Не указано')+'</div>'+
+            '<div class="lead-info">🕐 '+escapeHtml(lead.timestamp||'Не указано')+'</div>'+
             '<div class="lead-actions"><button class="status-btn '+(lead.status==='Новая'?'active':'')+'" onclick="updateLeadStatus(\''+lead.id+'\',\'new\')">🆕 Новая</button>'+
             '<button class="status-btn '+(lead.status==='Обзвонена'?'active':'')+'" onclick="updateLeadStatus(\''+lead.id+'\',\'contacted\')">📞 Обзвонена</button>'+
             '<button class="status-btn '+(lead.status==='Завершена'?'active':'')+'" onclick="updateLeadStatus(\''+lead.id+'\',\'completed\')">✅ Завершена</button>'+
             '<button class="status-btn '+(lead.status==='Отменена'?'active':'')+'" onclick="updateLeadStatus(\''+lead.id+'\',\'cancelled\')">❌ Отменена</button></div>';
           document.getElementById('leadsList').appendChild(card);
         });
-      } catch (e) { document.getElementById('leadsLoading').style.display='none'; showToast('❌ Ошибка загрузки заявок'); }
+      } catch (e) {
+        document.getElementById('leadsLoading').style.display='none';
+        showToast('❌ Ошибка загрузки заявок');
+      }
     }
-    async function updateLeadStatus(id, status) { try { await apiCall('update_lead_status',{id:id,status:status}); showToast('✅ Статус обновлён'); loadLeads(); } catch(e) { showToast('❌ Ошибка'); } }
-
-    async function loadProfile() {
-      document.getElementById('profileLoading').style.display='block'; document.getElementById('profileForm').style.display='none';
-      if (!config.scriptUrl) await loadConfig();
+   
+    async function updateLeadStatus(id, status) {
       try {
-        var result = await apiCall('get_agent_profile',{}); currentAgentData = result.data || {};
-        console.log('[loadProfile] Данные:', currentAgentData);
-        document.getElementById('profileLoading').style.display='none'; document.getElementById('profileForm').style.display='block';
-        document.getElementById('profileName').value=currentAgentData.name||''; document.getElementById('profileRole').value=currentAgentData.role||'';
-        document.getElementById('profileAgencyName').value=currentAgentData.agencyName||''; document.getElementById('profileAgencyAddress').value=currentAgentData.agencyAddress||'';
-        document.getElementById('profileTelegram').value=currentAgentData.telegramUsername||''; document.getElementById('profilePhone').value=currentAgentData.phone||'';
+        await apiCall('update_lead_status',{id:id,status:status});
+        showToast('✅ Статус обновлён');
+        loadLeads();
+      } catch(e) {
+        showToast('❌ Ошибка');
+      }
+    }
+
+    // === ПРОФИЛЬ ===
+    async function loadProfile() {
+      document.getElementById('profileLoading').style.display='block';
+      document.getElementById('profileForm').style.display='none';
+      try {
+        var result = await apiCall('get_agent_profile',{});
+        currentAgentData = result.data || {};
+        document.getElementById('profileLoading').style.display='none';
+        document.getElementById('profileForm').style.display='block';
+        document.getElementById('profileName').value=currentAgentData.name||'';
+        document.getElementById('profileRole').value=currentAgentData.role||'';
+        document.getElementById('profileAgencyName').value=currentAgentData.agencyName||'';
+        document.getElementById('profileAgencyAddress').value=currentAgentData.agencyAddress||'';
+        document.getElementById('profileTelegram').value=currentAgentData.telegramUsername||'';
+        document.getElementById('profilePhone').value=currentAgentData.phone||'';
         document.getElementById('profilePhotoUrl').value=currentAgentData.photoUrl||'';
         if (currentAgentData.photoUrl) renderPhotoPreview('profile',[currentAgentData.photoUrl]);
-      } catch(e) { document.getElementById('profileLoading').style.display='none'; showToast(' Ошибка загрузки профиля'); }
+      } catch(e) {
+        document.getElementById('profileLoading').style.display='none';
+        showToast('❌ Ошибка загрузки профиля');
+      }
     }
+   
     async function saveProfile(event) {
-      event.preventDefault(); var btn=event.target.querySelector('button[type="submit"]'); var ot=btn.textContent; btn.disabled=true; btn.textContent='Сохранение...';
+      event.preventDefault();
+      var btn=event.target.querySelector('button[type="submit"]');
+      var ot=btn.textContent;
+      btn.disabled=true;
+      btn.textContent='Сохранение...';
       try {
-        await apiCall('update_agent_profile',{name:document.getElementById('profileName').value.trim(),role:document.getElementById('profileRole').value.trim(),agencyName:document.getElementById('profileAgencyName').value.trim(),agencyAddress:document.getElementById('profileAgencyAddress').value.trim(),telegramUsername:document.getElementById('profileTelegram').value.trim(),phone:document.getElementById('profilePhone').value.trim(),photoUrl:document.getElementById('profilePhotoUrl').value.trim()});
+        await apiCall('update_agent_profile',{
+          name:document.getElementById('profileName').value.trim(),
+          role:document.getElementById('profileRole').value.trim(),
+          agencyName:document.getElementById('profileAgencyName').value.trim(),
+          agencyAddress:document.getElementById('profileAgencyAddress').value.trim(),
+          telegramUsername:document.getElementById('profileTelegram').value.trim(),
+          phone:document.getElementById('profilePhone').value.trim(),
+          photoUrl:document.getElementById('profilePhotoUrl').value.trim()
+        });
         showToast('✅ Профиль сохранён');
-      } catch(e) { showToast('❌ Ошибка'); } finally { btn.disabled=false; btn.textContent=ot; }
-    }    async function uploadProfilePhoto(input) {
-      if (!input.files||input.files.length===0) return; var file=input.files[0]; var btn=input.parentElement; var ot=btn.innerHTML; btn.innerHTML='⏳ Загрузка...';
+      } catch(e) {
+        showToast('❌ Ошибка');
+      } finally {
+        btn.disabled=false;
+        btn.textContent=ot;
+      }
+    }   
+   
+    async function uploadProfilePhoto(input) {
+      if (!input.files||input.files.length===0) return;
+      var file=input.files[0];
+      var btn=input.parentElement;
+      var ot=btn.innerHTML;
+      btn.innerHTML='⏳ Загрузка...';
       try {
-        var base64=await fileToBase64(file); await apiCall('upload_image',{image:base64,fileName:file.name}); await new Promise(function(r){setTimeout(r,1500);});
-        var ur=await fetch(config.scriptUrl+'?action=get_last_file_url'); var ud=await ur.json();
-        if (ud&&ud.url) { document.getElementById('profilePhotoUrl').value=ud.url; renderPhotoPreview('profile',[ud.url]); showToast('✅ Фото загружено'); }
-      } catch(e) { showToast('❌ Ошибка'); } finally { btn.innerHTML=ot; input.value=''; }
+        var base64=await fileToBase64(file);
+        var result = await apiCall('upload_image',{image:base64,fileName:file.name});
+        if (result.url) {
+          document.getElementById('profilePhotoUrl').value=result.url;
+          renderPhotoPreview('profile',[result.url]);
+          showToast('✅ Фото загружено');
+        }
+      } catch(e) {
+        showToast('❌ Ошибка');
+      } finally {
+        btn.innerHTML=ot;
+        input.value='';
+      }
     }
 
+    // === СТРАНИЦА "ОБО МНЕ" ===
     async function loadAboutPage() {
-      document.getElementById('aboutLoading').style.display='block'; document.getElementById('aboutForm').style.display='none';
-      if (!config.scriptUrl) await loadConfig();
+      document.getElementById('aboutLoading').style.display='block';
+      document.getElementById('aboutForm').style.display='none';
       try {
-        var result = await apiCall('get_pages',{}); pagesData=result.data||[];
-        console.log('[loadAboutPage] Страниц:', pagesData.length);
+        var result = await apiCall('get_pages',{});
+        pagesData=result.data||[];
         var aboutPage=pagesData.find(function(p){return p.page==='about';});
-        document.getElementById('aboutLoading').style.display='none'; document.getElementById('aboutForm').style.display='block';
+        document.getElementById('aboutLoading').style.display='none';
+        document.getElementById('aboutForm').style.display='block';
         document.getElementById('aboutTitle').value=aboutPage?aboutPage.title:'Обо мне';
         document.getElementById('aboutContent').value=aboutPage?aboutPage.content:'';
-      } catch(e) { document.getElementById('aboutLoading').style.display='none'; showToast('❌ Ошибка'); }
+      } catch(e) {
+        document.getElementById('aboutLoading').style.display='none';
+        showToast('❌ Ошибка');
+      }
     }
+   
     async function saveAboutPage(event) {
-      event.preventDefault(); var btn=event.target.querySelector('button[type="submit"]'); var ot=btn.textContent; btn.disabled=true; btn.textContent='Сохранение...';
-      try { await apiCall('update_page',{page:'about',title:document.getElementById('aboutTitle').value.trim(),content:document.getElementById('aboutContent').value.trim()}); showToast('✅ Страница сохранена'); }
-      catch(e) { showToast('❌ Ошибка'); } finally { btn.disabled=false; btn.textContent=ot; }
+      event.preventDefault();
+      var btn=event.target.querySelector('button[type="submit"]');
+      var ot=btn.textContent;
+      btn.disabled=true;
+      btn.textContent='Сохранение...';
+      try {
+        await apiCall('update_page',{
+          page:'about',
+          title:document.getElementById('aboutTitle').value.trim(),
+          content:document.getElementById('aboutContent').value.trim()
+        });
+        showToast('✅ Страница сохранена');
+      }
+      catch(e) {
+        showToast('❌ Ошибка');
+      } finally {
+        btn.disabled=false;
+        btn.textContent=ot;
+      }
     }
 
+    // === СМЕНА PIN ===
     async function changePin() {
       var current=document.getElementById('currentPin').value;
       var newP=document.getElementById('newPin').value;
@@ -522,23 +860,46 @@
       if (!current||!newP||!confirm) { showToast('⚠️ Заполните все поля'); return; }
       if (newP!==confirm) { showToast('⚠️ Новые PIN не совпадают'); return; }
       if (newP.length<4) { showToast('⚠️ PIN минимум 4 символа'); return; }
-      var btn=event.target; var ot=btn.textContent; btn.disabled=true; btn.textContent='Сохранение...';
+     
+      var btn=event.target;
+      var ot=btn.textContent;
+      btn.disabled=true;
+      btn.textContent='Сохранение...';
       try {
         await apiCall('change_pin',{oldPin:current,newPin:newP});
-        showToast('✅ PIN изменён'); document.getElementById('currentPin').value=''; document.getElementById('newPin').value=''; document.getElementById('confirmPin').value='';
+        showToast('✅ PIN изменён');
+        document.getElementById('currentPin').value='';
+        document.getElementById('newPin').value='';
+        document.getElementById('confirmPin').value='';
         sessionStorage.setItem('adminPin',newP);
-      } catch(e) { showToast('❌ '+e.message); } finally { btn.disabled=false; btn.textContent=ot; }
+      } catch(e) {
+        showToast('❌ '+e.message);
+      } finally {
+        btn.disabled=false;
+        btn.textContent=ot;
+      }
     }
 
-    function escapeHtml(t) { if(!t) return ''; var d=document.createElement('div'); d.textContent=String(t); return d.innerHTML; }
-    function showToast(m) { var t=document.getElementById('toast'); t.textContent=m; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); setTimeout(function(){t.classList.remove('show');},3000); }
-    function getTelegramInitData() { return sessionStorage.getItem('tg_initData')||''; }
+    // === УТИЛИТЫ ===
+    function escapeHtml(t) {
+      if(!t) return '';
+      var d=document.createElement('div');
+      d.textContent=String(t);
+      return d.innerHTML;
+    }
+   
+    function showToast(m) {
+      var t=document.getElementById('toast');
+      t.textContent=m;
+      t.classList.remove('show');
+      void t.offsetWidth;
+      t.classList.add('show');
+      setTimeout(function(){t.classList.remove('show');},3000);
+    }
 
-    document.addEventListener('DOMContentLoaded', async function() {
-      await loadConfig();
-      var ok = await initAgent();
-      if (ok) checkAuth();    });
-    document.getElementById('objectModal').addEventListener('click', function(e) { if(e.target===this) closeModal(); });
+    document.getElementById('objectModal').addEventListener('click', function(e) {
+      if(e.target===this) closeModal();
+    });
   </script>
 </body>
 </html>
