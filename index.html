@@ -3,10 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <!-- ← ИСПРАВЛЕНО: запрет кэширования -->
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   <title>КАТАЛОГ НОВОСТРОЕК</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=2.0.1">
   <style>
     .admin-frame { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: white; display: none; }
     .admin-frame.active { display: block; }
@@ -24,7 +28,7 @@
       }
       window.isAdmin = false; return false;
     }
-    // ← ИЗМЕНЕНО: передаём agent_id в админку через iframe
+    // ← ИСПРАВЛЕНО: передаём user_id в iframe через URL
     function openAdminPanel() {
       if (!window.isAdmin) {
         alert('⛔ Доступ запрещён!');
@@ -40,14 +44,16 @@
           if (typeof AGENT_ID !== 'undefined' && AGENT_ID) {
             agentParam = '&agent=' + encodeURIComponent(AGENT_ID);
           }
-          const initData = window.Telegram && window.Telegram.WebApp
-            ? encodeURIComponent(window.Telegram.WebApp.initData)
-            : '';
-          iframe.src = 'admin.html?v=1.1.1&tg=' + initData + agentParam;
+          // Ключевое изменение: передаём Telegram ID родителя в iframe
+          var userIdParam = '';
+          if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
+            userIdParam = '&user_id=' + window.Telegram.WebApp.initDataUnsafe.user.id;          }
+          iframe.src = 'admin.html?v=2.0.1' + agentParam + userIdParam;
         }
       }
     }
-    function closeAdminPanel() {      const adminFrame = document.getElementById('adminFrame');
+    function closeAdminPanel() {
+      const adminFrame = document.getElementById('adminFrame');
       if (adminFrame) adminFrame.classList.remove('active');
     }
     if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', checkAdminAccess); }
@@ -55,12 +61,11 @@
   </script>
 </head>
 <body>
-  <!-- ← НОВЫЙ БЛОК: Главная страница экосистемы "Просторы" -->
+  <!-- Главная страница экосистемы -->
   <div id="ecosystemPage" class="screen hidden" style="min-height:100vh;background:linear-gradient(135deg,#3D5266 0%,#3498DB 100%);display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;color:white;">
     <div style="font-size:72px;margin-bottom:20px;">🏙️</div>
     <h1 style="font-size:48px;font-weight:700;margin-bottom:12px;letter-spacing:2px;">ПРОСТОРЫ</h1>
     <p style="font-size:20px;margin-bottom:40px;opacity:0.9;">Экосистема решений для рынка недвижимости</p>
-   
     <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;max-width:900px;width:100%;margin-bottom:40px;">
       <div style="background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:30px;border-radius:16px;border:1px solid rgba(255,255,255,0.2);">
         <div style="font-size:48px;margin-bottom:12px;">🏢</div>
@@ -78,13 +83,11 @@
         <p style="font-size:14px;opacity:0.8;">Готовый арендный бизнес для пассивного дохода</p>
       </div>
     </div>
-   
     <div style="background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:30px;border-radius:16px;border:1px solid rgba(255,255,255,0.2);max-width:600px;">
       <h3 style="font-size:22px;margin-bottom:12px;">🚀 Для агентов</h3>
       <p style="font-size:16px;margin-bottom:20px;">Получите персональное приложение для работы с клиентами</p>
       <a href="https://t.me/prostors_support" style="display:inline-block;background:white;color:#3D5266;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;">Связаться с нами</a>
     </div>
-   
     <p style="margin-top:40px;opacity:0.6;font-size:12px;">© 2026 Просторы. Все права защищены.</p>
   </div>
 
@@ -93,10 +96,10 @@
       <img src="logo.png" alt="Logo" class="brand-logo">
       <span class="brand-company" id="companyName"></span>
     </div>
-    <img id="welcomeImage" class="welcome-img" src="welcome-bg.jpg" alt="Welcome">
-    <div class="welcome-bottom">
+    <img id="welcomeImage" class="welcome-img" src="welcome-bg.jpg" alt="Welcome">    <div class="welcome-bottom">
       <h1 class="welcome-main-title" id="welcomeTitle">КАТАЛОГ НОВОСТРОЕК</h1>
-      <p class="welcome-sub" id="welcomeTagline">Подберём квартиру под ваш бюджет</p>      <button class="btn-primary" id="welcomeButton" onclick="startApp()">НАЧАТЬ ПОДБОР</button>
+      <p class="welcome-sub" id="welcomeTagline">Подберём квартиру под ваш бюджет</p>
+      <button class="btn-primary" id="welcomeButton" onclick="startApp()">НАЧАТЬ ПОДБОР</button>
     </div>
   </div>
   <div id="loadingScreen" class="screen loading hidden">
@@ -142,10 +145,10 @@
   <div id="detailsModal" class="modal hidden">
     <div class="modal-content">
       <button class="modal-close" onclick="closeModal()">×</button>
-      <div id="modalGallery" class="modal-gallery"></div>
-      <h2 id="modalTitle"></h2>
+      <div id="modalGallery" class="modal-gallery"></div>      <h2 id="modalTitle"></h2>
       <div id="modalPrice" class="modal-price"></div>
-      <div id="modalMeta" class="modal-meta"></div>      <h3>📖 Описание</h3><div id="modalDescription" class="modal-desc"></div>
+      <div id="modalMeta" class="modal-meta"></div>
+      <h3>📖 Описание</h3><div id="modalDescription" class="modal-desc"></div>
       <h3>✨ Преимущества</h3><div id="modalFeatures" class="modal-features"></div>
       <h3>📐 Планировки</h3><div id="modalFloorPlans" class="floor-plans"></div>
       <button id="modalConsultBtn" class="tg-btn">Заказать консультацию</button>
@@ -172,7 +175,6 @@
       <button onclick="showPage('home')">🏢 Каталог</button>
       <button onclick="showPage('about')">👤 Обо мне</button>
       <button onclick="showPage('contacts')">📞 Контакты</button>
-      <!-- ← ИЗМЕНЕНО: кнопка админки с правильным id -->
       <button id="adminMenuItem" onclick="openAdminPanel()" style="display: none; border-top: 2px solid #ddd; margin-top: 15px; padding-top: 15px; color: #667eea; font-weight: 600;">⚙️ Админ-панель</button>
     </nav>
   </div>
@@ -192,23 +194,21 @@
       <div class="contact-actions"><button class="btn-tg" onclick="openDirectChat()">✈️ Написать в Telegram</button><button class="btn-phone" onclick="callAgent()">📞 Позвонить</button></div>
     </div>
   </div>
-  <div id="adminFrame" class="admin-frame">
-    <button class="admin-close-btn" onclick="closeAdminPanel()"><span>←</span><span>Назад</span></button>
-    <iframe id="adminIframe"></iframe>  </div>
+  <div id="adminFrame" class="admin-frame">    <button class="admin-close-btn" onclick="closeAdminPanel()"><span>←</span><span>Назад</span></button>
+    <iframe id="adminIframe"></iframe>
+  </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=2.0.0"></script>
-<!-- ← ИЗМЕНЕНО: показ кнопки админки только для владельца + проверка AGENT_ID -->
+<!-- ← ИСПРАВЛЕНО: версия для сброса кэша -->
+<script src="app.js?v=2.0.1"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     if (typeof window.isAdmin === 'undefined') checkAdminAccess();
-   
     function tryShowAdminButton() {
       if (window.isAdmin && typeof AGENT_ID !== 'undefined' && AGENT_ID) {
         const adminMenuItem = document.getElementById('adminMenuItem');
         if (adminMenuItem) adminMenuItem.style.display = 'block';
       }
     }
-   
     tryShowAdminButton();
     setTimeout(tryShowAdminButton, 1000);
     setTimeout(tryShowAdminButton, 3000);
