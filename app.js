@@ -603,11 +603,6 @@ function submitConsultForm(event) {
        
         console.log('[submitConsultForm] ✅ Данные собраны');
         console.log('[submitConsultForm] AGENT_ID:', AGENT_ID);
-        console.log('[submitConsultForm] scriptUrl:', config.client.scriptUrl);
-        console.log('[submitConsultForm] object:', item.name);
-        console.log('[submitConsultForm] name:', name);
-        console.log('[submitConsultForm] phone:', phone);
-        console.log('[submitConsultForm] telegram:', telegram);
        
         var sb = event.target.querySelector('button[type="submit"]');
         var originalText = sb.textContent;
@@ -625,39 +620,30 @@ function submitConsultForm(event) {
             }
         };
        
-        console.log('[submitConsultForm] Payload:', JSON.stringify(payload));
-       
-        // ← ВРЕМЕННО: убран mode: 'no-cors' для отладки
+        // ← КЛЮЧЕВОЕ: text/plain + no-cors обходит CORS
         fetch(config.client.scriptUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(payload)
         })
-        .then(function(response) {
-            console.log('[submitConsultForm] Response status:', response.status);
-            return response.json();
-        })
-        .then(function(data) {
-            console.log('[submitConsultForm] Response data:', data);
+        .then(function() {
+            console.log('[submitConsultForm] ✅ Запрос отправлен (opaque response)');
             sb.textContent = originalText;
             sb.disabled = false;
             document.getElementById('consultForm').reset();
             closeConsultModal();
-            if (data.success) {
-                setTimeout(function() { tg.showAlert('✅ Заявка отправлена!'); }, 100);
-            } else {
-                tg.showAlert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
-            }
+            setTimeout(function() { tg.showAlert('✅ Заявка отправлена!'); }, 100);
         })
         .catch(function(err) {
-            console.error('[submitConsultForm] ❌ Error:', err);
-            tg.showAlert('⚠️ Ошибка отправки: ' + err.message);
+            console.error('[submitConsultForm]  Error:', err);
+            tg.showAlert('️ Ошибка отправки: ' + err.message);
             sb.textContent = originalText;
             sb.disabled = false;
         });
     } catch (e) {
         console.error('[submitConsultForm] ❌ Exception:', e);
-        tg.showAlert('️ Произошла ошибка.');
+        tg.showAlert('⚠️ Произошла ошибка.');
     }
 }
 function escapeHtml(text) { if (!text) return ''; var div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
