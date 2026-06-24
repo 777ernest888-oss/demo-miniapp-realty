@@ -600,24 +600,65 @@ function submitConsultForm(event) {
         if (phone.replace(/\D/g, '').length < 10) { tg.showAlert('❌ Введите корректный телефон'); return; }
         if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) { tg.showAlert('❌ Telegram только латиницей'); return; }
         if (!AGENT_ID) { tg.showAlert('❌ Ошибка: агент не определён'); return; }
-        console.log('[submitConsultForm] Отправка заявки | agentId:', AGENT_ID, '| object:', item.name);
+       
+        console.log('[submitConsultForm] ✅ Данные собраны');
+        console.log('[submitConsultForm] AGENT_ID:', AGENT_ID);
+        console.log('[submitConsultForm] scriptUrl:', config.client.scriptUrl);
+        console.log('[submitConsultForm] object:', item.name);
+        console.log('[submitConsultForm] name:', name);
+        console.log('[submitConsultForm] phone:', phone);
+        console.log('[submitConsultForm] telegram:', telegram);
+       
         var sb = event.target.querySelector('button[type="submit"]');
-        var originalText = sb.textContent; sb.textContent = 'Отправка...'; sb.disabled = true;
+        var originalText = sb.textContent;
+        sb.textContent = 'Отправка...';
+        sb.disabled = true;
+       
+        var payload = {
+            action: 'save_lead',
+            agentId: AGENT_ID,
+            data: {
+                objectName: item.name,
+                clientName: name,
+                clientPhone: phone,
+                clientTelegram: telegram || 'Не указан'
+            }
+        };
+       
+        console.log('[submitConsultForm] Payload:', JSON.stringify(payload));
+       
+        // ← ВРЕМЕННО: убран mode: 'no-cors' для отладки
         fetch(config.client.scriptUrl, {
-            method: 'POST', mode: 'no-cors',
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'save_lead', agentId: AGENT_ID, data: { objectName: item.name, clientName: name, clientPhone: phone, clientTelegram: telegram || 'Не указан' } })
+            body: JSON.stringify(payload)
         })
-        .then(function() {
-            sb.textContent = originalText; sb.disabled = false;
-            document.getElementById('consultForm').reset(); closeConsultModal();
-            setTimeout(function() { tg.showAlert('✅ Заявка отправлена!'); }, 100);
+        .then(function(response) {
+            console.log('[submitConsultForm] Response status:', response.status);
+            return response.json();
+        })
+        .then(function(data) {
+            console.log('[submitConsultForm] Response data:', data);
+            sb.textContent = originalText;
+            sb.disabled = false;
+            document.getElementById('consultForm').reset();
+            closeConsultModal();
+            if (data.success) {
+                setTimeout(function() { tg.showAlert('✅ Заявка отправлена!'); }, 100);
+            } else {
+                tg.showAlert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+            }
         })
         .catch(function(err) {
             console.error('[submitConsultForm] ❌ Error:', err);
-            tg.showAlert('⚠️ Ошибка отправки.'); sb.textContent = originalText; sb.disabled = false;
+            tg.showAlert('⚠️ Ошибка отправки: ' + err.message);
+            sb.textContent = originalText;
+            sb.disabled = false;
         });
-    } catch (e) { console.error('[submitConsultForm] ❌ Exception:', e); tg.showAlert('⚠️ Произошла ошибка.'); }
+    } catch (e) {
+        console.error('[submitConsultForm] ❌ Exception:', e);
+        tg.showAlert('️ Произошла ошибка.');
+    }
 }
 
 function escapeHtml(text) { if (!text) return ''; var div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
