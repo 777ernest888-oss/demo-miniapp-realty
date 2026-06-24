@@ -24,33 +24,70 @@
       }
       window.isAdmin = false; return false;
     }
+    // ← ИЗМЕНЕНО: передаём agent_id в админку через iframe
     function openAdminPanel() {
-  if (!window.isAdmin) {
-    alert('⛔ Доступ запрещён!');
-    return;
-  }
-  closeMenu();
-  const adminFrame = document.getElementById('adminFrame');
-  if (adminFrame) {
-    adminFrame.classList.add('active');
-    const iframe = document.getElementById('adminIframe');
-    if (iframe) {
-      // Передаём initData прямо в URL — это надёжнее чем postMessage в Telegram
-      const initData = window.Telegram && window.Telegram.WebApp
-        ? encodeURIComponent(window.Telegram.WebApp.initData)
-        : '';
-      iframe.src = 'admin.html?v=1.1.1&tg=' + initData;
-    }
-  }
-}
-    function closeAdminPanel() {
+      if (!window.isAdmin) {
+        alert('⛔ Доступ запрещён!');
+        return;
+      }
+      closeMenu();
       const adminFrame = document.getElementById('adminFrame');
-      if (adminFrame) adminFrame.classList.remove('active');    }
+      if (adminFrame) {
+        adminFrame.classList.add('active');
+        const iframe = document.getElementById('adminIframe');
+        if (iframe) {
+          var agentParam = '';
+          if (typeof AGENT_ID !== 'undefined' && AGENT_ID) {
+            agentParam = '&agent=' + encodeURIComponent(AGENT_ID);
+          }
+          const initData = window.Telegram && window.Telegram.WebApp
+            ? encodeURIComponent(window.Telegram.WebApp.initData)
+            : '';
+          iframe.src = 'admin.html?v=1.1.1&tg=' + initData + agentParam;
+        }
+      }
+    }
+    function closeAdminPanel() {      const adminFrame = document.getElementById('adminFrame');
+      if (adminFrame) adminFrame.classList.remove('active');
+    }
     if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', checkAdminAccess); }
     else { checkAdminAccess(); }
   </script>
 </head>
 <body>
+  <!-- ← НОВЫЙ БЛОК: Главная страница экосистемы "Просторы" -->
+  <div id="ecosystemPage" class="screen hidden" style="min-height:100vh;background:linear-gradient(135deg,#3D5266 0%,#3498DB 100%);display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;color:white;">
+    <div style="font-size:72px;margin-bottom:20px;">🏙️</div>
+    <h1 style="font-size:48px;font-weight:700;margin-bottom:12px;letter-spacing:2px;">ПРОСТОРЫ</h1>
+    <p style="font-size:20px;margin-bottom:40px;opacity:0.9;">Экосистема решений для рынка недвижимости</p>
+   
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;max-width:900px;width:100%;margin-bottom:40px;">
+      <div style="background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:30px;border-radius:16px;border:1px solid rgba(255,255,255,0.2);">
+        <div style="font-size:48px;margin-bottom:12px;">🏢</div>
+        <h3 style="font-size:20px;margin-bottom:8px;">Новостройки</h3>
+        <p style="font-size:14px;opacity:0.8;">Каталог новостроек Санкт-Петербурга с фильтрами и картой</p>
+      </div>
+      <div style="background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:30px;border-radius:16px;border:1px solid rgba(255,255,255,0.2);">
+        <div style="font-size:48px;margin-bottom:12px;">🏬</div>
+        <h3 style="font-size:20px;margin-bottom:8px;">Коммерческая недвижимость</h3>
+        <p style="font-size:14px;opacity:0.8;">Офисы, торговые помещения, склады</p>
+      </div>
+      <div style="background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:30px;border-radius:16px;border:1px solid rgba(255,255,255,0.2);">
+        <div style="font-size:48px;margin-bottom:12px;">💰</div>
+        <h3 style="font-size:20px;margin-bottom:8px;">ГАБ Калькулятор</h3>
+        <p style="font-size:14px;opacity:0.8;">Готовый арендный бизнес для пассивного дохода</p>
+      </div>
+    </div>
+   
+    <div style="background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:30px;border-radius:16px;border:1px solid rgba(255,255,255,0.2);max-width:600px;">
+      <h3 style="font-size:22px;margin-bottom:12px;">🚀 Для агентов</h3>
+      <p style="font-size:16px;margin-bottom:20px;">Получите персональное приложение для работы с клиентами</p>
+      <a href="https://t.me/prostors_support" style="display:inline-block;background:white;color:#3D5266;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;">Связаться с нами</a>
+    </div>
+   
+    <p style="margin-top:40px;opacity:0.6;font-size:12px;">© 2026 Просторы. Все права защищены.</p>
+  </div>
+
   <div id="welcomeScreen" class="screen welcome">
     <div id="welcomeBrand" class="welcome-brand">
       <img src="logo.png" alt="Logo" class="brand-logo">
@@ -59,8 +96,7 @@
     <img id="welcomeImage" class="welcome-img" src="welcome-bg.jpg" alt="Welcome">
     <div class="welcome-bottom">
       <h1 class="welcome-main-title" id="welcomeTitle">КАТАЛОГ НОВОСТРОЕК</h1>
-      <p class="welcome-sub" id="welcomeTagline">Подберём квартиру под ваш бюджет</p>
-      <button class="btn-primary" id="welcomeButton" onclick="startApp()">НАЧАТЬ ПОДБОР</button>
+      <p class="welcome-sub" id="welcomeTagline">Подберём квартиру под ваш бюджет</p>      <button class="btn-primary" id="welcomeButton" onclick="startApp()">НАЧАТЬ ПОДБОР</button>
     </div>
   </div>
   <div id="loadingScreen" class="screen loading hidden">
@@ -79,7 +115,7 @@
       </div>
     </header>
     <div class="filters-toggle">
-      <button class="filters-toggle-btn" onclick="toggleFilters()"> Фильтры</button>
+      <button class="filters-toggle-btn" onclick="toggleFilters()">🔽 Фильтры</button>
     </div>
     <div id="filtersBlock" class="filters-block hidden">
       <div class="filter-group">
@@ -92,11 +128,12 @@
           <button class="price-btn" data-price="100000000">До 100 млн</button>
         </div>
       </div>
-      <div class="filter-group"><label> Районы</label><div id="districtCheckboxes" class="checkbox-group"></div></div>
-      <div class="filter-group"><label> Метро</label><div id="metroCheckboxes" class="checkbox-group"></div></div>
-      <div class="filter-group"><label>🚪 Комнаты</label><div id="roomsCheckboxes" class="checkbox-group"></div></div>    </div>
+      <div class="filter-group"><label>📍 Районы</label><div id="districtCheckboxes" class="checkbox-group"></div></div>
+      <div class="filter-group"><label>🚇 Метро</label><div id="metroCheckboxes" class="checkbox-group"></div></div>
+      <div class="filter-group"><label>🚪 Комнаты</label><div id="roomsCheckboxes" class="checkbox-group"></div></div>
+    </div>
     <div class="view-toggle">
-      <button id="listViewBtn" class="view-btn active" onclick="switchView('list')"> Список</button>
+      <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>
       <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺️ Карта</button>
     </div>
     <div id="listingsContainer" class="listings"></div>
@@ -108,8 +145,7 @@
       <div id="modalGallery" class="modal-gallery"></div>
       <h2 id="modalTitle"></h2>
       <div id="modalPrice" class="modal-price"></div>
-      <div id="modalMeta" class="modal-meta"></div>
-      <h3>📖 Описание</h3><div id="modalDescription" class="modal-desc"></div>
+      <div id="modalMeta" class="modal-meta"></div>      <h3>📖 Описание</h3><div id="modalDescription" class="modal-desc"></div>
       <h3>✨ Преимущества</h3><div id="modalFeatures" class="modal-features"></div>
       <h3>📐 Планировки</h3><div id="modalFloorPlans" class="floor-plans"></div>
       <button id="modalConsultBtn" class="tg-btn">Заказать консультацию</button>
@@ -133,17 +169,19 @@
   <div id="sideMenu" class="side-menu hidden">
     <button class="menu-close" onclick="closeMenu()">×</button>
     <nav class="menu-nav">
-      <button onclick="showPage('home')"> Каталог</button>
+      <button onclick="showPage('home')">🏢 Каталог</button>
       <button onclick="showPage('about')">👤 Обо мне</button>
       <button onclick="showPage('contacts')">📞 Контакты</button>
-      <button id="adminMenuItem" onclick="openAdminPanel()" style="display: none; border-top: 2px solid #ddd; margin-top: 15px; padding-top: 15px; color: #667eea; font-weight: 600;">️ Админ-панель</button>
+      <!-- ← ИЗМЕНЕНО: кнопка админки с правильным id -->
+      <button id="adminMenuItem" onclick="openAdminPanel()" style="display: none; border-top: 2px solid #ddd; margin-top: 15px; padding-top: 15px; color: #667eea; font-weight: 600;">⚙️ Админ-панель</button>
     </nav>
   </div>
   <div id="page-about" class="page hidden">
     <div class="page-header"><button class="page-back-btn" onclick="appBack()">← Назад</button><h2>Обо мне</h2></div>
     <div class="page-content">
       <p>Привет! Я — брокер по недвижимости. Помогаю подбирать объекты с максимальной доходностью и юридической чистотой.</p>
-      <h3>🔍 Как я работаю:</h3>      <ul><li>Проверяю документы и историю застройщика.</li><li>Торгуюсь за скидку (часто до 5-10%).</li><li>Помогаю с ипотекой и одобрением.</li></ul>
+      <h3>🔍 Как я работаю:</h3>
+      <ul><li>Проверяю документы и историю застройщика.</li><li>Торгуюсь за скидку (часто до 5-10%).</li><li>Помогаю с ипотекой и одобрением.</li></ul>
     </div>
   </div>
   <div id="page-contacts" class="page hidden">
@@ -151,22 +189,29 @@
     <div class="page-content">
       <div class="contact-card"><div class="agent-avatar"></div><div class="agent-info"><h3 id="agentName">Имя Агента</h3><p id="agentRole">Эксперт по недвижимости</p></div></div>
       <div id="agencyBlock" class="agency-block"><h4>🏢 Агентство</h4><p id="agencyName">Название АН</p><p id="agencyAddress" class="address-text">📍 Адрес офиса</p></div>
-      <div class="contact-actions"><button class="btn-tg" onclick="openDirectChat()">✈️ Написать в Telegram</button><button class="btn-phone" onclick="callAgent()"> Позвонить</button></div>
+      <div class="contact-actions"><button class="btn-tg" onclick="openDirectChat()">✈️ Написать в Telegram</button><button class="btn-phone" onclick="callAgent()">📞 Позвонить</button></div>
     </div>
   </div>
   <div id="adminFrame" class="admin-frame">
     <button class="admin-close-btn" onclick="closeAdminPanel()"><span>←</span><span>Назад</span></button>
-    <iframe id="adminIframe"></iframe>
-  </div>
+    <iframe id="adminIframe"></iframe>  </div>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="app.js?v=1.1.0"></script>
+<!-- ← ИЗМЕНЕНО: показ кнопки админки только для владельца + проверка AGENT_ID -->
 <script>
   document.addEventListener('DOMContentLoaded', function() {
     if (typeof window.isAdmin === 'undefined') checkAdminAccess();
-    if (window.isAdmin) {
-      const adminMenuItem = document.getElementById('adminMenuItem');
-      if (adminMenuItem) adminMenuItem.style.display = 'block';
+   
+    function tryShowAdminButton() {
+      if (window.isAdmin && typeof AGENT_ID !== 'undefined' && AGENT_ID) {
+        const adminMenuItem = document.getElementById('adminMenuItem');
+        if (adminMenuItem) adminMenuItem.style.display = 'block';
+      }
     }
+   
+    tryShowAdminButton();
+    setTimeout(tryShowAdminButton, 1000);
+    setTimeout(tryShowAdminButton, 3000);
   });
 </script>
 </body>
