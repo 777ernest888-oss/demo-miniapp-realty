@@ -209,7 +209,7 @@
     var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
     if (tg) { tg.ready(); tg.expand(); }
 
-    // Слушатель postMessage от родителя (для получения initData безопасно)
+    // Слушатель postMessage от родителя
     window.addEventListener('message', function(event) {
       if (event.origin !== window.location.origin) return;
       if (event.data && event.data.type === 'TELEGRAM_INIT_DATA') {
@@ -227,7 +227,7 @@
 
     async function loadConfig() {
       try {
-        var response = await fetch('client-config.json?v=2.0.2');
+        var response = await fetch('client-config.json?v=2.0.3');
         var data = await response.json();
         config.scriptUrl = data.client.scriptUrl;
         console.log('[admin loadConfig] ✅', config.scriptUrl);
@@ -301,10 +301,8 @@
 
     // === АВТОРИЗАЦИЯ ===
     function checkAuth() {
-      // 1. Проверка сессии
       if (sessionStorage.getItem('adminAuth') === 'true') { isAuthorized = true; showApp(); return; }
      
-      // 2. Проверка Telegram initData
       var initData = getTelegramInitData();
       if (initData) {
         isAuthorized = true;
@@ -313,7 +311,6 @@
         return;
       }
      
-      // 3. Показ экрана PIN
       document.getElementById('pinScreen').style.display = 'flex';
       document.getElementById('pinInput').focus();
     }
@@ -329,13 +326,9 @@
       document.getElementById('pinError').style.display = 'none';
 
       try {
-        // ВАЖНО: БЕЗ no-cors! Читаем реальный ответ
-        var response = await fetch(config.scriptUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({ action: 'verify_pin', pin: input, agentId: AGENT_ID })
-        });
-       
+        // ИСПОЛЬЗУЕМ GET ДЛЯ ПРОВЕРКИ PIN (без CORS)
+        var url = config.scriptUrl + '?action=verify_pin&agentId=' + encodeURIComponent(AGENT_ID) + '&pin=' + encodeURIComponent(input);
+        var response = await fetch(url);
         var data = await response.json();
        
         if (data.success) {
@@ -366,7 +359,7 @@
       loadObjects();
     }
 
-    // === УНИВЕРСАЛЬНЫЙ API ВЫЗОВ (БЕЗ NO-CORS) ===
+    // === УНИВЕРСАЛЬНЫЙ API ВЫЗОВ (NO-CORS для POST) ===
     async function apiCall(action, params) {
       if (!config.scriptUrl) throw new Error('Script URL не настроен');
      
@@ -377,26 +370,25 @@
         pin: sessionStorage.getItem('adminPin') || ''
       });
 
-      var response = await fetch(config.scriptUrl, {
+      // Для всех операций записи используем no-cors (как в app.js)
+      await fetch(config.scriptUrl, {
         method: 'POST',
+        mode: 'no-cors',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)
       });
-
-      var data = await response.json();
      
-      if (!data.success) {
-        // Обработка ошибок авторизации
-        if (data.code === 401 || data.code === 403) {
-          sessionStorage.removeItem('adminAuth');
-          sessionStorage.removeItem('adminPin');
-          location.reload();
-          throw new Error('Сессия истекла. Войдите снова.');
-        }
-        throw new Error(data.error || 'Ошибка сервера');
+      // Для чтения данных (get_leads, get_agent_profile) делаем отдельный GET
+      if (action === 'get_leads' || action === 'get_agent_profile' || action === 'get_pages') {
+        var getUrl = config.scriptUrl + '?action=' + action + '&agent_id=' + encodeURIComponent(AGENT_ID);
+        var response = await fetch(getUrl);
+        var data = await response.json();
+        if (!data.success) throw new Error(data.error || 'Ошибка сервера');
+        return data;
       }
      
-      return data;
+      // Для CRUD считаем успешным
+      return { success: true };
     }
 
     function getTelegramInitData() {
@@ -426,7 +418,7 @@
       document.getElementById('objectsList').innerHTML = '';
      
       try {
-        // Используем GET с параметрами для чтения
+        // Используем GET для чтения
         var url = config.scriptUrl + '?action=get_listings&includeHidden=true&agent_id=' + encodeURIComponent(AGENT_ID);
         var response = await fetch(url);
         var data = await response.json();
@@ -609,11 +601,28 @@
           var file = files[i];
           var base64 = await fileToBase64(file);
          
-          // ПОЛУЧАЕМ URL СРАЗУ ИЗ ОТВЕТА!
-          var result = await apiCall('upload_image', { image: base64, fileName: file.name });
+          // Отправляем через no-cors (как в app.js)
+          await fetch(config.scriptUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'upload_image',
+              agentId: AGENT_ID,
+              pin: sessionStorage.getItem('adminPin'),
+              data: { image: base64, fileName: file.name }
+            })
+          });
          
-          if (result.url) {
-            addPhotoToField(type, result.url);
+          // После отправки ждём 1.5 секунды (как в старой версии), чтобы Apps Script успел записать файл
+          await new Promise(resolve => setTimeout(resolve, 1500));
+         
+          // Получаем последний URL через GET
+          var lastRes = await fetch(config.scriptUrl + '?action=get_last_file_url');
+          var lastData = await lastRes.json();
+         
+          if (lastData.url) {
+            addPhotoToField(type, lastData.url);
           }
         }
         showToast('✅ Фото загружено');
@@ -798,10 +807,23 @@
       btn.innerHTML='⏳ Загрузка...';
       try {
         var base64=await fileToBase64(file);
-        var result = await apiCall('upload_image',{image:base64,fileName:file.name});
-        if (result.url) {
-          document.getElementById('profilePhotoUrl').value=result.url;
-          renderPhotoPreview('profile',[result.url]);
+        await fetch(config.scriptUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'upload_image',
+            agentId: AGENT_ID,
+            pin: sessionStorage.getItem('adminPin'),
+            data: { image: base64, fileName: file.name }
+          })
+        });
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        var lastRes = await fetch(config.scriptUrl + '?action=get_last_file_url');
+        var lastData = await lastRes.json();
+        if (lastData.url) {
+          document.getElementById('profilePhotoUrl').value=lastData.url;
+          renderPhotoPreview('profile',[lastData.url]);
           showToast('✅ Фото загружено');
         }
       } catch(e) {
