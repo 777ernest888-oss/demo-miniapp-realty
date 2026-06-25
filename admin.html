@@ -332,7 +332,7 @@
         // ВАЖНО: БЕЗ no-cors! Читаем реальный ответ
         var response = await fetch(config.scriptUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({ action: 'verify_pin', pin: input, agentId: AGENT_ID })
         });
        
@@ -379,7 +379,7 @@
 
       var response = await fetch(config.scriptUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)
       });
 
