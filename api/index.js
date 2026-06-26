@@ -737,48 +737,90 @@ module.exports = async (req, res) => {
       return jsonResponse(res, 404, { success: false, error: 'Не найдено' }, requestId);
     }
    
-    // Сохранение заявки (ПУБЛИЧНЫЙ МЕТОД)
-    if (processedAction === 'save_lead') {
-      const requestData = req.body.data || req.body;
-     
-      const clientName = sanitizeInput(requestData.clientName, 100);
-      if (!clientName || clientName.length < 2) {
-        return jsonResponse(res, 400, { success: false, error: 'Введите имя' }, requestId);
-      }
-     
-      const clientPhone = validatePhone(requestData.clientPhone);
-      if (!clientPhone) {
-        return jsonResponse(res, 400, { success: false, error: 'Введите корректный телефон' }, requestId);
-      }
-     
-      const clientTelegram = sanitizeInput(requestData.clientTelegram || '', 50);
-      const objectName = sanitizeInput(requestData.objectName || '', 200);
-     
-      const phoneForSheets = "'" + clientPhone;
-     
-      const timestamp = formatRussianDate(new Date());
-      const leadId = 'lead-' + Date.now();
-     
-      const agentInfo = await getAgentData(sheets, agentId);
-      const chatId = agentInfo.chatId || '';
-     
-      await sheets.spreadsheets.values.append({
-        spreadsheetId: SPREADSHEET_ID,
-        range: 'Leads!A:H',
-        valueInputOption: 'USER_ENTERED',
-        resource: {
-          values: [[
-            agentId,
-            leadId,
-            timestamp,
-            objectName,
-            clientName,
-            phoneForSheets,
-            clientTelegram || 'Не указан',
-            'Новая',
-          ]],
-        },
+    // 12. Сохранение заявки (ПУБЛИЧНЫЙ МЕТОД)
+if (processedAction === 'save_lead') {
+  const requestData = req.body.data || req.body;
+ 
+  const clientName = sanitizeInput(requestData.clientName, 100);
+  if (!clientName || clientName.length < 2) {
+    return jsonResponse(res, 400, { success: false, error: 'Введите имя' }, requestId);
+  }
+ 
+  const clientPhone = validatePhone(requestData.clientPhone);
+  if (!clientPhone) {
+    return jsonResponse(res, 400, { success: false, error: 'Введите корректный телефон' }, requestId);
+  }
+ 
+  const clientTelegram = sanitizeInput(requestData.clientTelegram || '', 50);
+  const objectName = sanitizeInput(requestData.objectName || '', 200);
+ 
+  const phoneForSheets = "'" + clientPhone;
+ 
+  const timestamp = formatRussianDate(new Date());
+  const leadId = 'lead-' + Date.now();
+ 
+  const agentInfo = await getAgentData(sheets, agentId);
+  const chatId = agentInfo.chatId || '';
+ 
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SPREADSHEET_ID,
+    range: 'Leads!A:H',
+    valueInputOption: 'USER_ENTERED',
+    resource: {
+      values: [[
+        agentId,
+        leadId,
+        timestamp,
+        objectName,
+        clientName,
+        phoneForSheets,
+        clientTelegram || 'Не указан',
+        'Новая',
+      ]],
+    },
+  });
+ 
+  const token = process.env.TELEGRAM_NOTIFICATION_BOT_TOKEN;
+  if (token && chatId) {
+    const msg = `<b>🔔 Новая заявка!</b>\n\n` +
+               `<b>Объект:</b> ${objectName || '-'}\n` +
+               `<b>Имя:</b> ${clientName}\n` +
+               `<b>Телефон:</b> ${clientPhone}\n` +
+               `<b>Telegram:</b> ${clientTelegram || '-'}`;
+   
+    try {
+      const tgResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: chatId,
+          text: msg,
+          parse_mode: 'HTML',
+        }),
       });
+     
+      if (!tgResponse.ok) {
+        logger.warn(requestId, 'Telegram notification failed', {
+          status: tgResponse.status,
+          chatId,
+        });
+      }
+    } catch (tgErr) {
+      logger.warn(requestId, 'Telegram notification error', {
+        error: tgErr.message,
+      });
+    }
+  }
+ 
+  logger.info(requestId, 'Lead saved', {
+    leadId,
+    agentId,
+    clientName,
+    clientPhone,
+  });
+ 
+  return jsonResponse(res, 200, { success: true, id: leadId }, requestId);
+}
      
       const token = process.env.TELEGRAM_NOTIFICATION_BOT_TOKEN;
       if (token && chatId) {
