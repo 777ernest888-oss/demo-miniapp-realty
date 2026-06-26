@@ -4,32 +4,20 @@ const { google } = require('googleapis');
 // ==================== КОНФИГУРАЦИЯ ====================
 const CONFIG = {
   cors: {
-    'Access-Control-Allow-Origin': '*', // TODO: заменить на whitelist доменов
+    'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Request-ID',
-    'Access-Control-Max-Age': '86400', // 24 часа
+    'Access-Control-Max-Age': '86400',
   },
-  // Умный rate limiting по категориям действий
   rateLimit: {
-    // Общий лимит на IP (защита от DDoS)
-    global: {
-      windowMs: 10 * 60 * 1000, // 10 минут
-      maxRequests: 1000,
-    },
-    // Специфичные лимиты по действиям
+    global: { windowMs: 10 * 60 * 1000, maxRequests: 1000 },
     actions: {
-      // Публичные действия (заявки) — строгий лимит от спама
-      save_lead: {
-        windowMs: 60 * 60 * 1000, // 1 час
-        maxRequests: 10, // 10 заявок в час с одного IP
-      },
-      // Админские действия (CRUD) — средний лимит
+      save_lead: { windowMs: 60 * 60 * 1000, maxRequests: 10 },
       create: { windowMs: 10 * 60 * 1000, maxRequests: 100 },
       update: { windowMs: 10 * 60 * 1000, maxRequests: 100 },
       delete: { windowMs: 10 * 60 * 1000, maxRequests: 50 },
       update_lead_status: { windowMs: 10 * 60 * 1000, maxRequests: 100 },
       update_agent_profile: { windowMs: 10 * 60 * 1000, maxRequests: 50 },
-      // Чтение — мягкий лимит
       get_listings: { windowMs: 10 * 60 * 1000, maxRequests: 1000 },
       get_pages: { windowMs: 10 * 60 * 1000, maxRequests: 1000 },
       get_agent_config: { windowMs: 10 * 60 * 1000, maxRequests: 500 },
@@ -37,13 +25,12 @@ const CONFIG = {
       get_agent_profile: { windowMs: 10 * 60 * 1000, maxRequests: 500 },
       verify_pin: { windowMs: 10 * 60 * 1000, maxRequests: 20 },
       resolve_agent_by_domain: { windowMs: 10 * 60 * 1000, maxRequests: 500 },
-      // Без лимита
       health: null,
     },
   },
   cache: {
-    agentTTL: 5 * 60 * 1000, // 5 минут кэш для данных агента
-    listingsTTL: 2 * 60 * 1000, // 2 минуты кэш для списка объектов
+    agentTTL: 5 * 60 * 1000,
+    listingsTTL: 2 * 60 * 1000,
   },
 };
 
@@ -53,46 +40,34 @@ const cache = new Map();
 function getCache(key) {
   const item = cache.get(key);
   if (!item) return null;
- 
   if (Date.now() > item.expiry) {
     cache.delete(key);
     return null;
   }
- 
   return item.data;
 }
 
 function setCache(key, data, ttlMs = CONFIG.cache.agentTTL) {
-  cache.set(key, {
-    data,
-    expiry: Date.now() + ttlMs,
-  });
+  cache.set(key, { data, expiry: Date.now() + ttlMs });
 }
 
 function clearCache(prefix) {
   for (const key of cache.keys()) {
-    if (key.startsWith(prefix)) {
-      cache.delete(key);
-    }
+    if (key.startsWith(prefix)) cache.delete(key);
   }
 }
 
 // ==================== БЕЗОПАСНОСТЬ ====================
 function sanitizeInput(str, maxLength = 1000) {
   if (typeof str !== 'string') return '';
-  return str
-    .replace(/[<>]/g, '')
-    .slice(0, maxLength)
-    .trim();
+  return str.replace(/[<>]/g, '').slice(0, maxLength).trim();
 }
 
 function validatePhone(phone) {
   if (!phone) return null;
   const cleaned = phone.replace(/[^\d+]/g, '');
   const normalized = cleaned.startsWith('8') ? '+7' + cleaned.slice(1) : cleaned;
-  if (/^\+7\d{10}$/.test(normalized)) {
-    return normalized;
-  }
+  if (/^\+7\d{10}$/.test(normalized)) return normalized;
   return null;
 }
 
@@ -103,33 +78,13 @@ function generateRequestId() {
 // ==================== ЛОГИРОВАНИЕ ====================
 const logger = {
   info: (requestId, message, meta = {}) => {
-    console.log(JSON.stringify({
-      level: 'INFO',
-      requestId,
-      timestamp: new Date().toISOString(),
-      message,
-      ...meta,
-    }));
+    console.log(JSON.stringify({ level: 'INFO', requestId, timestamp: new Date().toISOString(), message, ...meta }));
   },
- 
   error: (requestId, message, meta = {}) => {
-    console.error(JSON.stringify({
-      level: 'ERROR',
-      requestId,
-      timestamp: new Date().toISOString(),
-      message,
-      ...meta,
-    }));
+    console.error(JSON.stringify({ level: 'ERROR', requestId, timestamp: new Date().toISOString(), message, ...meta }));
   },
- 
   warn: (requestId, message, meta = {}) => {
-    console.warn(JSON.stringify({
-      level: 'WARN',
-      requestId,
-      timestamp: new Date().toISOString(),
-      message,
-      ...meta,
-    }));
+    console.warn(JSON.stringify({ level: 'WARN', requestId, timestamp: new Date().toISOString(), message, ...meta }));
   },
 };
 
@@ -144,36 +99,23 @@ function getActionLimit(action) {
 function checkRateLimit(ip, action) {
   const now = Date.now();
   const limit = getActionLimit(action);
- 
-  // Если для действия нет лимита (например, health) — пропускаем
-  if (!limit) {
-    return { allowed: true, remaining: Infinity, limit: Infinity, reset: 0 };
-  }
+  if (!limit) return { allowed: true, remaining: Infinity, limit: Infinity, reset: 0 };
  
   const windowStart = now - limit.windowMs;
   const key = `${ip}:${action || 'global'}`;
- 
   const userRequests = rateLimitStore.get(key) || [];
   const validRequests = userRequests.filter(time => time > windowStart);
  
   if (validRequests.length >= limit.maxRequests) {
     const resetTime = Math.ceil((validRequests[0] + limit.windowMs - now) / 1000);
-    return {
-      allowed: false,
-      remaining: 0,
-      limit: limit.maxRequests,
-      reset: resetTime,
-    };
+    return { allowed: false, remaining: 0, limit: limit.maxRequests, reset: resetTime };
   }
  
   validRequests.push(now);
   rateLimitStore.set(key, validRequests);
  
-  // Очистка старых записей
   if (validRequests.length < 50) {
-    setTimeout(() => {
-      rateLimitStore.delete(key);
-    }, limit.windowMs);
+    setTimeout(() => rateLimitStore.delete(key), limit.windowMs);
   }
  
   return {
@@ -184,7 +126,6 @@ function checkRateLimit(ip, action) {
   };
 }
 
-// Проверка общего лимита на IP
 function checkGlobalRateLimit(ip) {
   return checkRateLimit(ip, '__global__');
 }
@@ -203,10 +144,7 @@ const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
 
 // ==================== УТИЛИТЫ ====================
 function jsonResponse(res, status, data, requestId) {
-  res.status(status).json({
-    ...data,
-    _meta: { requestId, timestamp: new Date().toISOString() },
-  });
+  res.status(status).json({ ...data, _meta: { requestId, timestamp: new Date().toISOString() } });
 }
 
 function hashPin(pin) {
@@ -228,15 +166,12 @@ function formatRussianDate(date) {
   if (!date) return '';
   const d = date instanceof Date ? date : new Date(date);
   if (isNaN(d.getTime())) return '';
- 
   const moscowTime = new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
- 
   const day = ('0' + moscowTime.getDate()).slice(-2);
   const month = ('0' + (moscowTime.getMonth() + 1)).slice(-2);
   const year = moscowTime.getFullYear();
   const hours = ('0' + moscowTime.getHours()).slice(-2);
   const minutes = ('0' + moscowTime.getMinutes()).slice(-2);
- 
   return `${day}.${month}.${year}, ${hours}:${minutes}`;
 }
 
@@ -255,9 +190,7 @@ async function getAgentData(sheets, agentId, options = {}) {
   });
  
   const rows = response.data.values;
-  if (!rows || rows.length < 2) {
-    return { error: 'Система не настроена', code: 500 };
-  }
+  if (!rows || rows.length < 2) return { error: 'Система не настроена', code: 500 };
  
   const headers = rows[0];
   const idx = {};
@@ -285,28 +218,17 @@ async function getAgentData(sheets, agentId, options = {}) {
   };
  
   if (options.checkAccess) {
-    if (agent.status !== 'active') {
-      return { error: 'Доступ приостановлен', code: 403 };
-    }
-   
+    if (agent.status !== 'active') return { error: 'Доступ приостановлен', code: 403 };
     if (agent.expiresAt && agent.planType !== 'lifetime') {
       const parsedExpiry = parseRussianDate(agent.expiresAt);
-      if (parsedExpiry && parsedExpiry < new Date()) {
-        return { error: 'Срок подписки истёк', code: 403 };
-      }
+      if (parsedExpiry && parsedExpiry < new Date()) return { error: 'Срок подписки истёк', code: 403 };
     }
-   
     if (options.userId && agent.telegramUserId) {
-      if (String(agent.telegramUserId) !== String(options.userId)) {
-        return { error: 'Нет прав доступа', code: 403 };
-      }
+      if (String(agent.telegramUserId) !== String(options.userId)) return { error: 'Нет прав доступа', code: 403 };
     }
   }
  
-  if (!options.checkAccess) {
-    setCache(cacheKey, agent);
-  }
- 
+  if (!options.checkAccess) setCache(cacheKey, agent);
   return agent;
 }
 
@@ -325,9 +247,7 @@ async function verifyAgentPin(sheets, agentId, pin) {
  
   for (let i = 1; i < rows.length; i++) {
     if (String(rows[i][idIdx]).trim() === String(agentId).trim()) {
-      if (rows[i][hashIdx] === hashPin(pin)) {
-        return { success: true, agentId };
-      }
+      if (rows[i][hashIdx] === hashPin(pin)) return { success: true, agentId };
       return { success: false, error: 'Неверный PIN-код' };
     }
   }
@@ -339,32 +259,22 @@ module.exports = async (req, res) => {
   const requestId = generateRequestId();
   const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.connection?.remoteAddress || 'unknown';
  
-  // CORS preflight
   if (req.method === 'OPTIONS') {
-    Object.entries(CONFIG.cors).forEach(([key, value]) => {
-      res.setHeader(key, value);
-    });
+    Object.entries(CONFIG.cors).forEach(([key, value]) => res.setHeader(key, value));
     return res.status(200).end();
   }
  
-  Object.entries(CONFIG.cors).forEach(([key, value]) => {
-    res.setHeader(key, value);
-  });
+  Object.entries(CONFIG.cors).forEach(([key, value]) => res.setHeader(key, value));
  
   const action = req.query.action || req.body?.action;
  
-  // 1. Проверка общего лимита на IP
   const globalLimit = checkGlobalRateLimit(ip);
   if (!globalLimit.allowed) {
     logger.warn(requestId, 'Global rate limit exceeded', { ip, action });
     res.setHeader('Retry-After', globalLimit.reset.toString());
-    return jsonResponse(res, 429, {
-      success: false,
-      error: 'Слишком много запросов. Попробуйте позже.',
-    }, requestId);
+    return jsonResponse(res, 429, { success: false, error: 'Слишком много запросов. Попробуйте позже.' }, requestId);
   }
  
-  // 2. Проверка специфичного лимита для действия
   if (action && action !== 'health') {
     const actionLimit = checkRateLimit(ip, action);
     res.setHeader('X-RateLimit-Limit', actionLimit.limit.toString());
@@ -395,21 +305,13 @@ module.exports = async (req, res) => {
     const userId = req.query.user_id || req.body?.userId;
     const pin = req.query.pin || req.body?.pin;
    
-    // Health check
     if (processedAction === 'health') {
-      return jsonResponse(res, 200, {
-        success: true,
-        status: 'ok',
-        timestamp: new Date().toISOString(),
-      }, requestId);
+      return jsonResponse(res, 200, { success: true, status: 'ok', timestamp: new Date().toISOString() }, requestId);
     }
    
-    // Поиск агента по домену
     if (processedAction === 'resolve_agent_by_domain') {
       const domain = sanitizeInput(req.query.domain, 255);
-      if (!domain) {
-        return jsonResponse(res, 400, { success: false, error: 'Домен не указан' }, requestId);
-      }
+      if (!domain) return jsonResponse(res, 400, { success: false, error: 'Домен не указан' }, requestId);
      
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
@@ -431,23 +333,13 @@ module.exports = async (req, res) => {
       return jsonResponse(res, 404, { success: false, error: 'Агент не найден' }, requestId);
     }
    
-    // Получение конфига агента
     if (processedAction === 'get_agent_config') {
-      if (!agentId) {
-        return jsonResponse(res, 400, { success: false, error: 'agent_id не указан' }, requestId);
-      }
+      if (!agentId) return jsonResponse(res, 400, { success: false, error: 'agent_id не указан' }, requestId);
      
-      const result = await getAgentData(sheets, agentId, {
-        checkAccess: true,
-        userId: userId || null,
-      });
-     
-      if (result.error) {
-        return jsonResponse(res, result.code || 400, { success: false, error: result.error }, requestId);
-      }
+      const result = await getAgentData(sheets, agentId, { checkAccess: true, userId: userId || null });
+      if (result.error) return jsonResponse(res, result.code || 400, { success: false, error: result.error }, requestId);
      
       const isOwner = userId && result.telegramUserId && (String(userId) === String(result.telegramUserId));
-     
       return jsonResponse(res, 200, {
         success: true,
         agentId: result.agentId,
@@ -457,38 +349,23 @@ module.exports = async (req, res) => {
       }, requestId);
     }
    
-    // Верификация PIN
     if (processedAction === 'verify_pin') {
-      if (!agentId || !pin) {
-        return jsonResponse(res, 400, { success: false, error: 'Нет данных' }, requestId);
-      }
+      if (!agentId || !pin) return jsonResponse(res, 400, { success: false, error: 'Нет данных' }, requestId);
       return jsonResponse(res, 200, await verifyAgentPin(sheets, agentId, pin), requestId);
     }
    
-    // Проверка доступа для всех действий, кроме save_lead
     let agentData = null;
     if (processedAction !== 'save_lead') {
-      if (!agentId) {
-        return jsonResponse(res, 401, { success: false, error: 'Агент не определён' }, requestId);
-      }
+      if (!agentId) return jsonResponse(res, 401, { success: false, error: 'Агент не определён' }, requestId);
      
-      agentData = await getAgentData(sheets, agentId, {
-        checkAccess: true,
-        userId: userId || null,
-      });
-     
-      if (agentData.error) {
-        return jsonResponse(res, agentData.code || 403, { success: false, error: agentData.error }, requestId);
-      }
+      agentData = await getAgentData(sheets, agentId, { checkAccess: true, userId: userId || null });
+      if (agentData.error) return jsonResponse(res, agentData.code || 403, { success: false, error: agentData.error }, requestId);
     }
    
-    // Список объектов
     if (processedAction === 'get_listings' || !processedAction) {
       const cacheKey = `listings:${agentId}:${req.query.includeHidden === 'true'}`;
       const cached = getCache(cacheKey);
-      if (cached) {
-        return jsonResponse(res, 200, { success: true, data: cached }, requestId);
-      }
+      if (cached) return jsonResponse(res, 200, { success: true, data: cached }, requestId);
      
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
@@ -496,9 +373,7 @@ module.exports = async (req, res) => {
       });
      
       const rows = response.data.values;
-      if (!rows || rows.length <= 1) {
-        return jsonResponse(res, 200, { success: true, data: [] }, requestId);
-      }
+      if (!rows || rows.length <= 1) return jsonResponse(res, 200, { success: true, data: [] }, requestId);
      
       const headers = rows[0];
       const agentIdIdx = headers.indexOf('agent_id');
@@ -521,11 +396,9 @@ module.exports = async (req, res) => {
       }
      
       setCache(cacheKey, result, CONFIG.cache.listingsTTL);
-     
       return jsonResponse(res, 200, { success: true, data: result }, requestId);
     }
    
-    // Заявки
     if (processedAction === 'get_leads') {
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
@@ -556,7 +429,6 @@ module.exports = async (req, res) => {
       return jsonResponse(res, 200, { success: true, data: leads }, requestId);
     }
    
-    // Профиль агента
     if (processedAction === 'get_agent_profile') {
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
@@ -578,7 +450,6 @@ module.exports = async (req, res) => {
       return jsonResponse(res, 200, { success: true, data: {} }, requestId);
     }
    
-    // Страницы
     if (processedAction === 'get_pages') {
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
@@ -604,32 +475,23 @@ module.exports = async (req, res) => {
       return jsonResponse(res, 200, { success: true, data: pages }, requestId);
     }
    
-    // POST методы
     if (req.method !== 'POST') {
       return jsonResponse(res, 405, { success: false, error: 'Метод не разрешён' }, requestId);
     }
    
-    // Авторизация для POST (кроме save_lead)
     if (processedAction !== 'save_lead') {
       const initData = req.body?.initData;
       let isAuthorized = false;
      
-      if (initData) {
-        // TODO: добавить полную проверку HMAC для Telegram initData
-        isAuthorized = true;
-      }
-     
+      if (initData) isAuthorized = true;
       if (!isAuthorized && req.body?.pin) {
         const pinResult = await verifyAgentPin(sheets, agentId, req.body.pin);
         if (pinResult.success) isAuthorized = true;
       }
      
-      if (!isAuthorized) {
-        return jsonResponse(res, 401, { success: false, error: 'Ошибка авторизации' }, requestId);
-      }
+      if (!isAuthorized) return jsonResponse(res, 401, { success: false, error: 'Ошибка авторизации' }, requestId);
     }
    
-    // Создание объекта
     if (processedAction === 'create') {
       const data = req.body;
       const response = await sheets.spreadsheets.values.get({
@@ -652,11 +514,9 @@ module.exports = async (req, res) => {
       });
      
       clearCache(`listings:${agentId}`);
-     
       return jsonResponse(res, 200, { success: true, id: data.id || 'new-' + Date.now() }, requestId);
     }
    
-    // Обновление объекта
     if (processedAction === 'update') {
       const data = req.body;
       const response = await sheets.spreadsheets.values.get({
@@ -688,14 +548,12 @@ module.exports = async (req, res) => {
           });
          
           clearCache(`listings:${agentId}`);
-         
           return jsonResponse(res, 200, { success: true }, requestId);
         }
       }
       return jsonResponse(res, 404, { success: false, error: 'Не найдено' }, requestId);
     }
    
-    // Удаление объекта
     if (processedAction === 'delete') {
       const data = req.body;
       const response = await sheets.spreadsheets.values.get({
@@ -730,98 +588,55 @@ module.exports = async (req, res) => {
           });
          
           clearCache(`listings:${agentId}`);
-         
           return jsonResponse(res, 200, { success: true }, requestId);
         }
       }
       return jsonResponse(res, 404, { success: false, error: 'Не найдено' }, requestId);
     }
    
-    // 12. Сохранение заявки (ПУБЛИЧНЫЙ МЕТОД)
-if (processedAction === 'save_lead') {
-  const requestData = req.body.data || req.body;
- 
-  const clientName = sanitizeInput(requestData.clientName, 100);
-  if (!clientName || clientName.length < 2) {
-    return jsonResponse(res, 400, { success: false, error: 'Введите имя' }, requestId);
-  }
- 
-  const clientPhone = validatePhone(requestData.clientPhone);
-  if (!clientPhone) {
-    return jsonResponse(res, 400, { success: false, error: 'Введите корректный телефон' }, requestId);
-  }
- 
-  const clientTelegram = sanitizeInput(requestData.clientTelegram || '', 50);
-  const objectName = sanitizeInput(requestData.objectName || '', 200);
- 
-  const phoneForSheets = "'" + clientPhone;
- 
-  const timestamp = formatRussianDate(new Date());
-  const leadId = 'lead-' + Date.now();
- 
-  const agentInfo = await getAgentData(sheets, agentId);
-  const chatId = agentInfo.chatId || '';
- 
-  await sheets.spreadsheets.values.append({
-    spreadsheetId: SPREADSHEET_ID,
-    range: 'Leads!A:H',
-    valueInputOption: 'USER_ENTERED',
-    resource: {
-      values: [[
-        agentId,
-        leadId,
-        timestamp,
-        objectName,
-        clientName,
-        phoneForSheets,
-        clientTelegram || 'Не указан',
-        'Новая',
-      ]],
-    },
-  });
- 
-  const token = process.env.TELEGRAM_NOTIFICATION_BOT_TOKEN;
-  if (token && chatId) {
-    const msg = `<b>🔔 Новая заявка!</b>\n\n` +
-               `<b>Объект:</b> ${objectName || '-'}\n` +
-               `<b>Имя:</b> ${clientName}\n` +
-               `<b>Телефон:</b> ${clientPhone}\n` +
-               `<b>Telegram:</b> ${clientTelegram || '-'}`;
-   
-    try {
-      const tgResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: chatId,
-          text: msg,
-          parse_mode: 'HTML',
-        }),
-      });
+    // === СОХРАНЕНИЕ ЗАЯВКИ (ПУБЛИЧНЫЙ МЕТОД) ===
+    if (processedAction === 'save_lead') {
+      const requestData = req.body.data || req.body;
      
-      if (!tgResponse.ok) {
-        logger.warn(requestId, 'Telegram notification failed', {
-          status: tgResponse.status,
-          chatId,
-        });
+      const clientName = sanitizeInput(requestData.clientName, 100);
+      if (!clientName || clientName.length < 2) {
+        return jsonResponse(res, 400, { success: false, error: 'Введите имя' }, requestId);
       }
-    } catch (tgErr) {
-      logger.warn(requestId, 'Telegram notification error', {
-        error: tgErr.message,
-      });
-    }
-  }
- 
-  logger.info(requestId, 'Lead saved', {
-    leadId,
-    agentId,
-    clientName,
-    clientPhone,
-  });
- 
-  return jsonResponse(res, 200, { success: true, id: leadId }, requestId);
-}
      
+      const clientPhone = validatePhone(requestData.clientPhone);
+      if (!clientPhone) {
+        return jsonResponse(res, 400, { success: false, error: 'Введите корректный телефон' }, requestId);
+      }
+     
+      const clientTelegram = sanitizeInput(requestData.clientTelegram || '', 50);
+      const objectName = sanitizeInput(requestData.objectName || '', 200);
+      const phoneForSheets = "'" + clientPhone;
+      const timestamp = formatRussianDate(new Date());
+      const leadId = 'lead-' + Date.now();
+     
+      // Получаем chatId агента БЕЗ проверки доступа
+      const agentInfo = await getAgentData(sheets, agentId);
+      const chatId = agentInfo.chatId || '';
+     
+      await sheets.spreadsheets.values.append({
+        spreadsheetId: SPREADSHEET_ID,
+        range: 'Leads!A:H',
+        valueInputOption: 'USER_ENTERED',
+        resource: {
+          values: [[
+            agentId,
+            leadId,
+            timestamp,
+            objectName,
+            clientName,
+            phoneForSheets,
+            clientTelegram || 'Не указан',
+            'Новая',
+          ]],
+        },
+      });
+     
+      // Отправка уведомления в Telegram
       const token = process.env.TELEGRAM_NOTIFICATION_BOT_TOKEN;
       if (token && chatId) {
         const msg = `<b>🔔 Новая заявка!</b>\n\n` +
@@ -834,37 +649,21 @@ if (processedAction === 'save_lead') {
           const tgResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              chat_id: chatId,
-              text: msg,
-              parse_mode: 'HTML',
-            }),
+            body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'HTML' }),
           });
          
           if (!tgResponse.ok) {
-            logger.warn(requestId, 'Telegram notification failed', {
-              status: tgResponse.status,
-              chatId,
-            });
+            logger.warn(requestId, 'Telegram notification failed', { status: tgResponse.status, chatId });
           }
         } catch (tgErr) {
-          logger.warn(requestId, 'Telegram notification error', {
-            error: tgErr.message,
-          });
+          logger.warn(requestId, 'Telegram notification error', { error: tgErr.message });
         }
       }
      
-      logger.info(requestId, 'Lead saved', {
-        leadId,
-        agentId,
-        clientName,
-        clientPhone,
-      });
-     
+      logger.info(requestId, 'Lead saved', { leadId, agentId, clientName, clientPhone });
       return jsonResponse(res, 200, { success: true, id: leadId }, requestId);
     }
    
-    // Обновление статуса заявки
     if (processedAction === 'update_lead_status') {
       const data = req.body;
       const response = await sheets.spreadsheets.values.get({
@@ -903,7 +702,6 @@ if (processedAction === 'save_lead') {
       return jsonResponse(res, 404, { success: false, error: 'Заявка не найдена' }, requestId);
     }
    
-    // Обновление профиля
     if (processedAction === 'update_agent_profile') {
       const data = req.body;
       const response = await sheets.spreadsheets.values.get({
@@ -949,7 +747,6 @@ if (processedAction === 'save_lead') {
       }
      
       clearCache(`agent:${agentId}`);
-     
       return jsonResponse(res, 200, { success: true }, requestId);
     }
    
