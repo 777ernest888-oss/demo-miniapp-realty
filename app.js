@@ -12,6 +12,14 @@ let AGENT_CONFIG = null;
 
 function getImageUrl(sourceUrl) {
     if (!sourceUrl) return '';
+   
+    // Конвертация GitHub blob ссылок в raw
+    if (sourceUrl.includes('github.com') && sourceUrl.includes('/blob/')) {
+        return sourceUrl
+            .replace('github.com', 'raw.githubusercontent.com')
+            .replace('/blob/', '/');
+    }
+   
     if (sourceUrl.startsWith('http://') || sourceUrl.startsWith('https://')) return sourceUrl;
     return sourceUrl;
 }
