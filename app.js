@@ -685,14 +685,7 @@ function submitConsultForm(event) {
             sb.textContent = originalText;
             sb.disabled = false;
         });
-        .then(function() {
-            console.log('[submitConsultForm] ✅ Запрос отправлен (opaque response)');
-            sb.textContent = originalText;
-            sb.disabled = false;
-            document.getElementById('consultForm').reset();
-            closeConsultModal();
-            setTimeout(function() { tg.showAlert('✅ Заявка отправлена!'); }, 100);
-        })
+        
         .catch(function(err) {
             console.error('[submitConsultForm]  Error:', err);
             tg.showAlert('️ Ошибка отправки: ' + err.message);
@@ -703,6 +696,13 @@ function submitConsultForm(event) {
         console.error('[submitConsultForm] ❌ Exception:', e);
         tg.showAlert('⚠️ Произошла ошибка.');
     }
+}
+
+function startApp() {
+    document.getElementById('welcomeScreen').classList.add('hidden');
+    document.getElementById('mainContent').classList.remove('hidden');
+    window.scrollTo(0, 0);
+    hideBack();
 }
 
 function escapeHtml(text) { if (!text) return ''; var div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
