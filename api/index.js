@@ -1,5 +1,4 @@
-// Vercel Serverless Function - Prostors API (Production Ready)
-// v2 - Fixed access is not defined error
+// Vercel Serverless Function - Prostors API (Production Ready) V8
 const { google } = require('googleapis');
 
 // ==================== КОНФИГУРАЦИЯ ====================
