@@ -325,22 +325,29 @@ module.exports = async (req, res) => {
       return res.json({ success: false, error: 'Метод не разрешён' });
     }
 
-    // Авторизация для POST
-    const initData = req.body?.initData;
-    let isAuthorized = false;
-
-    if (initData) {
-      // Проверка initData (упрощённая)
-      isAuthorized = true; // TODO: добавить полную проверку HMAC
+// POST методы
+    if (req.method !== 'POST') {
+      return res.json({ success: false, error: 'Метод не разрешён' });
     }
 
-    if (!isAuthorized && req.body?.pin) {
-      const pinResult = await verifyAgentPin(sheets, agentId, req.body.pin);
-      if (pinResult.success) isAuthorized = true;
-    }
+    // Заявки не требуют авторизации (любой клиент может отправить)
+    if (action !== 'save_lead') {
+      // Для остальных POST действий нужна авторизация
+      const initData = req.body?.initData;
+      let isAuthorized = false;
 
-    if (!isAuthorized) {
-      return res.json({ success: false, error: 'Ошибка авторизации', code: 401 });
+      if (initData) {
+        isAuthorized = true; // TODO: добавить полную проверку HMAC
+      }
+
+      if (!isAuthorized && req.body?.pin) {
+        const pinResult = await verifyAgentPin(sheets, agentId, req.body.pin);
+        if (pinResult.success) isAuthorized = true;
+      }
+
+      if (!isAuthorized) {
+        return res.json({ success: false, error: 'Ошибка авторизации', code: 401 });
+      }
     }
 
     // 8. Создание объекта
