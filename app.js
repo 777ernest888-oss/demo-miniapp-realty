@@ -189,7 +189,12 @@ async function loadPropertiesFromScript() {
     if (!config.client || !config.client.scriptUrl) { console.log('[loadProperties] No scriptUrl'); return []; }
     try {
         var url = config.client.scriptUrl;
-        if (AGENT_ID) url += (url.includes('?') ? '&' : '?') + 'agent_id=' + AGENT_ID;
+if (url.includes('?')) {
+  url += '&action=get_listings';
+} else {
+  url += '?action=get_listings';
+}
+if (AGENT_ID) url += '&agent_id=' + AGENT_ID;
         console.log('[loadProperties] Fetching:', url);
         const response = await fetch(url);
         if (!response.ok) { console.error('[loadProperties] ❌ HTTP:', response.status); return []; }
