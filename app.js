@@ -684,7 +684,7 @@ function submitConsultForm(event) {
             tg.showAlert('❌ Ошибка отправки: ' + err.message);
             sb.textContent = originalText;
             sb.disabled = false;
-        }));
+        });
 
     } catch (e) {
         console.error('[submitConsultForm] ❌ Exception:', e);
