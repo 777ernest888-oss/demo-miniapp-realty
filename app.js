@@ -660,12 +660,31 @@ function submitConsultForm(event) {
             }
         };
       
-        fetch(config.client.scriptUrl, {
+        fetch(config.client.scriptUrl + '?action=save_lead', {
             method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
         })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+            console.log('[submitConsultForm] Ответ сервера:', data);
+            sb.textContent = originalText;
+            sb.disabled = false;
+           
+            if (data.success) {
+                document.getElementById('consultForm').reset();
+                closeConsultModal();
+                setTimeout(function() { tg.showAlert('✅ Заявка отправлена!'); }, 100);
+            } else {
+                tg.showAlert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
+            }
+        })
+        .catch(function(err) {
+            console.error('[submitConsultForm] Error:', err);
+            tg.showAlert('❌ Ошибка отправки: ' + err.message);
+            sb.textContent = originalText;
+            sb.disabled = false;
+        });
         .then(function() {
             console.log('[submitConsultForm] ✅ Запрос отправлен (opaque response)');
             sb.textContent = originalText;
