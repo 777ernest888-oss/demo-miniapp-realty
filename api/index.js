@@ -47,7 +47,17 @@ function formatRussianDate(date) {
   if (!date) return '';
   const d = date instanceof Date ? date : new Date(date);
   if (isNaN(d.getTime())) return '';
-  return ('0' + d.getDate()).slice(-2) + '.' + ('0' + (d.getMonth() + 1)).slice(-2) + '.' + d.getFullYear();
+ 
+  // Московское время (UTC+3)
+  const moscowTime = new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
+ 
+  const day = ('0' + moscowTime.getDate()).slice(-2);
+  const month = ('0' + (moscowTime.getMonth() + 1)).slice(-2);
+  const year = moscowTime.getFullYear();
+  const hours = ('0' + moscowTime.getHours()).slice(-2);
+  const minutes = ('0' + moscowTime.getMinutes()).slice(-2);
+ 
+  return `${day}.${month}.${year}, ${hours}:${minutes}`;
 }
 
 // Проверка доступа агента
@@ -325,29 +335,22 @@ module.exports = async (req, res) => {
       return res.json({ success: false, error: 'Метод не разрешён' });
     }
 
-// POST методы
-    if (req.method !== 'POST') {
-      return res.json({ success: false, error: 'Метод не разрешён' });
+    // Авторизация для POST
+    const initData = req.body?.initData;
+    let isAuthorized = false;
+
+    if (initData) {
+      // Проверка initData (упрощённая)
+      isAuthorized = true; // TODO: добавить полную проверку HMAC
     }
 
-    // Заявки не требуют авторизации (любой клиент может отправить)
-    if (action !== 'save_lead') {
-      // Для остальных POST действий нужна авторизация
-      const initData = req.body?.initData;
-      let isAuthorized = false;
+    if (!isAuthorized && req.body?.pin) {
+      const pinResult = await verifyAgentPin(sheets, agentId, req.body.pin);
+      if (pinResult.success) isAuthorized = true;
+    }
 
-      if (initData) {
-        isAuthorized = true; // TODO: добавить полную проверку HMAC
-      }
-
-      if (!isAuthorized && req.body?.pin) {
-        const pinResult = await verifyAgentPin(sheets, agentId, req.body.pin);
-        if (pinResult.success) isAuthorized = true;
-      }
-
-      if (!isAuthorized) {
-        return res.json({ success: false, error: 'Ошибка авторизации', code: 401 });
-      }
+    if (!isAuthorized) {
+      return res.json({ success: false, error: 'Ошибка авторизации', code: 401 });
     }
 
     // 8. Создание объекта
@@ -455,6 +458,16 @@ module.exports = async (req, res) => {
     // 11. Сохранение заявки
     if (action === 'save_lead') {
       const data = req.body.data || req.body;
+     
+      // Очистка телефона и предотвращение ошибки формулы
+if (data.clientPhone) {
+  data.clientPhone = data.clientPhone.replace(/[^\d+]/g, '');
+  // Добавляем апостроф в начало, чтобы Google Sheets не интерпретировал как формулу
+  if (data.clientPhone.startsWith('+')) {
+    data.clientPhone = "'" + data.clientPhone;
+  }
+}
+     
       const timestamp = formatRussianDate(new Date());
       const leadId = 'lead-' + Date.now();
 
