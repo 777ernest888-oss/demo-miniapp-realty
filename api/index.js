@@ -454,7 +454,7 @@ module.exports = async (req, res) => {
 
     // 11. Сохранение заявки
     if (action === 'save_lead') {
-      const data = req.body;
+      const data = req.body.data || req.body;
       const timestamp = formatRussianDate(new Date());
       const leadId = 'lead-' + Date.now();
 
