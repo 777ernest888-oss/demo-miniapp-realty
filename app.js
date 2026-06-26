@@ -47,7 +47,8 @@ async function loadClientConfig() {
         config = await response.json();
         console.log('[loadClientConfig] ✅ Config загружен:', config);
     } catch (error) {
-        console.error('[loadClientConfig] ❌ Error:', error);        alert('Ошибка загрузки конфигурации!');
+        console.error('[loadClientConfig] ❌ Error:', error);
+        alert('Ошибка загрузки конфигурации!');
     }
 }
 
@@ -96,7 +97,8 @@ async function initAgent() {
         var response = await fetch(config.client.scriptUrl + '?action=get_agent_config&agent_id=' + encodeURIComponent(AGENT_ID) + '&user_id=' + userId);
         if (!response.ok) {
             console.error('[initAgent] ❌ HTTP error:', response.status);
-            showErrorScreen('Ошибка сервера: ' + response.status);            return false;
+            showErrorScreen('Ошибка сервера: ' + response.status);
+            return false;
         }
         var data = await response.json();
         console.log('[initAgent] Ответ сервера:', data);
@@ -145,7 +147,8 @@ function applyBrandConfig(brandConfig) {
         var companyName = document.getElementById('companyName');
         if (companyName) companyName.textContent = brandConfig.appName;
     }
-    if (brandConfig.welcomeTitle) { var el = document.getElementById('welcomeTitle'); if (el) el.textContent = brandConfig.welcomeTitle; }    if (brandConfig.tagline) { var el = document.getElementById('welcomeTagline'); if (el) el.textContent = brandConfig.tagline; }
+    if (brandConfig.welcomeTitle) { var el = document.getElementById('welcomeTitle'); if (el) el.textContent = brandConfig.welcomeTitle; }
+    if (brandConfig.tagline) { var el = document.getElementById('welcomeTagline'); if (el) el.textContent = brandConfig.tagline; }
     if (brandConfig.buttonText) { var el = document.getElementById('welcomeButton'); if (el) el.textContent = brandConfig.buttonText; }
     if (brandConfig.logoUrl) { var el = document.querySelector('#headerBrand .brand-logo'); if (el) { el.src = getImageUrl(brandConfig.logoUrl); el.onerror = onImgError; } }
     if (brandConfig.agentPhotoUrl) { var el = document.querySelector('.agent-photo'); if (el) el.src = getImageUrl(brandConfig.agentPhotoUrl); }
@@ -189,28 +192,44 @@ async function loadPropertiesFromScript() {
     if (!config.client || !config.client.scriptUrl) { console.log('[loadProperties] No scriptUrl'); return []; }
     try {
         var url = config.client.scriptUrl;
-if (url.includes('?')) {
-  url += '&action=get_listings';
-} else {
-  url += '?action=get_listings';
-}
-if (AGENT_ID) url += '&agent_id=' + AGENT_ID;
+        if (url.includes('?')) {
+            url += '&action=get_listings';
+        } else {
+            url += '?action=get_listings';
+        }
+        if (AGENT_ID) url += '&agent_id=' + AGENT_ID;
+       
         console.log('[loadProperties] Fetching:', url);
         const response = await fetch(url);
         if (!response.ok) { console.error('[loadProperties] ❌ HTTP:', response.status); return []; }
         const data = await response.json();
-        if (data.error) { console.error('[loadProperties] ❌ Script error:', data.error); return []; }        if (Array.isArray(data) && data.length > 1) {
+       
+        // Поддержка обоих форматов: Vercel API и старый Apps Script
+        let properties = [];
+       
+        if (data.success && Array.isArray(data.data)) {
+            // Формат Vercel API: {success: true, data: [{...}, {...}]}
+            properties = data.data;
+            console.log('[loadProperties] ✅ Vercel API формат, загружено', properties.length, 'объектов');
+        } else if (Array.isArray(data) && data.length > 1) {
+            // Формат Apps Script: [[headers], [row1], [row2], ...]
             const headers = data[0];
             const rows = data.slice(1);
-            const result = rows.map(function(row) {
+            properties = rows.map(function(row) {
                 const obj = {};
                 headers.forEach(function(header, i) { obj[header] = row[i]; });
                 return obj;
             });
-            console.log('[loadProperties] ✅ Loaded', result.length, 'properties');
-            return result;
+            console.log('[loadProperties] ✅ Apps Script формат, загружено', properties.length, 'объектов');
+        } else if (data.error) {
+            console.error('[loadProperties] ❌ Script error:', data.error);
+            return [];
+        } else {
+            console.warn('[loadProperties] ⚠️ Неизвестный формат данных:', data);
+            return [];
         }
-        return [];
+       
+        return properties;
     } catch (e) { console.error('[loadProperties] ❌ Exception:', e); return []; }
 }
 
@@ -297,6 +316,7 @@ function showPage(pageId) {
     }
     window.scrollTo(0, 0);
 }
+
 function renderContactsPage() {
     const data = currentAgentData;
     document.getElementById('agentName').textContent = data.name || 'Имя Агента';
@@ -346,7 +366,8 @@ function switchView(view) {
     const mapContainer = document.getElementById('mapContainer');
     if (view === 'list') {
         listBtn.classList.add('active'); mapBtn.classList.remove('active');
-        listContainer.classList.remove('hidden'); mapContainer.classList.add('hidden'); hideBack();    } else {
+        listContainer.classList.remove('hidden'); mapContainer.classList.add('hidden'); hideBack();
+    } else {
         listBtn.classList.remove('active'); mapBtn.classList.add('active');
         listContainer.classList.add('hidden'); mapContainer.classList.remove('hidden'); showBack();
         setTimeout(function() { initMap(); }, 100);
@@ -370,7 +391,7 @@ async function init() {
         if (!propertiesData || propertiesData.length === 0) propertiesData = [];
         listings = propertiesData;
         renderWelcome(); renderFilters();
-        renderListings(listings.filter(function(l) { return l.active; }));
+        renderListings(listings.filter(function(l) { return l.active === true || l.active === 'TRUE'; }));
         initPhoneMask(); initTelegramMask(); hideBack();
         var loadingScreen = document.getElementById('loadingScreen');
         if (loadingScreen) loadingScreen.classList.add('hidden');
@@ -395,7 +416,8 @@ function applyBranding() {
     el = document.getElementById('welcomeTitle'); if (el && config.branding.welcomeTitle) el.textContent = config.branding.welcomeTitle;
     el = document.getElementById('welcomeTagline'); if (el && config.branding.tagline) el.textContent = config.branding.tagline;
     el = document.getElementById('welcomeButton'); if (el && config.branding.buttonText) el.textContent = config.branding.buttonText;
-    el = document.getElementById('headerTitle'); if (el && config.branding.name) el.textContent = config.branding.name.toUpperCase();    el = document.querySelector('#headerBrand .brand-logo'); if (el && config.branding.logo) { el.src = getImageUrl(config.branding.logo); el.onerror = onImgError; }
+    el = document.getElementById('headerTitle'); if (el && config.branding.name) el.textContent = config.branding.name.toUpperCase();
+    el = document.querySelector('#headerBrand .brand-logo'); if (el && config.branding.logo) { el.src = getImageUrl(config.branding.logo); el.onerror = onImgError; }
 }
 
 function renderWelcome() {
@@ -437,14 +459,15 @@ function filterListings() {
     const selectedMetros = Array.from(document.querySelectorAll('input[data-filter="metro"]:checked')).map(function(cb) { return cb.value; });
     const selectedRooms = Array.from(document.querySelectorAll('input[data-filter="rooms"]:checked')).map(function(cb) { return cb.value; });
     const filtered = listings.filter(function(item) {
-        if (!item.active) return false;
+        if (item.active !== true && item.active !== 'TRUE') return false;
         if (typeof item.price_from === 'number' && item.price_from > maxPrice) return false;
         if (selectedDistricts.length > 0 && selectedDistricts.indexOf(item.district) === -1) return false;
         if (selectedMetros.length > 0 && selectedMetros.indexOf(item.metro) === -1) return false;
         if (selectedRooms.length > 0 && item.rooms) {
             var itemRooms = String(item.rooms).split(',').map(function(r) { return r.trim(); });
             if (!selectedRooms.some(function(r) { return itemRooms.indexOf(r) !== -1; })) return false;
-        }        return true;
+        }
+        return true;
     });
     console.log('[filterListings] Показано:', filtered.length, 'из', listings.length);
     renderListings(filtered);
@@ -455,7 +478,7 @@ function filterListings() {
 function resetFilters() {
     document.querySelectorAll('.price-btn').forEach(function(btn) { btn.classList.remove('active'); });
     document.querySelectorAll('.filter-checkbox').forEach(function(cb) { cb.checked = false; });
-    renderListings(listings.filter(function(l) { return l.active; }));
+    renderListings(listings.filter(function(l) { return l.active === true || l.active === 'TRUE'; }));
 }
 
 function renderListings(data) {
@@ -493,13 +516,15 @@ function initMap() {
     if (!mapContainer) return;
     if (!map) { map = L.map('mapContainer').setView([59.9343, 30.3351], 11); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map); }
     filterListings();
-    setTimeout(function() { map.invalidateSize(); }, 150);}
+    setTimeout(function() { map.invalidateSize(); }, 150);
+}
 
 function updateMapMarkers(filteredItems) {
     if (!map) return;
     markers.forEach(function(m) { map.removeLayer(m); }); markers = [];
     filteredItems.forEach(function(item) {
-        if (!item.active || !item.lat || !item.lng) return;
+        if (item.active !== true && item.active !== 'TRUE') return;
+        if (!item.lat || !item.lng) return;
         var priceDisplay = '?';
         if (typeof item.price_from === 'number') priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
         var marker = L.marker([item.lat, item.lng]).addTo(map);
@@ -542,7 +567,8 @@ function openDetails(id) {
         var t = document.createElement('h3'); t.className = 'plans-section-title'; t.textContent = '📐 Планировки'; pc.appendChild(t);
         var pt = document.createElement('div'); pt.className = 'carousel-track';
         plansImages.forEach(function(url) { var s = document.createElement('div'); s.className = 'slide'; s.style.flex = '0 0 85%'; var img = document.createElement('img'); img.src = getImageUrl(url); img.style.height = '200px'; img.onclick = function() { window.open(getImageUrl(url), '_blank'); }; img.onerror = onImgError; s.appendChild(img); pt.appendChild(s); });
-        pc.appendChild(pt);    } else if (item.floor_plans_text) { pc.innerHTML = '<h3 class="plans-section-title">📐 Планировки</h3><p class="floor-plans-text">' + item.floor_plans_text + '</p>'; }
+        pc.appendChild(pt);
+    } else if (item.floor_plans_text) { pc.innerHTML = '<h3 class="plans-section-title">📐 Планировки</h3><p class="floor-plans-text">' + item.floor_plans_text + '</p>'; }
     var mc = document.querySelector('#detailsModal .modal-content');
     var btn = document.getElementById('modalConsultBtn');
     if (!btn) { btn = document.createElement('button'); btn.id = 'modalConsultBtn'; btn.className = 'tg-btn'; btn.style.marginTop = '20px'; btn.style.marginBottom = '40px'; mc.appendChild(btn); }
@@ -591,7 +617,8 @@ function initTelegramMask() {
         if (val.includes('@') && !val.startsWith('@')) val = '@' + val.replace(/@/g, '');
         if (val.length > 32) val = val.slice(0, 32);
         e.target.value = val;
-    });}
+    });
+}
 
 function submitConsultForm(event) {
     event.preventDefault();
@@ -605,15 +632,15 @@ function submitConsultForm(event) {
         if (phone.replace(/\D/g, '').length < 10) { tg.showAlert('❌ Введите корректный телефон'); return; }
         if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) { tg.showAlert('❌ Telegram только латиницей'); return; }
         if (!AGENT_ID) { tg.showAlert('❌ Ошибка: агент не определён'); return; }
-       
+      
         console.log('[submitConsultForm] ✅ Данные собраны');
         console.log('[submitConsultForm] AGENT_ID:', AGENT_ID);
-       
+      
         var sb = event.target.querySelector('button[type="submit"]');
         var originalText = sb.textContent;
         sb.textContent = 'Отправка...';
         sb.disabled = true;
-       
+      
         var payload = {
             action: 'save_lead',
             agentId: AGENT_ID,
@@ -624,8 +651,7 @@ function submitConsultForm(event) {
                 clientTelegram: telegram || 'Не указан'
             }
         };
-       
-        // ← КЛЮЧЕВОЕ: text/plain + no-cors обходит CORS
+      
         fetch(config.client.scriptUrl, {
             method: 'POST',
             mode: 'no-cors',
@@ -651,6 +677,7 @@ function submitConsultForm(event) {
         tg.showAlert('⚠️ Произошла ошибка.');
     }
 }
+
 function escapeHtml(text) { if (!text) return ''; var div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
 
 if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
