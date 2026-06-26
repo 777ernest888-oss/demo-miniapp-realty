@@ -217,9 +217,11 @@ module.exports = async (req, res) => {
       return res.json(await verifyAgentPin(sheets, agentId, pin));
     }
 
-    // Проверка доступа для остальных методов
-    const access = await checkAgentAccess(sheets, agentId, userId);
-    if (!access.allowed) return res.json({ success: false, error: access.error, code: 403 });
+    // Проверка доступа для GET методов и POST (кроме save_lead)
+    if (action !== 'save_lead') {
+      const access = await checkAgentAccess(sheets, agentId, userId);
+      if (!access.allowed) return res.json({ success: false, error: access.error, code: 403 });
+    }
 
     // 4. Список объектов
     if (action === 'get_listings' || !action) {
@@ -330,27 +332,28 @@ module.exports = async (req, res) => {
       return res.json({ success: true, data: pages });
     }
 
-    // POST методы требуют авторизации
+    // POST методы
     if (req.method !== 'POST') {
       return res.json({ success: false, error: 'Метод не разрешён' });
     }
 
-    // Авторизация для POST
-    const initData = req.body?.initData;
-    let isAuthorized = false;
+    // Авторизация для POST (кроме save_lead)
+    if (action !== 'save_lead') {
+      const initData = req.body?.initData;
+      let isAuthorized = false;
 
-    if (initData) {
-      // Проверка initData (упрощённая)
-      isAuthorized = true; // TODO: добавить полную проверку HMAC
-    }
+      if (initData) {
+        isAuthorized = true;
+      }
 
-    if (!isAuthorized && req.body?.pin) {
-      const pinResult = await verifyAgentPin(sheets, agentId, req.body.pin);
-      if (pinResult.success) isAuthorized = true;
-    }
+      if (!isAuthorized && req.body?.pin) {
+        const pinResult = await verifyAgentPin(sheets, agentId, req.body.pin);
+        if (pinResult.success) isAuthorized = true;
+      }
 
-    if (!isAuthorized) {
-      return res.json({ success: false, error: 'Ошибка авторизации', code: 401 });
+      if (!isAuthorized) {
+        return res.json({ success: false, error: 'Ошибка авторизации', code: 401 });
+      }
     }
 
     // 8. Создание объекта
@@ -439,7 +442,7 @@ module.exports = async (req, res) => {
               requests: [{
                 deleteDimension: {
                   range: {
-                    sheetId: 0, // ID листа Listings
+                    sheetId: 0,
                     dimension: 'ROWS',
                     startIndex: i,
                     endIndex: i + 1,
@@ -459,14 +462,15 @@ module.exports = async (req, res) => {
     if (action === 'save_lead') {
       const data = req.body.data || req.body;
      
-      // Очистка телефона и предотвращение ошибки формулы
-if (data.clientPhone) {
-  data.clientPhone = data.clientPhone.replace(/[^\d+]/g, '');
-  // Добавляем апостроф в начало, чтобы Google Sheets не интерпретировал как формулу
-  if (data.clientPhone.startsWith('+')) {
-    data.clientPhone = "'" + data.clientPhone;
-  }
-}
+      // Очистка телефона от лишних символов
+      let cleanPhone = '';
+      if (data.clientPhone) {
+        cleanPhone = data.clientPhone.replace(/[^\d+]/g, '');
+        // Добавляем апостроф в начало, чтобы Google Sheets не интерпретировал как формулу
+        if (cleanPhone.startsWith('+')) {
+          cleanPhone = "'" + cleanPhone;
+        }
+      }
      
       const timestamp = formatRussianDate(new Date());
       const leadId = 'lead-' + Date.now();
@@ -482,7 +486,7 @@ if (data.clientPhone) {
             timestamp,
             data.objectName || '',
             data.clientName || '',
-            data.clientPhone || '',
+            cleanPhone,
             data.clientTelegram || 'Не указан',
             'Новая',
           ]],
@@ -491,14 +495,18 @@ if (data.clientPhone) {
 
       // Уведомление агенту
       const token = process.env.TELEGRAM_NOTIFICATION_BOT_TOKEN;
-      const chatId = access.chatId;
+      const chatId = access?.chatId || '';
       if (token && chatId) {
-        const msg = `<b>🔔 Новая заявка!</b>\n\n🏢 ${data.objectName || '-'}\n👤 ${data.clientName || '-'}\n📞 ${data.clientPhone || '-'}\n💬 ${data.clientTelegram || '-'}`;
-        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'HTML' }),
-        });
+        const msg = `<b>🔔 Новая заявка!</b>\n\n ${data.objectName || '-'}\n ${data.clientName || '-'}\n ${data.clientPhone || '-'}\n ${data.clientTelegram || '-'}`;
+        try {
+          await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'HTML' }),
+          });
+        } catch (tgErr) {
+          console.error('Telegram notification error:', tgErr);
+        }
       }
 
       return res.json({ success: true, id: leadId });
