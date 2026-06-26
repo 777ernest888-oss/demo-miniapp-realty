@@ -30,4 +30,10 @@
   ],
   "cleanUrls": true,
   "trailingSlash": false
+  ,
+   "build": {
+     "env": {
+       "FORCE_REBUILD": "2026-06-26"
+     }
+   }
 }
