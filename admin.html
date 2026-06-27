@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Админка | Просторы</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="this.src='https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.js'"></script>
   <style>
     :root { --primary: #3D5266; --accent: #3498DB; --bg: #F5F7FA; --card-bg: #FFFFFF; --text: #2C3E50; --text-secondary: #7F8C8D; --border: #E0E6ED; --danger: #E74C3C; --success: #27AE60; --warning: #F39C12; --radius: 12px; --shadow: 0 2px 8px rgba(0,0,0,0.08); }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -200,7 +199,6 @@
   <script>
     // === ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===
     var config = { scriptUrl: '', supabaseUrl: '', supabaseAnonKey: '' };
-    var supabase = null;
     var objects = [], leads = [], currentAgentData = {}, pagesData = {};
     var currentEditId = null, photoStore = { main: '', gallery: [], plans: [] }, currentStatus = 'true', currentTab = 'objects';
     var isAuthorized = false;
@@ -229,20 +227,16 @@
 
     async function loadConfig() {
       try {
-        var response = await fetch('client-config.json?v=2.0.4');
+        var response = await fetch('client-config.json?v=2.0.5');
         var data = await response.json();
         config.scriptUrl = data.client.scriptUrl;
         config.supabaseUrl = data.supabase && data.supabase.url ? data.supabase.url : '';
         config.supabaseAnonKey = data.supabase && data.supabase.anonKey ? data.supabase.anonKey : '';
-
-        if (config.supabaseUrl && config.supabaseAnonKey && window.supabase) {
-          supabase = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
-          console.log('[admin loadConfig] ✅ Supabase подключён');
-        } else {
-          console.warn('[admin loadConfig] ⚠️ Supabase не подключён. Проверьте client-config.json');
-        }
-
+       
         console.log('[admin loadConfig] ✅', config.scriptUrl);
+        if (config.supabaseUrl) {
+          console.log('[admin loadConfig] ℹ️ Supabase URL:', config.supabaseUrl);
+        }
       } catch (e) {
         console.error('[admin loadConfig] ❌', e);
         showToast('❌ Ошибка конфигурации');
@@ -597,11 +591,11 @@
       }
     }
 
-    // === ЗАГРУЗКА ФОТО В SUPABASE STORAGE ===
+    // === ЗАГРУЗКА ФОТО В SUPABASE STORAGE (ПРЯМОЙ HTTP ЗАПРОС) ===
     async function uploadPhoto(type, input) {
       if (!input.files || input.files.length === 0) return;
-      if (!supabase) {
-        showToast('❌ Supabase не подключён. Проверьте консоль.');
+      if (!config.supabaseUrl || !config.supabaseAnonKey) {
+        showToast('❌ Supabase не настроен');
         return;
       }
     
@@ -615,21 +609,25 @@
           var file = files[i];
           var fileName = AGENT_ID + '/' + Date.now() + '_' + i + '_' + file.name.replace(/\s+/g, '_');
         
-          var uploadResult = await supabase.storage
-            .from('property-images')
-            .upload(fileName, file, {
-              cacheControl: '3600',
-              upsert: true,
-              contentType: file.type
-            });
+          var uploadUrl = config.supabaseUrl + '/storage/v1/object/property-images/' + fileName;
         
-          if (uploadResult.error) throw uploadResult.error;
+          var uploadResponse = await fetch(uploadUrl, {
+            method: 'POST',
+            headers: {
+              'Authorization': 'Bearer ' + config.supabaseAnonKey,
+              'Content-Type': file.type,
+              'x-upsert': 'true'
+            },
+            body: file
+          });
         
-          var urlResult = supabase.storage
-            .from('property-images')
-            .getPublicUrl(fileName);
+          if (!uploadResponse.ok) {
+            throw new Error('Ошибка загрузки: ' + uploadResponse.status);
+          }
         
-          addPhotoToField(type, urlResult.data.publicUrl);
+          var publicUrl = config.supabaseUrl + '/storage/v1/object/public/property-images/' + fileName;
+        
+          addPhotoToField(type, publicUrl);
         }
         showToast('✅ Фото загружено');
       } catch (e) {
@@ -806,11 +804,11 @@
       }
     }  
   
-    // === ЗАГРУЗКА ФОТО ПРОФИЛЯ В SUPABASE STORAGE ===
+    // === ЗАГРУЗКА ФОТО ПРОФИЛЯ В SUPABASE (ПРЯМОЙ HTTP ЗАПРОС) ===
     async function uploadProfilePhoto(input) {
       if (!input.files || input.files.length === 0) return;
-      if (!supabase) {
-        showToast('❌ Supabase не подключён');
+      if (!config.supabaseUrl || !config.supabaseAnonKey) {
+        showToast('❌ Supabase не настроен');
         return;
       }
     
@@ -822,22 +820,26 @@
       try {
         var fileName = AGENT_ID + '/profile_' + Date.now() + '_' + file.name.replace(/\s+/g, '_');
       
-        var uploadResult = await supabase.storage
-          .from('property-images')
-          .upload(fileName, file, {
-            cacheControl: '3600',
-            upsert: true,
-            contentType: file.type
-          });
+        var uploadUrl = config.supabaseUrl + '/storage/v1/object/property-images/' + fileName;
       
-        if (uploadResult.error) throw uploadResult.error;
+        var uploadResponse = await fetch(uploadUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + config.supabaseAnonKey,
+            'Content-Type': file.type,
+            'x-upsert': 'true'
+          },
+          body: file
+        });
       
-        var urlResult = supabase.storage
-          .from('property-images')
-          .getPublicUrl(fileName);
+        if (!uploadResponse.ok) {
+          throw new Error('Ошибка загрузки: ' + uploadResponse.status);
+        }
       
-        document.getElementById('profilePhotoUrl').value = urlResult.data.publicUrl;
-        renderPhotoPreview('profile', [urlResult.data.publicUrl]);
+        var publicUrl = config.supabaseUrl + '/storage/v1/object/public/property-images/' + fileName;
+      
+        document.getElementById('profilePhotoUrl').value = publicUrl;
+        renderPhotoPreview('profile', [publicUrl]);
         showToast('✅ Фото загружено');
       } catch (e) {
         console.error('Ошибка загрузки фото:', e);
