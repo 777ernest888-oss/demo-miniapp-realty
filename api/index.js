@@ -494,30 +494,35 @@ module.exports = async (req, res) => {
       if (!isAuthorized) return jsonResponse(res, 401, { success: false, error: 'Ошибка авторизации' }, requestId);
     }
    
-    if (processedAction === 'create') {
-      const data = req.body;
-      const response = await sheets.spreadsheets.values.get({
-        spreadsheetId: SPREADSHEET_ID,
-        range: 'Listings!1:1',
-      });
-      const headers = response.data.values[0];
-     
-      const newRow = headers.map(h => {
-        if (h === 'agent_id') return agentId;
-        if (h === 'created_at' || h === 'updated_at') return formatRussianDate(new Date());
-        return sanitizeInput(data[h], 500) || '';
-      });
-     
-      await sheets.spreadsheets.values.append({
-        spreadsheetId: SPREADSHEET_ID,
-        range: 'Listings!A:Z',
-        valueInputOption: 'USER_ENTERED',
-        resource: { values: [newRow] },
-      });
-     
-      clearCache(`listings:${agentId}`);
-      return jsonResponse(res, 200, { success: true, id: data.id || 'new-' + Date.now() }, requestId);
-    }
+if (processedAction === 'create') {
+  const data = req.body;
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId: SPREADSHEET_ID,
+    range: 'Listings!1:1',
+  });
+  const headers = response.data.values[0];
+ 
+  // Генерируем id если не передан
+  const newId = data.id || 'spb-' + Date.now();
+ 
+  const newRow = headers.map(h => {
+    if (h === 'id') return newId;
+    if (h === 'agent_id') return agentId;
+    if (h === 'created_at' || h === 'updated_at') return formatRussianDate(new Date());
+    if (h === 'active') return data[h] === true || data[h] === 'true' ? 'TRUE' : 'FALSE';
+    return sanitizeInput(data[h], 500) || '';
+  });
+ 
+  await sheets.spreadsheets.values.append({
+    spreadsheetId: SPREADSHEET_ID,
+    range: 'Listings!A:Z',
+    valueInputOption: 'USER_ENTERED',
+    resource: { values: [newRow] },
+  });
+ 
+  clearCache(`listings:${agentId}`);
+  return jsonResponse(res, 200, { success: true, id: newId }, requestId);
+}
    
     if (processedAction === 'update') {
       const data = req.body;
