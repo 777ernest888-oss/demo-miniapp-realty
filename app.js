@@ -216,10 +216,20 @@ async function loadPropertiesFromScript() {
         let properties = [];
        
         if (data.success && Array.isArray(data.data)) {
-            // Формат Vercel API: {success: true, data: [{...}, {...}]}
-            properties = data.data;
-            console.log('[loadProperties] ✅ Vercel API формат, загружено', properties.length, 'объектов');
-        } else if (Array.isArray(data) && data.length > 1) {
+    // Формат Vercel API: {success: true, data: [{...}, {...}]}
+    properties = data.data.map(function(item) {
+        // Преобразуем числовые поля из строк в числа
+        if (item.price_from !== undefined && item.price_from !== '') item.price_from = parseFloat(item.price_from) || 0;
+        if (item.price_to !== undefined && item.price_to !== '') item.price_to = parseFloat(item.price_to) || 0;
+        if (item.price_per_sqm !== undefined && item.price_per_sqm !== '') item.price_per_sqm = parseFloat(item.price_per_sqm) || 0;
+        if (item.area_min !== undefined && item.area_min !== '') item.area_min = parseFloat(item.area_min) || 0;
+        if (item.area_max !== undefined && item.area_max !== '') item.area_max = parseFloat(item.area_max) || 0;
+        if (item.lat !== undefined && item.lat !== '') item.lat = parseFloat(item.lat) || 0;
+        if (item.lng !== undefined && item.lng !== '') item.lng = parseFloat(item.lng) || 0;
+        return item;
+    });
+    console.log('[loadProperties] ✅ Vercel API формат, загружено', properties.length, 'объектов');
+} else if (Array.isArray(data) && data.length > 1) {
             // Формат Apps Script: [[headers], [row1], [row2], ...]
             const headers = data[0];
             const rows = data.slice(1);
