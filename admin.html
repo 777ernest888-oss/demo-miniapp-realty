@@ -371,12 +371,14 @@
       });
 
       // Для всех операций записи используем no-cors (как в app.js)
-      await fetch(config.scriptUrl, {
-        method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload)
-      });
+      var response = await fetch(config.scriptUrl, {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(payload)
+});
+var data = await response.json();
+if (!data.success) throw new Error(data.error || 'Ошибка сервера');
+return data;
      
       // Для чтения данных (get_leads, get_agent_profile) делаем отдельный GET
       if (action === 'get_leads' || action === 'get_agent_profile' || action === 'get_pages') {
@@ -923,6 +925,5 @@
       if(e.target===this) closeModal();
     });
   </script>
-  <script src="admin.js?v=3"></script>
 </body>
 </html>
