@@ -485,10 +485,30 @@
       document.getElementById('deleteBtn').style.display = 'block';
       document.getElementById('saveBtn').textContent = 'Сохранить изменения';
     
-      var fields = ['fieldName','fieldAddress','fieldDistrict','fieldMetro','fieldPriceFrom','fieldPriceTo','fieldPriceSqm','fieldAreaMin','fieldAreaMax','fieldRooms','fieldClass','fieldCompletionSoonest','fieldCompletionAll','fieldFinishing','fieldStatus','fieldDescription','fieldFeatures','fieldLat','fieldLng'];
-      fields.forEach(function(fid) {
-        var key = fid.replace('field','').toLowerCase();
-        document.getElementById(fid).value = obj[key] || '';
+      // ИСПРАВЛЕНИЕ: правильное маппинг полей с подчёркиванием
+      var fieldMap = {
+        fieldName: 'name',
+        fieldAddress: 'address',
+        fieldDistrict: 'district',
+        fieldMetro: 'metro',
+        fieldPriceFrom: 'price_from',
+        fieldPriceTo: 'price_to',
+        fieldPriceSqm: 'price_per_sqm',
+        fieldAreaMin: 'area_min',
+        fieldAreaMax: 'area_max',
+        fieldRooms: 'rooms',
+        fieldClass: 'class',
+        fieldCompletionSoonest: 'completion_soonest',
+        fieldCompletionAll: 'completion_all',
+        fieldFinishing: 'finishing',
+        fieldStatus: 'status',
+        fieldDescription: 'description',
+        fieldFeatures: 'features',
+        fieldLat: 'lat',
+        fieldLng: 'lng'
+      };
+      Object.keys(fieldMap).forEach(function(fid) {
+        document.getElementById(fid).value = obj[fieldMap[fid]] || '';
       });
     
       var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
@@ -864,7 +884,7 @@
         document.getElementById('aboutContent').value=aboutPage?aboutPage.content:'';
       } catch(e) {
         document.getElementById('aboutLoading').style.display='none';
-        showToast('❌ Ошибка');
+        showToast(' Ошибка');
       }
     }
   
@@ -896,7 +916,7 @@
       var newP=document.getElementById('newPin').value;
       var confirm=document.getElementById('confirmPin').value;
       if (!current||!newP||!confirm) { showToast('⚠️ Заполните все поля'); return; }
-      if (newP!==confirm) { showToast('⚠️ Новые PIN не совпадают'); return; }
+      if (newP!==confirm) { showToast('️ Новые PIN не совпадают'); return; }
       if (newP.length<4) { showToast('⚠️ PIN минимум 4 символа'); return; }
     
       var btn=event.target;
