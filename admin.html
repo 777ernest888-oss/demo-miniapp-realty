@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Админка | Просторы</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root { --primary: #3D5266; --accent: #3498DB; --bg: #F5F7FA; --card-bg: #FFFFFF; --text: #2C3E50; --text-secondary: #7F8C8D; --border: #E0E6ED; --danger: #E74C3C; --success: #27AE60; --warning: #F39C12; --radius: 12px; --shadow: 0 2px 8px rgba(0,0,0,0.08); }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -198,7 +199,8 @@
 
   <script>
     // === ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===
-    var config = { scriptUrl: '' };
+    var config = { scriptUrl: '', supabaseUrl: '', supabaseAnonKey: '' };
+    var supabase = null;
     var objects = [], leads = [], currentAgentData = {}, pagesData = {};
     var currentEditId = null, photoStore = { main: '', gallery: [], plans: [] }, currentStatus = 'true', currentTab = 'objects';
     var isAuthorized = false;
@@ -227,9 +229,19 @@
 
     async function loadConfig() {
       try {
-        var response = await fetch('client-config.json?v=2.0.3');
+        var response = await fetch('client-config.json?v=2.0.4');
         var data = await response.json();
         config.scriptUrl = data.client.scriptUrl;
+        config.supabaseUrl = data.supabase && data.supabase.url ? data.supabase.url : '';
+        config.supabaseAnonKey = data.supabase && data.supabase.anonKey ? data.supabase.anonKey : '';
+
+        if (config.supabaseUrl && config.supabaseAnonKey && window.supabase) {
+          supabase = window.supabase.createClient(config.supabaseUrl, config.supabaseAnonKey);
+          console.log('[admin loadConfig] ✅ Supabase подключён');
+        } else {
+          console.warn('[admin loadConfig] ⚠️ Supabase не подключён. Проверьте client-config.json');
+        }
+
         console.log('[admin loadConfig] ✅', config.scriptUrl);
       } catch (e) {
         console.error('[admin loadConfig] ❌', e);
@@ -302,7 +314,7 @@
     // === АВТОРИЗАЦИЯ ===
     function checkAuth() {
       if (sessionStorage.getItem('adminAuth') === 'true') { isAuthorized = true; showApp(); return; }
-     
+    
       var initData = getTelegramInitData();
       if (initData) {
         isAuthorized = true;
@@ -310,7 +322,7 @@
         showApp();
         return;
       }
-     
+    
       document.getElementById('pinScreen').style.display = 'flex';
       document.getElementById('pinInput').focus();
     }
@@ -318,7 +330,7 @@
     async function checkPin() {
       var input = document.getElementById('pinInput').value.trim();
       if (!input) return;
-     
+    
       var btn = document.querySelector('#pinScreen button');
       var originalText = btn.textContent;
       btn.textContent = 'Проверка...';
@@ -326,11 +338,10 @@
       document.getElementById('pinError').style.display = 'none';
 
       try {
-        // ИСПОЛЬЗУЕМ GET ДЛЯ ПРОВЕРКИ PIN (без CORS)
         var url = config.scriptUrl + '?action=verify_pin&agentId=' + encodeURIComponent(AGENT_ID) + '&pin=' + encodeURIComponent(input);
         var response = await fetch(url);
         var data = await response.json();
-       
+      
         if (data.success) {
           isAuthorized = true;
           sessionStorage.setItem('adminAuth', 'true');
@@ -359,10 +370,10 @@
       loadObjects();
     }
 
-    // === УНИВЕРСАЛЬНЫЙ API ВЫЗОВ (NO-CORS для POST) ===
+    // === УНИВЕРСАЛЬНЫЙ API ВЫЗОВ ===
     async function apiCall(action, params) {
       if (!config.scriptUrl) throw new Error('Script URL не настроен');
-     
+    
       var payload = Object.assign({}, params, {
         action: action,
         agentId: AGENT_ID,
@@ -370,17 +381,7 @@
         pin: sessionStorage.getItem('adminPin') || ''
       });
 
-      // Для всех операций записи используем no-cors (как в app.js)
-      var response = await fetch(config.scriptUrl, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(payload)
-});
-var data = await response.json();
-if (!data.success) throw new Error(data.error || 'Ошибка сервера');
-return data;
-     
-      // Для чтения данных (get_leads, get_agent_profile) делаем отдельный GET
+      // Для чтения данных используем GET
       if (action === 'get_leads' || action === 'get_agent_profile' || action === 'get_pages') {
         var getUrl = config.scriptUrl + '?action=' + action + '&agent_id=' + encodeURIComponent(AGENT_ID);
         var response = await fetch(getUrl);
@@ -388,9 +389,16 @@ return data;
         if (!data.success) throw new Error(data.error || 'Ошибка сервера');
         return data;
       }
-     
-      // Для CRUD считаем успешным
-      return { success: true };
+
+      // Для записи используем POST
+      var response = await fetch(config.scriptUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      var data = await response.json();
+      if (!data.success) throw new Error(data.error || 'Ошибка сервера');
+      return data;
     }
 
     function getTelegramInitData() {
@@ -418,26 +426,25 @@ return data;
     async function loadObjects() {
       document.getElementById('objectsLoading').style.display = 'block';
       document.getElementById('objectsList').innerHTML = '';
-     
+    
       try {
-        // Используем GET для чтения
         var url = config.scriptUrl + '?action=get_listings&includeHidden=true&agent_id=' + encodeURIComponent(AGENT_ID);
         var response = await fetch(url);
         var data = await response.json();
-       
+      
         if (data.success && Array.isArray(data.data)) {
           objects = data.data;
         } else {
           objects = [];
         }
-       
+      
         document.getElementById('objectsLoading').style.display = 'none';
-       
+      
         if (objects.length === 0) {
           document.getElementById('objectsList').innerHTML = '<div class="empty-state"><div class="empty-icon">🏗️</div><h3>Нет объектов</h3><p>Нажмите + чтобы добавить первый ЖК</p></div>';
           return;
         }
-       
+      
         objects.forEach(function(obj) {
           var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
           var thumbUrl = obj.image_main || '';
@@ -446,7 +453,7 @@ return data;
             : thumbUrl;
           var statusClass = isActive ? 'status-active' : 'status-hidden';
           var statusText = isActive ? 'Активен' : 'Скрыт';
-         
+        
           var card = document.createElement('div');
           card.className = 'object-card' + (isActive ? '' : ' hidden-object');
           card.onclick = function() { openEditModal(obj.id); };
@@ -483,28 +490,28 @@ return data;
       document.getElementById('statusToggle').style.display = 'flex';
       document.getElementById('deleteBtn').style.display = 'block';
       document.getElementById('saveBtn').textContent = 'Сохранить изменения';
-     
+    
       var fields = ['fieldName','fieldAddress','fieldDistrict','fieldMetro','fieldPriceFrom','fieldPriceTo','fieldPriceSqm','fieldAreaMin','fieldAreaMax','fieldRooms','fieldClass','fieldCompletionSoonest','fieldCompletionAll','fieldFinishing','fieldStatus','fieldDescription','fieldFeatures','fieldLat','fieldLng'];
       fields.forEach(function(fid) {
         var key = fid.replace('field','').toLowerCase();
         document.getElementById(fid).value = obj[key] || '';
       });
-     
+    
       var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
       setStatus(isActive ? 'true' : 'false');
-     
+    
       photoStore.main = obj.image_main || '';
       document.getElementById('fieldImageMain').value = photoStore.main;
       renderPhotoPreview('main', photoStore.main ? [photoStore.main] : []);
-     
+    
       photoStore.gallery = obj.images_gallery ? String(obj.images_gallery).split(',').filter(Boolean) : [];
       document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(',');
       renderPhotoPreview('gallery', photoStore.gallery);
-     
+    
       photoStore.plans = obj.floor_plans_images ? String(obj.floor_plans_images).split(',').filter(Boolean) : [];
       document.getElementById('fieldFloorPlansImages').value = photoStore.plans.join(',');
       renderPhotoPreview('plans', photoStore.plans);
-     
+    
       document.getElementById('objectModal').classList.add('active');
     }
 
@@ -512,7 +519,7 @@ return data;
       document.getElementById('objectModal').classList.remove('active');
       currentEditId = null;
     }
-   
+  
     function setStatus(v) {
       currentStatus = v;
       document.querySelectorAll('.toggle-option').forEach(function(el) {
@@ -526,7 +533,7 @@ return data;
       var ot = btn.textContent;
       btn.disabled = true;
       btn.textContent = 'Сохранение...';
-     
+    
       try {
         var p = {
           name: document.getElementById('fieldName').value.trim(),
@@ -553,7 +560,7 @@ return data;
           lng: parseFloat(document.getElementById('fieldLng').value)||'',
           active: currentStatus==='true'
         };
-       
+      
         if (currentEditId) {
           p.id = currentEditId;
           await apiCall('update', p);
@@ -590,45 +597,43 @@ return data;
       }
     }
 
-    // === ЗАГРУЗКА ФОТО (СИНХРОННАЯ!) ===
+    // === ЗАГРУЗКА ФОТО В SUPABASE STORAGE ===
     async function uploadPhoto(type, input) {
       if (!input.files || input.files.length === 0) return;
+      if (!supabase) {
+        showToast('❌ Supabase не подключён. Проверьте консоль.');
+        return;
+      }
+    
       var files = Array.from(input.files);
       var btn = input.parentElement;
       var ot = btn.innerHTML;
       btn.innerHTML = '⏳ Загрузка...';
-     
+    
       try {
         for (var i = 0; i < files.length; i++) {
           var file = files[i];
-          var base64 = await fileToBase64(file);
-         
-          // Отправляем через no-cors (как в app.js)
-          await fetch(config.scriptUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'upload_image',
-              agentId: AGENT_ID,
-              pin: sessionStorage.getItem('adminPin'),
-              data: { image: base64, fileName: file.name }
-            })
-          });
-         
-          // После отправки ждём 1.5 секунды (как в старой версии), чтобы Apps Script успел записать файл
-          await new Promise(resolve => setTimeout(resolve, 1500));
-         
-          // Получаем последний URL через GET
-          var lastRes = await fetch(config.scriptUrl + '?action=get_last_file_url');
-          var lastData = await lastRes.json();
-         
-          if (lastData.url) {
-            addPhotoToField(type, lastData.url);
-          }
+          var fileName = AGENT_ID + '/' + Date.now() + '_' + i + '_' + file.name.replace(/\s+/g, '_');
+        
+          var uploadResult = await supabase.storage
+            .from('property-images')
+            .upload(fileName, file, {
+              cacheControl: '3600',
+              upsert: true,
+              contentType: file.type
+            });
+        
+          if (uploadResult.error) throw uploadResult.error;
+        
+          var urlResult = supabase.storage
+            .from('property-images')
+            .getPublicUrl(fileName);
+        
+          addPhotoToField(type, urlResult.data.publicUrl);
         }
         showToast('✅ Фото загружено');
       } catch (e) {
+        console.error('Ошибка загрузки фото:', e);
         showToast('❌ Ошибка загрузки: ' + e.message);
       } finally {
         btn.innerHTML = ot;
@@ -644,7 +649,7 @@ return data;
         r.readAsDataURL(file);
       });
     }
-   
+  
     function addPhotoToField(type, url) {
       if (type==='main') {
         photoStore.main=url;
@@ -662,7 +667,7 @@ return data;
         renderPhotoPreview('plans',photoStore.plans);
       }
     }
-   
+  
     function removePhoto(type, idx) {
       if (type==='main') {
         photoStore.main='';
@@ -680,7 +685,7 @@ return data;
         renderPhotoPreview('plans',photoStore.plans);
       }
     }
-   
+  
     function renderPhotoPreview(type, urls) {
       var cid = type==='main'?'mainPhotoPreview':type==='gallery'?'galleryPreview':'plansPreview';
       var c = document.getElementById(cid);
@@ -700,7 +705,7 @@ return data;
         var rb = document.createElement('button');
         rb.className='photo-remove';
         rb.textContent='✕';
-        rb.onclick=function(e){e.stopPropagation();removePhoto(type,idx);};       
+        rb.onclick=function(e){e.stopPropagation();removePhoto(type,idx);};      
         w.appendChild(img);
         w.appendChild(rb);
         c.appendChild(w);
@@ -715,19 +720,19 @@ return data;
         var result = await apiCall('get_leads', {});
         leads = result.data || [];
         document.getElementById('leadsLoading').style.display='none';
-       
+      
         if (leads.length===0) {
           document.getElementById('leadsList').innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><h3>Нет заявок</h3></div>';
           return;
         }
-       
+      
         leads.forEach(function(lead) {
           var card = document.createElement('div');
           card.className='lead-card';
           var sc = 'status-'+(lead.status==='Новая'?'new':lead.status==='Обзвонена'?'contacted':lead.status==='Завершена'?'completed':'cancelled');
           var pd = lead.clientPhone && String(lead.clientPhone).indexOf('#ERROR')===-1 ? escapeHtml(lead.clientPhone) : 'Не указан';
           var td = lead.clientTelegram && lead.clientTelegram!=='Не указан' && String(lead.clientTelegram).indexOf('#ERROR')===-1 ? '<div class="lead-info">💬 '+escapeHtml(lead.clientTelegram)+'</div>' : '';
-         
+        
           card.innerHTML = '<div class="lead-header"><div class="lead-object">🏢 '+escapeHtml(lead.objectName||'Не указан')+'</div><div class="lead-status '+sc+'">'+escapeHtml(lead.status||'Новая')+'</div></div>'+
             '<div class="lead-info">👤 '+escapeHtml(lead.clientName||'Не указано')+'</div><div class="lead-info">📞 '+pd+'</div>'+td+
             '<div class="lead-info">🕐 '+escapeHtml(lead.timestamp||'Не указано')+'</div>'+
@@ -742,7 +747,7 @@ return data;
         showToast('❌ Ошибка загрузки заявок');
       }
     }
-   
+  
     async function updateLeadStatus(id, status) {
       try {
         await apiCall('update_lead_status',{id:id,status:status});
@@ -775,7 +780,7 @@ return data;
         showToast('❌ Ошибка загрузки профиля');
       }
     }
-   
+  
     async function saveProfile(event) {
       event.preventDefault();
       var btn=event.target.querySelector('button[type="submit"]');
@@ -799,40 +804,47 @@ return data;
         btn.disabled=false;
         btn.textContent=ot;
       }
-    }   
-   
+    }  
+  
+    // === ЗАГРУЗКА ФОТО ПРОФИЛЯ В SUPABASE STORAGE ===
     async function uploadProfilePhoto(input) {
-      if (!input.files||input.files.length===0) return;
-      var file=input.files[0];
-      var btn=input.parentElement;
-      var ot=btn.innerHTML;
-      btn.innerHTML='⏳ Загрузка...';
+      if (!input.files || input.files.length === 0) return;
+      if (!supabase) {
+        showToast('❌ Supabase не подключён');
+        return;
+      }
+    
+      var file = input.files[0];
+      var btn = input.parentElement;
+      var ot = btn.innerHTML;
+      btn.innerHTML = '⏳ Загрузка...';
+    
       try {
-        var base64=await fileToBase64(file);
-        await fetch(config.scriptUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify({
-            action: 'upload_image',
-            agentId: AGENT_ID,
-            pin: sessionStorage.getItem('adminPin'),
-            data: { image: base64, fileName: file.name }
-          })
-        });
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        var lastRes = await fetch(config.scriptUrl + '?action=get_last_file_url');
-        var lastData = await lastRes.json();
-        if (lastData.url) {
-          document.getElementById('profilePhotoUrl').value=lastData.url;
-          renderPhotoPreview('profile',[lastData.url]);
-          showToast('✅ Фото загружено');
-        }
-      } catch(e) {
-        showToast('❌ Ошибка');
+        var fileName = AGENT_ID + '/profile_' + Date.now() + '_' + file.name.replace(/\s+/g, '_');
+      
+        var uploadResult = await supabase.storage
+          .from('property-images')
+          .upload(fileName, file, {
+            cacheControl: '3600',
+            upsert: true,
+            contentType: file.type
+          });
+      
+        if (uploadResult.error) throw uploadResult.error;
+      
+        var urlResult = supabase.storage
+          .from('property-images')
+          .getPublicUrl(fileName);
+      
+        document.getElementById('profilePhotoUrl').value = urlResult.data.publicUrl;
+        renderPhotoPreview('profile', [urlResult.data.publicUrl]);
+        showToast('✅ Фото загружено');
+      } catch (e) {
+        console.error('Ошибка загрузки фото:', e);
+        showToast('❌ Ошибка: ' + e.message);
       } finally {
-        btn.innerHTML=ot;
-        input.value='';
+        btn.innerHTML = ot;
+        input.value = '';
       }
     }
 
@@ -853,7 +865,7 @@ return data;
         showToast('❌ Ошибка');
       }
     }
-   
+  
     async function saveAboutPage(event) {
       event.preventDefault();
       var btn=event.target.querySelector('button[type="submit"]');
@@ -884,7 +896,7 @@ return data;
       if (!current||!newP||!confirm) { showToast('⚠️ Заполните все поля'); return; }
       if (newP!==confirm) { showToast('⚠️ Новые PIN не совпадают'); return; }
       if (newP.length<4) { showToast('⚠️ PIN минимум 4 символа'); return; }
-     
+    
       var btn=event.target;
       var ot=btn.textContent;
       btn.disabled=true;
@@ -911,7 +923,7 @@ return data;
       d.textContent=String(t);
       return d.innerHTML;
     }
-   
+  
     function showToast(m) {
       var t=document.getElementById('toast');
       t.textContent=m;
