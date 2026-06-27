@@ -542,11 +542,24 @@
     }
 
     async function saveObject(event) {
-      event.preventDefault();
-      var btn = document.getElementById('saveBtn');
-      var ot = btn.textContent;
-      btn.disabled = true;
-      btn.textContent = 'Сохранение...';
+  event.preventDefault();
+ 
+  // Проверка: главное фото обязательно
+  if (!photoStore.main && !currentEditId) {
+    showToast('❌ Главное фото обязательно');
+    return;
+  }
+ 
+  // При редактировании нельзя удалить главное фото
+  if (!photoStore.main && currentEditId) {
+    showToast('⚠️ Нельзя удалить главное фото. Загрузите новое перед сохранением.');
+    return;
+  }
+ 
+  var btn = document.getElementById('saveBtn');
+  var ot = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Сохранение...';
     
       try {
         var p = {
