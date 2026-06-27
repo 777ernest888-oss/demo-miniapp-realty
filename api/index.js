@@ -59,6 +59,8 @@ function clearCache(prefix) {
 
 // ==================== БЕЗОПАСНОСТЬ ====================
 function sanitizeInput(str, maxLength = 1000) {
+  if (str === true) return 'TRUE';
+  if (str === false) return 'FALSE';
   if (typeof str !== 'string') return '';
   return str.replace(/[<>]/g, '').slice(0, maxLength).trim();
 }
