@@ -18,6 +18,8 @@ const CONFIG = {
       delete: { windowMs: 10 * 60 * 1000, maxRequests: 50 },
       update_lead_status: { windowMs: 10 * 60 * 1000, maxRequests: 100 },
       update_agent_profile: { windowMs: 10 * 60 * 1000, maxRequests: 50 },
+      update_page: { windowMs: 10 * 60 * 1000, maxRequests: 50 },
+      change_pin: { windowMs: 10 * 60 * 1000, maxRequests: 20 },
       get_listings: { windowMs: 10 * 60 * 1000, maxRequests: 1000 },
       get_pages: { windowMs: 10 * 60 * 1000, maxRequests: 1000 },
       get_agent_config: { windowMs: 10 * 60 * 1000, maxRequests: 500 },
@@ -434,7 +436,7 @@ module.exports = async (req, res) => {
     if (processedAction === 'get_agent_profile') {
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
-        range: 'AgentData!A:H',
+        range: 'AgentData!A:I',
       });
       const rows = response.data.values;
       if (!rows || rows.length < 2) return jsonResponse(res, 200, { success: true, data: {} }, requestId);
@@ -555,7 +557,7 @@ module.exports = async (req, res) => {
             if (data.hasOwnProperty(h)) {
               var val = data[h];
               if (val === '' || val === null || val === undefined) {
-                return rows[i][idx]; // пустое — оставляем старое
+                return rows[i][idx];
               }
               return sanitizeInput(val, 500);
             }
@@ -617,7 +619,6 @@ module.exports = async (req, res) => {
       return jsonResponse(res, 404, { success: false, error: 'Не найдено' }, requestId);
     }
   
-    // === СОХРАНЕНИЕ ЗАЯВКИ (ПУБЛИЧНЫЙ МЕТОД) ===
     if (processedAction === 'save_lead') {
       const requestData = req.body.data || req.body;
     
@@ -727,7 +728,7 @@ module.exports = async (req, res) => {
       const data = req.body;
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
-        range: 'AgentData!A:H',
+        range: 'AgentData!A:I',
       });
       const rows = response.data.values;
       const headers = rows[0];
@@ -736,6 +737,7 @@ module.exports = async (req, res) => {
       const rowData = [
         agentId,
         sanitizeInput(data.name, 100),
+        sanitizeInput(data.surname || '', 100),
         sanitizeInput(data.role, 100),
         sanitizeInput(data.agencyName, 200),
         sanitizeInput(data.agencyAddress, 300),
@@ -749,7 +751,7 @@ module.exports = async (req, res) => {
         if (String(rows[i][agentIdx]).trim() === String(agentId).trim()) {
           await sheets.spreadsheets.values.update({
             spreadsheetId: SPREADSHEET_ID,
-            range: `AgentData!A${i + 1}:H${i + 1}`,
+            range: `AgentData!A${i + 1}:I${i + 1}`,
             valueInputOption: 'USER_ENTERED',
             resource: { values: [rowData] },
           });
@@ -761,7 +763,7 @@ module.exports = async (req, res) => {
       if (!updated) {
         await sheets.spreadsheets.values.append({
           spreadsheetId: SPREADSHEET_ID,
-          range: 'AgentData!A:H',
+          range: 'AgentData!A:I',
           valueInputOption: 'USER_ENTERED',
           resource: { values: [rowData] },
         });
@@ -769,6 +771,96 @@ module.exports = async (req, res) => {
     
       clearCache(`agent:${agentId}`);
       return jsonResponse(res, 200, { success: true }, requestId);
+    }
+  
+    if (processedAction === 'update_page') {
+      const data = req.body;
+      const response = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: 'Pages!A:D',
+      });
+      const rows = response.data.values;
+      const headers = rows[0];
+      const agentIdx = headers.indexOf('agent_id');
+      const pageIdx = headers.indexOf('page');
+    
+      let updated = false;
+      for (let i = 1; i < rows.length; i++) {
+        if (String(rows[i][agentIdx]).trim() === String(agentId).trim() &&
+            String(rows[i][pageIdx]).trim() === String(data.page).trim()) {
+        
+          await sheets.spreadsheets.values.update({
+            spreadsheetId: SPREADSHEET_ID,
+            range: `Pages!A${i + 1}:D${i + 1}`,
+            valueInputOption: 'USER_ENTERED',
+            resource: {
+              values: [[
+                agentId,
+                data.page,
+                data.title || '',
+                data.content || ''
+              ]],
+            },
+          });
+          updated = true;
+          break;
+        }
+      }
+    
+      if (!updated) {
+        await sheets.spreadsheets.values.append({
+          spreadsheetId: SPREADSHEET_ID,
+          range: 'Pages!A:D',
+          valueInputOption: 'USER_ENTERED',
+          resource: {
+            values: [[
+              agentId,
+              data.page,
+              data.title || '',
+              data.content || ''
+            ]],
+          },
+        });
+      }
+    
+      return jsonResponse(res, 200, { success: true }, requestId);
+    }
+  
+    if (processedAction === 'change_pin') {
+      const data = req.body;
+      if (!data.oldPin || !data.newPin) {
+        return jsonResponse(res, 400, { success: false, error: 'Нет данных' }, requestId);
+      }
+    
+      const verifyResult = await verifyAgentPin(sheets, agentId, data.oldPin);
+      if (!verifyResult.success) {
+        return jsonResponse(res, 403, { success: false, error: 'Неверный текущий PIN' }, requestId);
+      }
+    
+      const newPinHash = hashPin(data.newPin);
+    
+      const response = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: 'Agents!A:D',
+      });
+      const rows = response.data.values;
+      const headers = rows[0];
+      const idIdx = headers.indexOf('agent_id');
+      const hashIdx = headers.indexOf('pin_hash');
+    
+      for (let i = 1; i < rows.length; i++) {
+        if (String(rows[i][idIdx]).trim() === String(agentId).trim()) {
+          await sheets.spreadsheets.values.update({
+            spreadsheetId: SPREADSHEET_ID,
+            range: `Agents!${String.fromCharCode(65 + hashIdx)}${i + 1}`,
+            valueInputOption: 'USER_ENTERED',
+            resource: { values: [[newPinHash]] },
+          });
+          return jsonResponse(res, 200, { success: true }, requestId);
+        }
+      }
+    
+      return jsonResponse(res, 404, { success: false, error: 'Агент не найден' }, requestId);
     }
   
     return jsonResponse(res, 400, { success: false, error: 'Неизвестное действие' }, requestId);
