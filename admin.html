@@ -121,6 +121,8 @@
         <div class="loading" id="profileLoading">Загрузка профиля...</div>
         <form id="profileForm" onsubmit="saveProfile(event)" style="display:none;">
           <div class="form-group"><label class="form-label">Имя *</label><input type="text" class="form-input" id="profileName" required></div>
+          <!-- ИЗМЕНЕНИЕ 1: Добавлено поле Фамилия -->
+          <div class="form-group"><label class="form-label">Фамилия</label><input type="text" class="form-input" id="profileSurname"></div>
           <div class="form-group"><label class="form-label">Должность</label><input type="text" class="form-input" id="profileRole"></div>
           <div class="form-group"><label class="form-label">Агентство</label><input type="text" class="form-input" id="profileAgencyName"></div>
           <div class="form-group"><label class="form-label">Адрес офиса</label><input type="text" class="form-input" id="profileAgencyAddress"></div>
@@ -542,24 +544,24 @@
     }
 
     async function saveObject(event) {
-  event.preventDefault();
- 
-  // Проверка: главное фото обязательно
-  if (!photoStore.main && !currentEditId) {
-    showToast('❌ Главное фото обязательно');
-    return;
-  }
- 
-  // При редактировании нельзя удалить главное фото
-  if (!photoStore.main && currentEditId) {
-    showToast('⚠️ Нельзя удалить главное фото. Загрузите новое перед сохранением.');
-    return;
-  }
- 
-  var btn = document.getElementById('saveBtn');
-  var ot = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = 'Сохранение...';
+      event.preventDefault();
+     
+      // Проверка: главное фото обязательно
+      if (!photoStore.main && !currentEditId) {
+        showToast('❌ Главное фото обязательно');
+        return;
+      }
+     
+      // При редактировании нельзя удалить главное фото
+      if (!photoStore.main && currentEditId) {
+        showToast('⚠️ Нельзя удалить главное фото. Загрузите новое перед сохранением.');
+        return;
+      }
+     
+      var btn = document.getElementById('saveBtn');
+      var ot = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Сохранение...';
     
       try {
         var p = {
@@ -799,6 +801,8 @@
         document.getElementById('profileLoading').style.display='none';
         document.getElementById('profileForm').style.display='block';
         document.getElementById('profileName').value=currentAgentData.name||'';
+        // ИЗМЕНЕНИЕ 2: Загрузка фамилии
+        document.getElementById('profileSurname').value=currentAgentData.surname||'';
         document.getElementById('profileRole').value=currentAgentData.role||'';
         document.getElementById('profileAgencyName').value=currentAgentData.agencyName||'';
         document.getElementById('profileAgencyAddress').value=currentAgentData.agencyAddress||'';
@@ -821,6 +825,8 @@
       try {
         await apiCall('update_agent_profile',{
           name:document.getElementById('profileName').value.trim(),
+          // ИЗМЕНЕНИЕ 3: Сохранение фамилии
+          surname:document.getElementById('profileSurname').value.trim(),
           role:document.getElementById('profileRole').value.trim(),
           agencyName:document.getElementById('profileAgencyName').value.trim(),
           agencyAddress:document.getElementById('profileAgencyAddress').value.trim(),
@@ -897,7 +903,7 @@
         document.getElementById('aboutContent').value=aboutPage?aboutPage.content:'';
       } catch(e) {
         document.getElementById('aboutLoading').style.display='none';
-        showToast(' Ошибка');
+        showToast('❌ Ошибка');
       }
     }
   
@@ -929,7 +935,7 @@
       var newP=document.getElementById('newPin').value;
       var confirm=document.getElementById('confirmPin').value;
       if (!current||!newP||!confirm) { showToast('⚠️ Заполните все поля'); return; }
-      if (newP!==confirm) { showToast('️ Новые PIN не совпадают'); return; }
+      if (newP!==confirm) { showToast('⚠️ Новые PIN не совпадают'); return; }
       if (newP.length<4) { showToast('⚠️ PIN минимум 4 символа'); return; }
     
       var btn=event.target;
