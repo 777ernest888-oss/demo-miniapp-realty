@@ -156,7 +156,7 @@
         <div class="form-group"><label class="form-label">Новый PIN</label><input type="password" class="form-input" id="newPin" placeholder="Минимум 4 символа"></div>
         <div class="form-group"><label class="form-label">Повторите новый PIN</label><input type="password" class="form-input" id="confirmPin" placeholder="Повторите новый PIN"></div>
         <button class="btn btn-primary" onclick="changePin()">🔒 Сменить PIN-код</button>
-        <p style="text-align:center;font-size:12px;color:var(--text-secondary);margin-top:16px;">После смены PIN текущая сессия будет обновлена автоматически.</p>
+        <p style="text-align:center;font-size:12px;color:var(--text-secondary);margin-top:16px;">После смены PIN вы будете разлогинены и войдёте с новым PIN-кодом.</p>
       </div>
     </div>
 
@@ -944,11 +944,12 @@
       btn.textContent='Сохранение...';
       try {
         await apiCall('change_pin',{oldPin:current,newPin:newP});
-        showToast('✅ PIN изменён');
-        document.getElementById('currentPin').value='';
-        document.getElementById('newPin').value='';
-        document.getElementById('confirmPin').value='';
-        sessionStorage.setItem('adminPin',newP);
+        showToast('✅ PIN изменён. Перезагрузка...');
+        // ИЗМЕНЕНИЕ 4: разлогин и перезагрузка после смены PIN
+        sessionStorage.removeItem('adminAuth');
+        sessionStorage.removeItem('adminPin');
+        sessionStorage.removeItem('tg_initData');
+        setTimeout(function() { location.reload(); }, 1000);
       } catch(e) {
         showToast('❌ '+e.message);
       } finally {
