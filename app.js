@@ -12,14 +12,9 @@ let AGENT_CONFIG = null;
 
 function getImageUrl(sourceUrl) {
     if (!sourceUrl) return '';
-  
-    // Конвертация GitHub blob ссылок в raw
     if (sourceUrl.includes('github.com') && sourceUrl.includes('/blob/')) {
-        return sourceUrl
-            .replace('github.com', 'raw.githubusercontent.com')
-            .replace('/blob/', '/');
+        return sourceUrl.replace('github.com', 'raw.githubusercontent.com').replace('/blob/', '/');
     }
-  
     if (sourceUrl.startsWith('http://') || sourceUrl.startsWith('https://')) return sourceUrl;
     return sourceUrl;
 }
@@ -64,13 +59,11 @@ async function initAgent() {
     var params = new URLSearchParams(window.location.search);
     var agentParam = params.get('agent');
     var hostname = window.location.hostname;
-
     if (!config.client || !config.client.scriptUrl) {
         console.error('[initAgent] ❌ Config не загружен:', config);
         showErrorScreen('Ошибка загрузки конфигурации. Обновите страницу.');
         return false;
     }
-
     try {
         if (agentParam) {
             AGENT_ID = agentParam;
@@ -93,15 +86,12 @@ async function initAgent() {
             showEcosystemPage();
             return false;
         }
-
         if (!AGENT_ID) { showErrorScreen('Агент не определён'); return false; }
-
         var userId = '';
         if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
             userId = window.Telegram.WebApp.initDataUnsafe.user.id;
         }
         console.log('[initAgent] Запрос get_agent_config | agent_id:', AGENT_ID, '| user_id:', userId);
-
         var response = await fetch(config.client.scriptUrl + '?action=get_agent_config&agent_id=' + encodeURIComponent(AGENT_ID) + '&user_id=' + userId);
         if (!response.ok) {
             console.error('[initAgent] ❌ HTTP error:', response.status);
@@ -110,7 +100,6 @@ async function initAgent() {
         }
         var data = await response.json();
         console.log('[initAgent] Ответ сервера:', data);
-
         if (data.success) {
             AGENT_CONFIG = data.config;
             applyBrandConfig(AGENT_CONFIG);
@@ -170,6 +159,7 @@ function showErrorScreen(message) {
         '<p style="color:#95A5A6;font-size:14px;">Обратитесь к администратору</p></div>';
 }
 
+// ИЗМЕНЕНИЕ: поиск агента по agent_id, а не первая строка
 async function loadAgentData() {
     try {
         if (!config.sheets || !config.sheets.agentData) return;
@@ -177,8 +167,20 @@ async function loadAgentData() {
         if (!res.ok) throw new Error('Network error');
         const csv = await res.text();
         const parsed = parseCSV(csv);
-        if (parsed.length > 0) currentAgentData = parsed[0];
-        console.log('[loadAgentData] ✅ Загружено:', currentAgentData);
+        if (AGENT_ID) {
+            const agentRow = parsed.find(function(row) {
+                return String(row.agent_id).trim() === String(AGENT_ID).trim();
+            });
+            if (agentRow) {
+                currentAgentData = agentRow;
+                console.log('[loadAgentData] ✅ Найден агент:', AGENT_ID, currentAgentData.name, currentAgentData.surname);
+            } else {
+                console.warn('[loadAgentData] ⚠️ Агент не найден в CSV:', AGENT_ID);
+            }
+        } else if (parsed.length > 0) {
+            currentAgentData = parsed[0];
+            console.log('[loadAgentData] ✅ Загружено (без agent_id):', currentAgentData);
+        }
     } catch (e) { console.warn('[loadAgentData] ⚠️ Error:', e); }
 }
 
@@ -200,24 +202,14 @@ async function loadPropertiesFromScript() {
     if (!config.client || !config.client.scriptUrl) { console.log('[loadProperties] No scriptUrl'); return []; }
     try {
         var url = config.client.scriptUrl;
-        if (url.includes('?')) {
-            url += '&action=get_listings';
-        } else {
-            url += '?action=get_listings';
-        }
+        if (url.includes('?')) { url += '&action=get_listings'; } else { url += '?action=get_listings'; }
         if (AGENT_ID) url += '&agent_id=' + AGENT_ID;
-      
         console.log('[loadProperties] Fetching:', url);
         const response = await fetch(url);
         if (!response.ok) { console.error('[loadProperties] ❌ HTTP:', response.status); return []; }
         const data = await response.json();
-      
-        // Поддержка обоих форматов: Vercel API и старый Apps Script
         let properties = [];
-      
         if (data.success && Array.isArray(data.data)) {
-            // Формат Vercel API: {success: true, data: [{...}, {...}]}
-            // ИСПРАВЛЕНИЕ: Преобразуем числовые поля из строк в числа
             properties = data.data.map(function(item) {
                 if (item.price_from !== undefined && item.price_from !== '') item.price_from = parseFloat(item.price_from) || 0;
                 if (item.price_to !== undefined && item.price_to !== '') item.price_to = parseFloat(item.price_to) || 0;
@@ -230,7 +222,6 @@ async function loadPropertiesFromScript() {
             });
             console.log('[loadProperties] ✅ Vercel API формат, загружено', properties.length, 'объектов');
         } else if (Array.isArray(data) && data.length > 1) {
-            // Формат Apps Script: [[headers], [row1], [row2], ...]
             const headers = data[0];
             const rows = data.slice(1);
             properties = rows.map(function(row) {
@@ -246,7 +237,6 @@ async function loadPropertiesFromScript() {
             console.warn('[loadProperties] ⚠️ Неизвестный формат данных:', data);
             return [];
         }
-      
         return properties;
     } catch (e) { console.error('[loadProperties] ❌ Exception:', e); return []; }
 }
@@ -305,6 +295,7 @@ function showPage(pageId) {
     document.getElementById('mainContent').classList.add('hidden');
     document.getElementById('page-about').classList.add('hidden');
     document.getElementById('page-contacts').classList.add('hidden');
+    document.getElementById('page-help').classList.add('hidden');
     if (pageId === 'home') { document.getElementById('mainContent').classList.remove('hidden'); hideBack(); }
     else if (pageId === 'contacts') { renderContactsPage(); document.getElementById('page-contacts').classList.remove('hidden'); showBack(); }
     else {
@@ -326,7 +317,7 @@ function showPage(pageId) {
             targetPage.classList.remove('hidden'); showBack();
         } else {
             if (targetPage) {
-                targetPage.querySelector('.page-header h2').textContent = pageId === 'about' ? 'Обо мне' : 'Информация';
+                targetPage.querySelector('.page-header h2').textContent = pageId === 'about' ? 'Обо мне' : (pageId === 'help' ? 'Помощь' : 'Информация');
                 targetPage.querySelector('.page-content').innerHTML = '<p>Информация загружается...</p>';
                 targetPage.classList.remove('hidden'); showBack();
             } else { document.getElementById('mainContent').classList.remove('hidden'); hideBack(); }
@@ -337,7 +328,6 @@ function showPage(pageId) {
 
 function renderContactsPage() {
     const data = currentAgentData;
-    // ИСПРАВЛЕНИЕ: Отображение имени + фамилии
     var fullName = [data.surname, data.name].filter(Boolean).join(' ');
     document.getElementById('agentName').textContent = fullName || 'Имя Фамилия Агента';
     document.getElementById('agentRole').textContent = data.role || 'Эксперт по недвижимости';
@@ -506,7 +496,7 @@ function renderListings(data) {
     if (!container) return;
     container.innerHTML = '';
     if (listings.length === 0) { container.innerHTML = '<div class="empty-state"><div class="empty-icon">🏗️</div><h3>База пуста</h3><p>Объекты ещё не добавлены.</p></div>'; return; }
-    if (!data || data.length === 0) { container.innerHTML = '<div class="empty-state"><div class="empty-icon">🔍</div><h3>Ничего не найдено</h3><p>Попробуйте изменить параметры поиска.</p><button class="btn-reset-filters" onclick="resetFilters()">Сбросить фильтры</button></div>'; return; }
+    if (!data || data.length === 0) { container.innerHTML = '<div class="empty-state"><div class="empty-icon"></div><h3>Ничего не найдено</h3><p>Попробуйте изменить параметры поиска.</p><button class="btn-reset-filters" onclick="resetFilters()">Сбросить фильтры</button></div>'; return; }
     data.forEach(function(item) {
         var priceDisplay = '?';
         if (typeof item.price_from === 'number') priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) + ' млн ₽' : (item.price_from / 1000000).toFixed(1) + ' млн ₽';
@@ -521,8 +511,8 @@ function renderListings(data) {
         card.onclick = function(e) { if (!e.target.closest('.consult-btn-inline')) openDetails(item.id); };
         card.innerHTML = '<img src="' + imageUrl + '" alt="' + escapeHtml(item.name) + '" class="listing-image" onerror="onImgError(event)">' +
             '<div class="listing-info"><h3>' + (escapeHtml(item.name) || 'Без названия') + '</h3>' +
-            '<div class="listing-meta"><span>📍 ' + (escapeHtml(item.district) || '') + '</span><span>🚇 ' + (escapeHtml(item.metro) || '') + '</span>' +
-            (item.rooms ? '<span>🚪 ' + escapeHtml(item.rooms) + '</span>' : '') + (area ? '<span>📐 ' + escapeHtml(area) + '</span>' : '') + '</div>' +
+            '<div class="listing-meta"><span> ' + (escapeHtml(item.district) || '') + '</span><span>🚇 ' + (escapeHtml(item.metro) || '') + '</span>' +
+            (item.rooms ? '<span> ' + escapeHtml(item.rooms) + '</span>' : '') + (area ? '<span>📐 ' + escapeHtml(area) + '</span>' : '') + '</div>' +
             '<div class="listing-price">от ' + priceDisplay + (priceTo ? ' до ' + priceTo + ' млн ₽' : '') + (ppsqm ? '<br><span class="price-per-sqm">~' + ppsqm + ' ₽/м²</span>' : '') + '</div>' +
             '<div class="listing-status status-' + statusKey + '">' + statusText + '</div>' +
             '<button class="tg-btn consult-btn-inline" onclick="openConsultForm(\'' + item.id + '\', event)">📞 Получить консультацию</button></div>';
@@ -563,7 +553,7 @@ function openDetails(id) {
     if (typeof item.price_from === 'number') priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
     var ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
     document.getElementById('modalPrice').innerHTML = 'от <b>' + priceDisplay + '</b> млн ₽' + (ppsqm ? '<span class="price-per-sqm">~' + ppsqm + ' ₽/м²</span>' : '');
-    document.getElementById('modalMeta').innerHTML = '<div class="meta-row"><span>📍 ' + (escapeHtml(item.address) || '') + '</span></div><div class="meta-row"><span>🚇 м. ' + (escapeHtml(item.metro) || '') + '</span></div><div class="meta-row"><span>🏗️ Класс: ' + (escapeHtml(item.class) || '') + '</span></div><div class="meta-row"><span>🎨 Отделка: ' + (escapeHtml(item.finishing) || '') + '</span></div><div class="meta-row"><span>📅 Срок сдачи: ' + (escapeHtml(item.completion_soonest) || '') + (item.completion_soonest && item.completion_all ? ' - ' : '') + (escapeHtml(item.completion_all) || '') + '</span></div>';
+    document.getElementById('modalMeta').innerHTML = '<div class="meta-row"><span> ' + (escapeHtml(item.address) || '') + '</span></div><div class="meta-row"><span>🚇 м. ' + (escapeHtml(item.metro) || '') + '</span></div><div class="meta-row"><span>🏗️ Класс: ' + (escapeHtml(item.class) || '') + '</span></div><div class="meta-row"><span>🎨 Отделка: ' + (escapeHtml(item.finishing) || '') + '</span></div><div class="meta-row"><span>📅 Срок сдачи: ' + (escapeHtml(item.completion_soonest) || '') + (item.completion_soonest && item.completion_all ? ' - ' : '') + (escapeHtml(item.completion_all) || '') + '</span></div>';
     document.getElementById('modalDescription').textContent = item.description || 'Описание отсутствует';
     document.getElementById('modalFeatures').innerHTML = item.features ? '<ul>' + item.features.split(',').map(function(f) { return '<li>' + escapeHtml(f.trim()) + '</li>'; }).join('') + '</ul>' : '<p style="color:var(--text-secondary);">Информация уточняется</p>';
     var gc = document.getElementById('modalGallery'); gc.innerHTML = '';
@@ -652,15 +642,12 @@ function submitConsultForm(event) {
         if (phone.replace(/\D/g, '').length < 10) { tg.showAlert('❌ Введите корректный телефон'); return; }
         if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) { tg.showAlert('❌ Telegram только латиницей'); return; }
         if (!AGENT_ID) { tg.showAlert('❌ Ошибка: агент не определён'); return; }
-     
         console.log('[submitConsultForm] ✅ Данные собраны');
         console.log('[submitConsultForm] AGENT_ID:', AGENT_ID);
-     
         var sb = event.target.querySelector('button[type="submit"]');
         var originalText = sb.textContent;
         sb.textContent = 'Отправка...';
         sb.disabled = true;
-     
         var payload = {
             action: 'save_lead',
             agentId: AGENT_ID,
@@ -671,7 +658,6 @@ function submitConsultForm(event) {
                 clientTelegram: telegram || 'Не указан'
             }
         };
-     
         fetch(config.client.scriptUrl + '?action=save_lead', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -682,7 +668,6 @@ function submitConsultForm(event) {
             console.log('[submitConsultForm] Ответ сервера:', data);
             sb.textContent = originalText;
             sb.disabled = false;
-          
             if (data.success) {
                 document.getElementById('consultForm').reset();
                 closeConsultModal();
@@ -697,18 +682,10 @@ function submitConsultForm(event) {
             sb.textContent = originalText;
             sb.disabled = false;
         });
-
     } catch (e) {
         console.error('[submitConsultForm] ❌ Exception:', e);
         tg.showAlert('⚠️ Произошла ошибка.');
     }
-}
-
-function startApp() {
-    document.getElementById('welcomeScreen').classList.add('hidden');
-    document.getElementById('mainContent').classList.remove('hidden');
-    window.scrollTo(0, 0);
-    hideBack();
 }
 
 function escapeHtml(text) { if (!text) return ''; var div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
