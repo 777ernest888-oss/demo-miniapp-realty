@@ -12,14 +12,14 @@ let AGENT_CONFIG = null;
 
 function getImageUrl(sourceUrl) {
     if (!sourceUrl) return '';
-   
+  
     // Конвертация GitHub blob ссылок в raw
     if (sourceUrl.includes('github.com') && sourceUrl.includes('/blob/')) {
         return sourceUrl
             .replace('github.com', 'raw.githubusercontent.com')
             .replace('/blob/', '/');
     }
-   
+  
     if (sourceUrl.startsWith('http://') || sourceUrl.startsWith('https://')) return sourceUrl;
     return sourceUrl;
 }
@@ -206,30 +206,30 @@ async function loadPropertiesFromScript() {
             url += '?action=get_listings';
         }
         if (AGENT_ID) url += '&agent_id=' + AGENT_ID;
-       
+      
         console.log('[loadProperties] Fetching:', url);
         const response = await fetch(url);
         if (!response.ok) { console.error('[loadProperties] ❌ HTTP:', response.status); return []; }
         const data = await response.json();
-       
+      
         // Поддержка обоих форматов: Vercel API и старый Apps Script
         let properties = [];
-       
+      
         if (data.success && Array.isArray(data.data)) {
-    // Формат Vercel API: {success: true, data: [{...}, {...}]}
-    properties = data.data.map(function(item) {
-        // Преобразуем числовые поля из строк в числа
-        if (item.price_from !== undefined && item.price_from !== '') item.price_from = parseFloat(item.price_from) || 0;
-        if (item.price_to !== undefined && item.price_to !== '') item.price_to = parseFloat(item.price_to) || 0;
-        if (item.price_per_sqm !== undefined && item.price_per_sqm !== '') item.price_per_sqm = parseFloat(item.price_per_sqm) || 0;
-        if (item.area_min !== undefined && item.area_min !== '') item.area_min = parseFloat(item.area_min) || 0;
-        if (item.area_max !== undefined && item.area_max !== '') item.area_max = parseFloat(item.area_max) || 0;
-        if (item.lat !== undefined && item.lat !== '') item.lat = parseFloat(item.lat) || 0;
-        if (item.lng !== undefined && item.lng !== '') item.lng = parseFloat(item.lng) || 0;
-        return item;
-    });
-    console.log('[loadProperties] ✅ Vercel API формат, загружено', properties.length, 'объектов');
-} else if (Array.isArray(data) && data.length > 1) {
+            // Формат Vercel API: {success: true, data: [{...}, {...}]}
+            // ИСПРАВЛЕНИЕ: Преобразуем числовые поля из строк в числа
+            properties = data.data.map(function(item) {
+                if (item.price_from !== undefined && item.price_from !== '') item.price_from = parseFloat(item.price_from) || 0;
+                if (item.price_to !== undefined && item.price_to !== '') item.price_to = parseFloat(item.price_to) || 0;
+                if (item.price_per_sqm !== undefined && item.price_per_sqm !== '') item.price_per_sqm = parseFloat(item.price_per_sqm) || 0;
+                if (item.area_min !== undefined && item.area_min !== '') item.area_min = parseFloat(item.area_min) || 0;
+                if (item.area_max !== undefined && item.area_max !== '') item.area_max = parseFloat(item.area_max) || 0;
+                if (item.lat !== undefined && item.lat !== '') item.lat = parseFloat(item.lat) || 0;
+                if (item.lng !== undefined && item.lng !== '') item.lng = parseFloat(item.lng) || 0;
+                return item;
+            });
+            console.log('[loadProperties] ✅ Vercel API формат, загружено', properties.length, 'объектов');
+        } else if (Array.isArray(data) && data.length > 1) {
             // Формат Apps Script: [[headers], [row1], [row2], ...]
             const headers = data[0];
             const rows = data.slice(1);
@@ -246,7 +246,7 @@ async function loadPropertiesFromScript() {
             console.warn('[loadProperties] ⚠️ Неизвестный формат данных:', data);
             return [];
         }
-       
+      
         return properties;
     } catch (e) { console.error('[loadProperties] ❌ Exception:', e); return []; }
 }
@@ -337,12 +337,14 @@ function showPage(pageId) {
 
 function renderContactsPage() {
     const data = currentAgentData;
-    document.getElementById('agentName').textContent = data.name || 'Имя Агента';
+    // ИСПРАВЛЕНИЕ: Отображение имени + фамилии
+    var fullName = [data.surname, data.name].filter(Boolean).join(' ');
+    document.getElementById('agentName').textContent = fullName || 'Имя Фамилия Агента';
     document.getElementById('agentRole').textContent = data.role || 'Эксперт по недвижимости';
     const avatarEl = document.querySelector('.agent-avatar'); avatarEl.innerHTML = '';
     const agentPhoto = AGENT_CONFIG && AGENT_CONFIG.agentPhotoUrl ? AGENT_CONFIG.agentPhotoUrl : (config.branding ? config.branding.agentPhoto : null);
     if (agentPhoto && agentPhoto.trim() && agentPhoto !== 'logo.png') {
-        const img = document.createElement('img'); img.src = getImageUrl(agentPhoto); img.alt = data.name || 'Агент'; img.onerror = onImgError; avatarEl.appendChild(img);
+        const img = document.createElement('img'); img.src = getImageUrl(agentPhoto); img.alt = fullName || 'Агент'; img.onerror = onImgError; avatarEl.appendChild(img);
     } else if (config.branding && config.branding.logo && config.branding.logo !== 'logo.png') {
         const img = document.createElement('img'); img.src = getImageUrl(config.branding.logo); img.alt = 'Логотип'; img.onerror = onImgError; avatarEl.appendChild(img);
     }
@@ -650,15 +652,15 @@ function submitConsultForm(event) {
         if (phone.replace(/\D/g, '').length < 10) { tg.showAlert('❌ Введите корректный телефон'); return; }
         if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) { tg.showAlert('❌ Telegram только латиницей'); return; }
         if (!AGENT_ID) { tg.showAlert('❌ Ошибка: агент не определён'); return; }
-      
+     
         console.log('[submitConsultForm] ✅ Данные собраны');
         console.log('[submitConsultForm] AGENT_ID:', AGENT_ID);
-      
+     
         var sb = event.target.querySelector('button[type="submit"]');
         var originalText = sb.textContent;
         sb.textContent = 'Отправка...';
         sb.disabled = true;
-      
+     
         var payload = {
             action: 'save_lead',
             agentId: AGENT_ID,
@@ -669,7 +671,7 @@ function submitConsultForm(event) {
                 clientTelegram: telegram || 'Не указан'
             }
         };
-      
+     
         fetch(config.client.scriptUrl + '?action=save_lead', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -680,7 +682,7 @@ function submitConsultForm(event) {
             console.log('[submitConsultForm] Ответ сервера:', data);
             sb.textContent = originalText;
             sb.disabled = false;
-           
+          
             if (data.success) {
                 document.getElementById('consultForm').reset();
                 closeConsultModal();
