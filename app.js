@@ -669,10 +669,22 @@ function submitConsultForm(event) {
             sb.textContent = originalText;
             sb.disabled = false;
             if (data.success) {
-                document.getElementById('consultForm').reset();
-                closeConsultModal();
-                setTimeout(function() { tg.showAlert('✅ Заявка отправлена!'); }, 100);
-            } else {
+    document.getElementById('consultForm').reset();
+    closeConsultModal();
+    // Используем совместимый метод вместо tg.showAlert
+    if (tg && tg.showAlert) {
+        setTimeout(function() {
+            try {
+                tg.showAlert('✅ Заявка отправлена!');
+            } catch (e) {
+                // Fallback для старых версий
+                alert('✅ Заявка отправлена!');
+            }
+        }, 100);
+    } else {
+        alert('✅ Заявка отправлена!');
+    }
+} else {
                 tg.showAlert('❌ Ошибка: ' + (data.error || 'Неизвестная ошибка'));
             }
         })
