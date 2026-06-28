@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Test</title></head>
+<body>
+<h1>Диагностика</h1>
+<div id="result">Загрузка...</div>
+<script>
+fetch('/client-config.json')
+  .then(r => r.json())
+  .then(c => {
+    document.getElementById('result').innerText =
+      'Config: OK\n' +
+      'API: ' + c.client.apiUrl + '\n' +
+      'Agent param: ' + new URLSearchParams(location.search).get('agent');
+   
+    return fetch(c.client.apiUrl + '?action=get_listings&agent_id=' +
+      new URLSearchParams(location.search).get('agent'));
+  })
+  .then(r => r.text())
+  .then(t => {
+    document.getElementById('result').innerText += '\n\nAPI Response:\n' + t.substring(0, 500);
+  })
+  .catch(e => {
+    document.getElementById('result').innerText = 'ERROR: ' + e.message;
+  });
+</script>
+</body>
+</html>
