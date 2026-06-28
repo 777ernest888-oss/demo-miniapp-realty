@@ -1,30 +1,31 @@
 {
-  "client": {
-    "projectId": "demo-miniapp-realty",
-    "scriptUrl": "https://new.prostors.ru/api",
-    "ownerId": "2038206387"
-  },
-  "supabase": {
-    "url": "https://rqiutnpawsmqvmzewamc.supabase.co",
-    "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJxaXV0bnBhd3NtcXZtemV3YW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3MDU4NTUsImV4cCI6MjA5NjI4MTg1NX0.MXZ3wSU8CU4C39C1OAZpY0klESrCMVWYiD8R-9-_U3A"
-  },
-  "sheets": {
-    "agentData": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTAJn5ah-8UjagF2CloZWriSpKLyMkD5RxLzYOHC7PCtcCe33iTs5NvqM2dLs8QLCuMIrkIOytK0PWy/pub?gid=1784165651&single=true&output=csv",
-    "pages": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTAJn5ah-8UjagF2CloZWriSpKLyMkD5RxLzYOHC7PCtcCe33iTs5NvqM2dLs8QLCuMIrkIOytK0PWy/pub?gid=374222153&single=true&output=csv"
-  },
-  "branding": {
-    "primaryColor": "#3D5266",
-    "accentColor": "#3498DB",
-    "logo": "https://storage.yandexcloud.net/my-branding/logo.png",
-    "agentPhoto": "https://storage.yandexcloud.net/my-branding/agent-photo.jpg",
-    "welcomeTitle": "КАТАЛОГ НОВОСТРОЕК",
-    "name": "Демонстрационная версия",
-    "tagline": "Подберём квартиру под ваш бюджет",
-    "buttonText": "НАЧАТЬ ПОДБОР"
-  },
-  "features": {
-    "showWelcomeScreen": true,
-    "enableMap": true,
-    "enableFilters": true
-  }
+  "client": {
+    "projectId": "demo-miniapp-realty",
+    "apiUrl": "/api",
+    "scriptUrl": "https://new.prostors.ru/api",
+    "ownerId": "2038206387"
+  },
+  "supabase": {
+    "url": "https://rqiutnpawsmqvmzewamc.supabase.co",
+    "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJxaXV0bnBhd3NtcXZtemV3YW1jIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA3MDU4NTUsImV4cCI6MjA5NjI4MTg1NX0.MXZ3wSU8CU4C39C1OAZpY0klESrCMVWYiD8R-9-_U3A"
+  },
+  "sheets": {
+    "agentData": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTAJn5ah-8UjagF2CloZWriSpKLyMkD5RxLzYOHC7PCtcCe33iTs5NvqM2dLs8QLCuMIrkIOytK0PWy/pub?gid=1784165651&single=true&output=csv",
+    "pages": "https://docs.google.com/spreadsheets/d/e/2PACX-1vTAJn5ah-8UjagF2CloZWriSpKLyMkD5RxLzYOHC7PCtcCe33iTs5NvqM2dLs8QLCuMIrkIOytK0PWy/pub?gid=374222153&single=true&output=csv"
+  },
+  "branding": {
+    "primaryColor": "#3D5266",
+    "accentColor": "#3498DB",
+    "logo": "https://storage.yandexcloud.net/my-branding/logo.png",
+    "agentPhoto": "https://storage.yandexcloud.net/my-branding/agent-photo.jpg",
+    "welcomeTitle": "КАТАЛОГ НОВОСТРОЕК",
+    "name": "Демонстрационная версия",
+    "tagline": "Подберём квартиру под ваш бюджет",
+    "buttonText": "НАЧАТЬ ПОДБОР"
+  },
+  "features": {
+    "showWelcomeScreen": true,
+    "enableMap": true,
+    "enableFilters": true
+  }
 }
