@@ -457,7 +457,7 @@ if (hasCompany) {
 } else {
   document.getElementById('agencyBlock').style.display = 'none';
 }
-
+}
 // ==================== МЕНЮ ====================
 function openMenu() { document.getElementById('menuOverlay').classList.remove('hidden'); document.getElementById('sideMenu').classList.remove('hidden'); }
 function closeMenu() { document.getElementById('menuOverlay').classList.add('hidden'); document.getElementById('sideMenu').classList.add('hidden'); }
