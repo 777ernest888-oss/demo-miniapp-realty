@@ -1,7 +1,7 @@
 {
   "client": {
     "projectId": "demo-miniapp-realty",
-    "scriptUrl": "https://demo-miniapp-realty.vercel.app/api",
+    "scriptUrl": "https://new.prostors.ru/api",
     "ownerId": "2038206387"
   },
   "supabase": {
