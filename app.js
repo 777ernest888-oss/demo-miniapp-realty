@@ -957,4 +957,3 @@ if (document.readyState === 'loading') {
 }
 }
 }
-}
