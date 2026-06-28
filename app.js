@@ -448,11 +448,14 @@ function renderContactsPage() {
     }
     // Если фото нет — оставляем пустой div (без заглушки)
 
-    // Агентство
-    const hasAgency = data.agencyName || data.agencyAddress;
-    document.getElementById('agencyBlock').style.display = hasAgency ? 'block' : 'none';
-    document.getElementById('agencyName').textContent = data.agencyName || '';
-    document.getElementById('agencyAddress').textContent = data.agencyAddress ? '📍 ' + data.agencyAddress : '';
+    // Компания (показываем только если заполнено)
+const hasCompany = data.agencyName || data.agencyAddress;
+if (hasCompany) {
+  document.getElementById('agencyBlock').style.display = 'block';
+  document.getElementById('agencyName').textContent = data.agencyName || '';
+  document.getElementById('agencyAddress').textContent = data.agencyAddress ? '📍 ' + data.agencyAddress : '';
+} else {
+  document.getElementById('agencyBlock').style.display = 'none';
 }
 
 // ==================== МЕНЮ ====================
