@@ -94,11 +94,11 @@ async function initAgent() {
                 return false;
             }
         }
-        else {
-            console.log('[initAgent] Главная страница экосистемы');
-            showEcosystemPage();
-            return false;
-        }
+        } else {
+  // Fallback: показываем демо-агента по умолчанию
+  AGENT_ID = '23062026-001';
+  console.log('[initAgent] ℹ️ Параметр agent не указан, используем демо-агента');
+}
 
         if (!AGENT_ID) { showErrorScreen('Агент не определён'); return false; }
 
