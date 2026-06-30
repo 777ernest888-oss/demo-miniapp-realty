@@ -639,7 +639,7 @@ module.exports = async (req, res) => {
       const leadId = 'lead-' + Date.now();
     
       const agentInfo = await getAgentData(sheets, agentId);
-      const chatId = agentInfo.telegramUserId || '';
+      const chatId = agentInfo.chatId || '';
     
       await sheets.spreadsheets.values.append({
         spreadsheetId: SPREADSHEET_ID,
