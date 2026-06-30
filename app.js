@@ -94,11 +94,11 @@ async function initAgent() {
                 return false;
             }
         }
-        } else {
-  // Fallback: показываем демо-агента по умолчанию
-  AGENT_ID = '23062026-001';
-  console.log('[initAgent] ℹ️ Параметр agent не указан, используем демо-агента');
-}
+        else {
+            // Fallback: показываем демо-агента по умолчанию
+            AGENT_ID = '23062026-001';
+            console.log('[initAgent] ℹ️ Параметр agent не указан, используем демо-агента');
+        }
 
         if (!AGENT_ID) { showErrorScreen('Агент не определён'); return false; }
 
@@ -449,15 +449,16 @@ function renderContactsPage() {
     // Если фото нет — оставляем пустой div (без заглушки)
 
     // Компания (показываем только если заполнено)
-const hasCompany = data.agencyName || data.agencyAddress;
-if (hasCompany) {
-  document.getElementById('agencyBlock').style.display = 'block';
-  document.getElementById('agencyName').textContent = data.agencyName || '';
-  document.getElementById('agencyAddress').textContent = data.agencyAddress ? '📍 ' + data.agencyAddress : '';
-} else {
-  document.getElementById('agencyBlock').style.display = 'none';
+    const hasCompany = data.agencyName || data.agencyAddress;
+    if (hasCompany) {
+        document.getElementById('agencyBlock').style.display = 'block';
+        document.getElementById('agencyName').textContent = data.agencyName || '';
+        document.getElementById('agencyAddress').textContent = data.agencyAddress ? '📍 ' + data.agencyAddress : '';
+    } else {
+        document.getElementById('agencyBlock').style.display = 'none';
+    }
 }
-}
+
 // ==================== МЕНЮ ====================
 function openMenu() { document.getElementById('menuOverlay').classList.remove('hidden'); document.getElementById('sideMenu').classList.remove('hidden'); }
 function closeMenu() { document.getElementById('menuOverlay').classList.add('hidden'); document.getElementById('sideMenu').classList.add('hidden'); }
