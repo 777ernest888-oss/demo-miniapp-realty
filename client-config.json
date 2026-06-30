@@ -1,7 +1,7 @@
 {
   "client": {
     "projectId": "demo-miniapp-realty",
-    "scriptUrl": "https://new.prostors.ru/api",
+    "scriptUrl": "https://functions.yandexcloud.net/d4e04038vnm9h79hq3ij",
     "ownerId": "2038206387"
   },
   "supabase": {
