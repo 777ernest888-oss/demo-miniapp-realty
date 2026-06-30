@@ -482,48 +482,68 @@
     }
     async function updateLeadStatus(id, status) { try { await apiCall('update_lead_status',{id:id,status:status}); showToast('✅ Статус обновлён'); loadLeads(); } catch(e) { showToast('❌ Ошибка'); } }
     async function loadProfile() {
-      document.getElementById('profileLoading').style.display='block';
-      document.getElementById('profileForm').style.display='none';
-      try {
-        var result = await apiCall('get_agent_profile',{});
-        currentAgentData = result.data || {};
-        document.getElementById('profileLoading').style.display='none';
-        document.getElementById('profileForm').style.display='block';
-        document.getElementById('profileName').value=currentAgentData.name||'';
-        document.getElementById('profileSurname').value=currentAgentData.surname||'';
-        document.getElementById('profileRole').value=currentAgentData.role||'';
-        document.getElementById('profileAgencyName').value=currentAgentData.agencyName||'';
-        document.getElementById('profileAgencyAddress').value=currentAgentData.agencyAddress||'';
-        document.getElementById('profileTelegram').value=currentAgentData.telegramUsername||'';
-        document.getElementById('profilePhone').value=currentAgentData.phone||'';
-        document.getElementById('profilePhotoUrl').value=currentAgentData.photoUrl||'';
-        document.getElementById('welcomeBgUrl').value=currentAgentData.welcomeBgUrl||'';
-        document.getElementById('profilePrimaryColor').value=currentAgentData.primaryColor||'#3D5266';
-        document.getElementById('profileAccentColor').value=currentAgentData.accentColor||'#3498DB';
-        document.getElementById('profileWelcomeTitle').value=currentAgentData.welcomeTitle||'КАТАЛОГ НОВОСТРОЕК';
-        document.getElementById('profileWelcomeTagline').value=currentAgentData.welcomeTagline||'Подберём квартиру под ваш бюджет';
-        document.getElementById('profileButtonText').value=currentAgentData.buttonText||'НАЧАТЬ ПОДБОР';
-        // Установка темы
-        var theme = currentAgentData.colorTheme || 'classic';
-        document.querySelectorAll('.color-theme-option').forEach(function(opt) { opt.classList.remove('selected'); });
-        var selectedOpt = document.querySelector('.color-theme-option[data-theme="' + theme + '"]');
-        if (selectedOpt) selectedOpt.classList.add('selected');
-        document.getElementById('customColorsBlock').style.display = theme === 'custom' ? 'block' : 'none';
-        // Загрузка "Обо мне"
-        document.getElementById('profileAboutTitle').value = currentAgentData.aboutTitle || 'Обо мне';
-        document.getElementById('profileAboutContent').value = currentAgentData.aboutContent || '';
-        // Превью фото
-        if (currentAgentData.photoUrl) renderPhotoPreview('profile',[currentAgentData.photoUrl]);
-        if (currentAgentData.welcomeBgUrl) renderPhotoPreview('welcomeBg',[currentAgentData.welcomeBgUrl]);
-      } catch(e) { document.getElementById('profileLoading').style.display='none'; showToast('❌ Ошибка загрузки профиля'); }
-    }
+      document.getElementById('profileLoading').style.display='block';
+      document.getElementById('profileForm').style.display='none';
+      try {
+        // Загружаем профиль агента
+        var profileResult = await apiCall('get_agent_profile',{});
+        currentAgentData = profileResult.data || {};
+
+        // Загружаем страницу "Обо мне" из листа Pages
+        var pagesResult = await apiCall('get_pages',{});
+        var pagesList = pagesResult.data || [];
+        var aboutPage = pagesList.find(function(p){ return p.page === 'about'; });
+
+        document.getElementById('profileLoading').style.display='none';
+        document.getElementById('profileForm').style.display='block';
+
+        // Заполняем поля профиля
+        document.getElementById('profileName').value=currentAgentData.name||'';
+        document.getElementById('profileSurname').value=currentAgentData.surname||'';
+        document.getElementById('profileRole').value=currentAgentData.role||'';
+        document.getElementById('profileAgencyName').value=currentAgentData.agencyName||'';
+        document.getElementById('profileAgencyAddress').value=currentAgentData.agencyAddress||'';
+        document.getElementById('profileTelegram').value=currentAgentData.telegramUsername||'';
+        document.getElementById('profilePhone').value=currentAgentData.phone||'';
+        document.getElementById('profilePhotoUrl').value=currentAgentData.photoUrl||'';
+        document.getElementById('welcomeBgUrl').value=currentAgentData.welcomeBgUrl||'';
+        document.getElementById('profilePrimaryColor').value=currentAgentData.primaryColor||'#3D5266';
+        document.getElementById('profileAccentColor').value=currentAgentData.accentColor||'#3498DB';
+        document.getElementById('profileWelcomeTitle').value=currentAgentData.welcomeTitle||'КАТАЛОГ НОВОСТРОЕК';
+        document.getElementById('profileWelcomeTagline').value=currentAgentData.welcomeTagline||'Подберём квартиру под ваш бюджет';
+        document.getElementById('profileButtonText').value=currentAgentData.buttonText||'НАЧАТЬ ПОДБОР';
+
+        // Установка темы
+        var theme = currentAgentData.colorTheme || 'classic';
+        document.querySelectorAll('.color-theme-option').forEach(function(opt) { opt.classList.remove('selected'); });
+        var selectedOpt = document.querySelector('.color-theme-option[data-theme="' + theme + '"]');
+        if (selectedOpt) selectedOpt.classList.add('selected');
+        document.getElementById('customColorsBlock').style.display = theme === 'custom' ? 'block' : 'none';
+
+        // Заполняем поля "Обо мне" из листа Pages
+        document.getElementById('profileAboutTitle').value = aboutPage ? (aboutPage.title || 'Обо мне') : 'Обо мне';
+        document.getElementById('profileAboutContent').value = aboutPage ? (aboutPage.content || '') : '';
+
+        // Превью фото
+        if (currentAgentData.photoUrl) renderPhotoPreview('profile',[currentAgentData.photoUrl]);
+        if (currentAgentData.welcomeBgUrl) renderPhotoPreview('welcomeBg',[currentAgentData.welcomeBgUrl]);
+      } catch(e) {
+        document.getElementById('profileLoading').style.display='none';
+        showToast('❌ Ошибка загрузки профиля');
+      }
+    }
     async function saveProfile(event) {
       event.preventDefault();
-      var btn=event.target.querySelector('button[type="submit"]'); var ot=btn.textContent; btn.disabled=true; btn.textContent='Сохранение...';
+      var btn=event.target.querySelector('button[type="submit"]');
+      var ot=btn.textContent;
+      btn.disabled=true;
+      btn.textContent='Сохранение...';
       try {
+        // Сохраняем профиль агента
         var theme = document.querySelector('.color-theme-option.selected').dataset.theme;
         var primary = theme === 'custom' ? document.getElementById('profilePrimaryColor').value : '';
         var accent = theme === 'custom' ? document.getElementById('profileAccentColor').value : '';
+
         await apiCall('update_agent_profile',{
           name:document.getElementById('profileName').value.trim(),
           surname:document.getElementById('profileSurname').value.trim(),
@@ -534,16 +554,28 @@
           phone:document.getElementById('profilePhone').value.trim(),
           photoUrl:document.getElementById('profilePhotoUrl').value.trim(),
           welcomeBgUrl:document.getElementById('welcomeBgUrl').value.trim(),
-          colorTheme: theme, primaryColor: primary, accentColor: accent,
+          colorTheme: theme,
+          primaryColor: primary,
+          accentColor: accent,
           welcomeTitle:document.getElementById('profileWelcomeTitle').value.trim(),
           welcomeTagline:document.getElementById('profileWelcomeTagline').value.trim(),
-          buttonText:document.getElementById('profileButtonText').value.trim(),
-          aboutTitle: document.getElementById('profileAboutTitle').value.trim(),
-          aboutContent: document.getElementById('profileAboutContent').value.trim()
+          buttonText:document.getElementById('profileButtonText').value.trim()
         });
-        showToast('✅ Профиль сохранён');
-      } catch(e) { showToast('❌ Ошибка'); }
-      finally { btn.disabled=false; btn.textContent=ot; }
+
+        // Сохраняем страницу "Обо мне" в лист Pages
+        await apiCall('update_page',{
+          page:'about',
+          title:document.getElementById('profileAboutTitle').value.trim(),
+          content:document.getElementById('profileAboutContent').value.trim()
+        });
+
+        showToast('✅ Профиль и страница "Обо мне" сохранены');
+      } catch(e) {
+        showToast('❌ Ошибка: ' + e.message);
+      } finally {
+        btn.disabled=false;
+        btn.textContent=ot;
+      }
     }
     async function uploadProfilePhoto(input) {
       if (!input.files || input.files.length === 0) return;
