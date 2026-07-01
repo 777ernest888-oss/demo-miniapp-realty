@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Регистрация агента</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        :root {
+            --primary: #3D5266;
+            --accent: #3498DB;
+            --bg: #f5f7fa;
+            --card-bg: #ffffff;
+            --text: #2c3e50;
+            --text-secondary: #7f8c8d;
+            --error: #e74c3c;
+            --success: #27ae60;
+            --border-radius: 12px;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+       
+        body { background-color: var(--bg); color: var(--text); padding: 16px; min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+        .container { width: 100%; max-width: 400px; background: var(--card-bg); border-radius: var(--border-radius); padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+
+        h1 { font-size: 20px; text-align: center; margin-bottom: 8px; color: var(--primary); }
+        .subtitle { font-size: 14px; text-align: center; color: var(--text-secondary); margin-bottom: 24px; }
+
+        .form-group { margin-bottom: 16px; }
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--text); }
+        input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; transition: border-color 0.2s; outline: none; }
+        input:focus { border-color: var(--accent); }
+        input.error { border-color: var(--error); }
+        .error-msg { font-size: 12px; color: var(--error); margin-top: 4px; display: none; }
+
+        /* Tariff Switcher */
+        .tariff-switcher { display: flex; gap: 8px; margin-bottom: 16px; }
+        .tariff-option { flex: 1; position: relative; }
+        .tariff-option input { position: absolute; opacity: 0; cursor: pointer; }
+        .tariff-label { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 12px 8px; border: 2px solid #ddd; border-radius: 8px; cursor: pointer; transition: all 0.2s; text-align: center; }
+        .tariff-name { font-size: 13px; font-weight: 600; margin-bottom: 4px; }
+        .tariff-price { font-size: 12px; color: var(--text-secondary); }
+        .tariff-option input:checked + .tariff-label { border-color: var(--accent); background-color: rgba(52, 152, 219, 0.05); }
+        .tariff-option input:checked + .tariff-label .tariff-name { color: var(--accent); }
+
+        button { width: 100%; padding: 14px; background-color: var(--accent); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer; transition: background-color 0.2s; margin-top: 8px; }
+        button:hover { background-color: #2980b9; }
+        button:disabled { background-color: #bdc3c7; cursor: not-allowed; }
+
+        /* Success Screen */
+        .success-screen { display: none; text-align: center; padding: 20px 0; }
+        .success-icon { font-size: 48px; margin-bottom: 16px; }
+        .success-title { font-size: 20px; font-weight: bold; color: var(--primary); margin-bottom: 8px; }
+        .success-text { font-size: 14px; color: var(--text-secondary); line-height: 1.5; }
+
+        .loader { display: none; width: 24px; height: 24px; border: 3px solid rgba(255,255,255,0.3); border-radius: 50%; border-top-color: white; animation: spin 1s ease-in-out infinite; margin: 0 auto; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- Registration Form -->
+    <div id="regForm">
+        <h1>Регистрация агента</h1>
+        <p class="subtitle">Первые 7 дней — бесплатно</p>
+
+        <form id="agentRegForm" novalidate>
+            <div class="form-group">
+                <label for="name">Имя и Фамилия *</label>
+                <input type="text" id="name" placeholder="Иван Иванов" required>
+                <div class="error-msg" id="nameError">Введите имя и фамилию</div>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email *</label>
+                <input type="email" id="email" placeholder="ivan@example.com" required>
+                <div class="error-msg" id="emailError">Введите корректный email</div>
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Телефон *</label>
+                <input type="tel" id="phone" placeholder="+7 (999) 123-45-67" required>
+                <div class="error-msg" id="phoneError">Введите корректный номер телефона</div>
+            </div>
+
+            <label style="margin-bottom: 8px;">Тариф после пробного периода *</label>
+            <div class="tariff-switcher">
+                <div class="tariff-option">
+                    <input type="radio" name="tariff" id="tariffMonth" value="monthly" checked>
+                    <label for="tariffMonth" class="tariff-label">
+                        <span class="tariff-name">1 месяц</span>
+                        <span class="tariff-price">1 990 ₽</span>
+                    </label>
+                </div>
+                <div class="tariff-option">
+                    <input type="radio" name="tariff" id="tariffYear" value="yearly">
+                    <label for="tariffYear" class="tariff-label">
+                        <span class="tariff-name">1 год</span>
+                        <span class="tariff-price">19 900 ₽</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="pin">PIN-код (4 цифры) *</label>
+                <input type="password" id="pin" placeholder="••••" maxlength="4" inputmode="numeric" pattern="\d{4}" required>
+                <div class="error-msg" id="pinError">PIN должен содержать 4 цифры</div>
+            </div>
+
+            <div class="form-group">
+                <label for="pinConfirm">Подтвердите PIN *</label>
+                <input type="password" id="pinConfirm" placeholder="••••" maxlength="4" inputmode="numeric" pattern="\d{4}" required>
+                <div class="error-msg" id="pinConfirmError">PIN-коды не совпадают</div>
+            </div>
+
+            <button type="submit" id="submitBtn">
+                <span id="btnText">Зарегистрироваться</span>
+                <div class="loader" id="btnLoader"></div>
+            </button>
+        </form>
+    </div>
+
+    <!-- Success Screen -->
+    <div id="successScreen" class="success-screen">
+        <div class="success-icon">✅</div>
+        <div class="success-title">Заявка принята!</div>
+        <p class="success-text">
+            Ваша регистрация отправлена на модерацию.<br><br>
+            Мы проверим данные и уведомим вас в Telegram, когда аккаунт будет активирован.
+        </p>
+    </div>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    // Phone mask
+    const phoneInput = document.getElementById('phone');
+    phoneInput.addEventListener('input', function(e) {
+        let x = e.target.value.replace(/\D/g, '').match(/(\d{0,1})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
+        if (!x[2]) { e.target.value = x[1] ? '+7' : ''; return; }
+        e.target.value = !x[2] ? x[1] : '+7 (' + x[2] + (x[3] ? ') ' + x[3] : '') + (x[4] ? '-' + x[4] : '') + (x[5] ? '-' + x[5] : '');
+    });
+
+    // PIN inputs: only digits
+    ['pin', 'pinConfirm'].forEach(id => {
+        document.getElementById(id).addEventListener('input', function(e) {
+            e.target.value = e.target.value.replace(/\D/g, '');
+        });
+    });
+
+    // Form validation & submit
+    document.getElementById('agentRegForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+       
+        // Reset errors
+        document.querySelectorAll('.error-msg').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('input').forEach(el => el.classList.remove('error'));
+       
+        let hasError = false;
+       
+        // Name validation (at least 2 words)
+        const name = document.getElementById('name').value.trim();
+        if (name.split(/\s+/).length < 2) {
+            showError('name', 'nameError');
+            hasError = true;
+        }
+       
+        // Email validation
+        const email = document.getElementById('email').value.trim();
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            showError('email', 'emailError');
+            hasError = true;
+        }
+       
+        // Phone validation
+        const phone = document.getElementById('phone').value.replace(/\D/g, '');
+        if (phone.length !== 11) {
+            showError('phone', 'phoneError');
+            hasError = true;
+        }
+       
+        // PIN validation
+        const pin = document.getElementById('pin').value;
+        if (!/^\d{4}$/.test(pin)) {
+            showError('pin', 'pinError');
+            hasError = true;
+        }
+       
+        // PIN confirm validation
+        const pinConfirm = document.getElementById('pinConfirm').value;
+        if (pin !== pinConfirm) {
+            showError('pinConfirm', 'pinConfirmError');
+            hasError = true;
+        }
+       
+        if (hasError) return;
+       
+        // Get telegram_user_id from initData
+        let telegramUserId = '';
+        try {
+            if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+                telegramUserId = String(tg.initDataUnsafe.user.id);
+            }
+        } catch(err) {
+            console.error('Cannot get user id:', err);
+        }
+       
+        if (!telegramUserId) {
+            alert('Ошибка: не удалось получить данные Telegram. Откройте форму через бота.');
+            return;
+        }
+       
+        // Show loader
+        const btn = document.getElementById('submitBtn');
+        const btnText = document.getElementById('btnText');
+        const btnLoader = document.getElementById('btnLoader');
+        btn.disabled = true;
+        btnText.style.display = 'none';
+        btnLoader.style.display = 'block';
+       
+        // Get selected tariff
+        const tariff = document.querySelector('input[name="tariff"]:checked').value;
+       
+        // Send registration request
+        const payload = {
+            action: 'register_agent',
+            data: {
+                name: name,
+                email: email,
+                phone: document.getElementById('phone').value.trim(),
+                tariff: tariff,
+                pin: pin,
+                telegram_user_id: telegramUserId
+            }
+        };
+       
+        try {
+            // TODO: Replace with actual Google Apps Script URL
+            const SCRIPT_URL = 'YOUR_GOOGLE_APPS_SCRIPT_URL_HERE';
+           
+            const response = await fetch(SCRIPT_URL, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+           
+            // Since we use no-cors, we can't read response.
+            // For production, use ContentService JSON response with GET redirect or similar.
+            // For now, assume success if no network error.
+            showSuccess();
+           
+        } catch(err) {
+            console.error('Registration error:', err);
+            alert('Ошибка при отправке. Попробуйте позже.');
+            btn.disabled = false;
+            btnText.style.display = 'block';
+            btnLoader.style.display = 'none';
+        }
+    });
+   
+    function showError(inputId, errorId) {
+        document.getElementById(inputId).classList.add('error');
+        document.getElementById(errorId).style.display = 'block';
+    }
+   
+    function showSuccess() {
+        document.getElementById('regForm').style.display = 'none';
+        document.getElementById('successScreen').style.display = 'block';
+        tg.MainButton.hide();
+    }
+</script>
+
+</body>
+</html>
