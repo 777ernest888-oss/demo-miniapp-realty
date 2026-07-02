@@ -1,140 +1,14 @@
-// Vercel Serverless Function - Prostors API (Production Ready) V8
+// Vercel Serverless Function - Prostors API
 const { google } = require('googleapis');
 
-// ==================== КОНФИГУРАЦИЯ ====================
-const CONFIG = {
-  cors: {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Request-ID',
-    'Access-Control-Max-Age': '86400',
-  },
-  rateLimit: {
-    global: { windowMs: 10 * 60 * 1000, maxRequests: 1000 },
-    actions: {
-      save_lead: { windowMs: 60 * 60 * 1000, maxRequests: 10 },
-      create: { windowMs: 10 * 60 * 1000, maxRequests: 100 },
-      update: { windowMs: 10 * 60 * 1000, maxRequests: 100 },
-      delete: { windowMs: 10 * 60 * 1000, maxRequests: 50 },
-      update_lead_status: { windowMs: 10 * 60 * 1000, maxRequests: 100 },
-      update_agent_profile: { windowMs: 10 * 60 * 1000, maxRequests: 50 },
-      update_page: { windowMs: 10 * 60 * 1000, maxRequests: 50 },
-      change_pin: { windowMs: 10 * 60 * 1000, maxRequests: 20 },
-      get_listings: { windowMs: 10 * 60 * 1000, maxRequests: 1000 },
-      get_pages: { windowMs: 10 * 60 * 1000, maxRequests: 1000 },
-      get_agent_config: { windowMs: 10 * 60 * 1000, maxRequests: 500 },
-      get_leads: { windowMs: 10 * 60 * 1000, maxRequests: 500 },
-      get_agent_profile: { windowMs: 10 * 60 * 1000, maxRequests: 500 },
-      verify_pin: { windowMs: 10 * 60 * 1000, maxRequests: 20 },
-      resolve_agent_by_domain: { windowMs: 10 * 60 * 1000, maxRequests: 500 },
-      health: null,
-    },
-  },
-  cache: {
-    agentTTL: 5 * 60 * 1000,
-    listingsTTL: 2 * 60 * 1000,
-  },
+// CORS заголовки
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
-// ==================== КЭШИРОВАНИЕ ====================
-const cache = new Map();
-
-function getCache(key) {
-  const item = cache.get(key);
-  if (!item) return null;
-  if (Date.now() > item.expiry) {
-    cache.delete(key);
-    return null;
-  }
-  return item.data;
-}
-
-function setCache(key, data, ttlMs = CONFIG.cache.agentTTL) {
-  cache.set(key, { data, expiry: Date.now() + ttlMs });
-}
-
-function clearCache(prefix) {
-  for (const key of cache.keys()) {
-    if (key.startsWith(prefix)) cache.delete(key);
-  }
-}
-
-// ==================== БЕЗОПАСНОСТЬ ====================
-function sanitizeInput(str, maxLength = 1000) {
-  if (str === true) return 'TRUE';
-  if (str === false) return 'FALSE';
-  if (typeof str !== 'string') return '';
-  return str.replace(/[<>]/g, '').slice(0, maxLength).trim();
-}
-
-function validatePhone(phone) {
-  if (!phone) return null;
-  const cleaned = phone.replace(/[^\d+]/g, '');
-  const normalized = cleaned.startsWith('8') ? '+7' + cleaned.slice(1) : cleaned;
-  if (/^\+7\d{10}$/.test(normalized)) return normalized;
-  return null;
-}
-
-function generateRequestId() {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-}
-
-// ==================== ЛОГИРОВАНИЕ ====================
-const logger = {
-  info: (requestId, message, meta = {}) => {
-    console.log(JSON.stringify({ level: 'INFO', requestId, timestamp: new Date().toISOString(), message, ...meta }));
-  },
-  error: (requestId, message, meta = {}) => {
-    console.error(JSON.stringify({ level: 'ERROR', requestId, timestamp: new Date().toISOString(), message, ...meta }));
-  },
-  warn: (requestId, message, meta = {}) => {
-    console.warn(JSON.stringify({ level: 'WARN', requestId, timestamp: new Date().toISOString(), message, ...meta }));
-  },
-};
-
-// ==================== УМНЫЙ RATE LIMITING ====================
-const rateLimitStore = new Map();
-
-function getActionLimit(action) {
-  if (!action) return CONFIG.rateLimit.global;
-  return CONFIG.rateLimit.actions[action] || CONFIG.rateLimit.global;
-}
-
-function checkRateLimit(ip, action) {
-  const now = Date.now();
-  const limit = getActionLimit(action);
-  if (!limit) return { allowed: true, remaining: Infinity, limit: Infinity, reset: 0 };
-
-  const windowStart = now - limit.windowMs;
-  const key = `${ip}:${action || 'global'}`;
-  const userRequests = rateLimitStore.get(key) || [];
-  const validRequests = userRequests.filter(time => time > windowStart);
-
-  if (validRequests.length >= limit.maxRequests) {
-    const resetTime = Math.ceil((validRequests[0] + limit.windowMs - now) / 1000);
-    return { allowed: false, remaining: 0, limit: limit.maxRequests, reset: resetTime };
-  }
-
-  validRequests.push(now);
-  rateLimitStore.set(key, validRequests);
-
-  if (validRequests.length < 50) {
-    setTimeout(() => rateLimitStore.delete(key), limit.windowMs);
-  }
-
-  return {
-    allowed: true,
-    remaining: limit.maxRequests - validRequests.length,
-    limit: limit.maxRequests,
-    reset: Math.ceil(limit.windowMs / 1000),
-  };
-}
-
-function checkGlobalRateLimit(ip) {
-  return checkRateLimit(ip, '__global__');
-}
-
-// ==================== ИНИЦИАЛИЗАЦИЯ API ====================
+// Инициализация Google Sheets API
 function getSheetsClient() {
   const credentials = JSON.parse(process.env.GOOGLE_SERVICE_ACCOUNT);
   const auth = new google.auth.GoogleAuth({
@@ -146,9 +20,12 @@ function getSheetsClient() {
 
 const SPREADSHEET_ID = process.env.SPREADSHEET_ID;
 
-// ==================== УТИЛИТЫ ====================
-function jsonResponse(res, status, data, requestId) {
-  res.status(status).json({ ...data, _meta: { requestId, timestamp: new Date().toISOString() } });
+// Утилиты
+function jsonResponse(res, status, data) {
+  res.status(status).json({
+    headers: corsHeaders,
+    body: JSON.stringify(data),
+  });
 }
 
 function hashPin(pin) {
@@ -170,31 +47,18 @@ function formatRussianDate(date) {
   if (!date) return '';
   const d = date instanceof Date ? date : new Date(date);
   if (isNaN(d.getTime())) return '';
-  const moscowTime = new Date(d.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
-  const day = ('0' + moscowTime.getDate()).slice(-2);
-  const month = ('0' + (moscowTime.getMonth() + 1)).slice(-2);
-  const year = moscowTime.getFullYear();
-  const hours = ('0' + moscowTime.getHours()).slice(-2);
-  const minutes = ('0' + moscowTime.getMinutes()).slice(-2);
-  return `${day}.${month}.${year}, ${hours}:${minutes}`;
+  return ('0' + d.getDate()).slice(-2) + '.' + ('0' + (d.getMonth() + 1)).slice(-2) + '.' + d.getFullYear();
 }
 
-// ==================== РАБОТА С АГЕНТАМИ ====================
-async function getAgentData(sheets, agentId, options = {}) {
-  const cacheKey = `agent:${agentId}`;
-
-  if (!options.checkAccess) {
-    const cached = getCache(cacheKey);
-    if (cached) return cached;
-  }
-
+// Проверка доступа агента
+async function checkAgentAccess(sheets, agentId, userId) {
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
     range: 'Agents!A:K',
   });
 
   const rows = response.data.values;
-  if (!rows || rows.length < 2) return { error: 'Система не настроена', code: 500 };
+  if (!rows || rows.length < 2) return { allowed: false, error: 'Система не настроена' };
 
   const headers = rows[0];
   const idx = {};
@@ -208,34 +72,41 @@ async function getAgentData(sheets, agentId, options = {}) {
     }
   }
 
-  if (!agentRow) return { error: 'Агент не найден', code: 404 };
+  if (!agentRow) return { allowed: false, error: 'Агент не найден' };
+  if (agentRow[idx.status] !== 'active') return { allowed: false, error: 'Доступ приостановлен' };
 
-  const agent = {
+  const expiresAt = agentRow[idx.expires_at];
+  if (expiresAt && agentRow[idx.plan_type] !== 'lifetime') {
+    const parsedExpiry = parseRussianDate(expiresAt);
+    if (parsedExpiry && parsedExpiry < new Date()) {
+      return { allowed: false, error: 'Срок подписки истёк' };
+    }
+  }
+
+  if (userId && agentRow[idx.telegram_user_id]) {
+    if (String(agentRow[idx.telegram_user_id]) !== String(userId)) {
+      return { allowed: false, error: 'Нет прав доступа к этому агенту' };
+    }
+  }
+
+  let brandConfig = {};
+  try {
+    brandConfig = agentRow[idx.brand_config] ? JSON.parse(agentRow[idx.brand_config]) : {};
+  } catch (e) {
+    brandConfig = {};
+  }
+
+  return {
+    allowed: true,
     agentId: agentRow[idx.agent_id],
     name: agentRow[idx.name],
     telegramUserId: agentRow[idx.telegram_user_id],
     chatId: agentRow[idx.chat_id] || '',
-    status: agentRow[idx.status],
-    planType: agentRow[idx.plan_type],
-    expiresAt: agentRow[idx.expires_at],
-    brandConfig: agentRow[idx.brand_config] ? JSON.parse(agentRow[idx.brand_config]) : {},
+    config: brandConfig,
   };
-
-  if (options.checkAccess) {
-    if (agent.status !== 'active') return { error: 'Доступ приостановлен', code: 403 };
-    if (agent.expiresAt && agent.planType !== 'lifetime') {
-      const parsedExpiry = parseRussianDate(agent.expiresAt);
-      if (parsedExpiry && parsedExpiry < new Date()) return { error: 'Срок подписки истёк', code: 403 };
-    }
-    if (options.userId && agent.telegramUserId) {
-      if (String(agent.telegramUserId) !== String(options.userId)) return { error: 'Нет прав доступа', code: 403 };
-    }
-  }
-
-  if (!options.checkAccess) setCache(cacheKey, agent);
-  return agent;
 }
 
+// Проверка PIN
 async function verifyAgentPin(sheets, agentId, pin) {
   const response = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
@@ -251,171 +122,139 @@ async function verifyAgentPin(sheets, agentId, pin) {
 
   for (let i = 1; i < rows.length; i++) {
     if (String(rows[i][idIdx]).trim() === String(agentId).trim()) {
-      if (rows[i][hashIdx] === hashPin(pin)) return { success: true, agentId };
+      if (rows[i][hashIdx] === hashPin(pin)) {
+        return { success: true, agentId: agentId };
+      }
       return { success: false, error: 'Неверный PIN-код' };
     }
   }
   return { success: false, error: 'Агент не найден' };
 }
 
-// ==================== ГЛАВНАЯ ФУНКЦИЯ ====================
+// Главная функция
 module.exports = async (req, res) => {
-  const requestId = generateRequestId();
-  const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.connection?.remoteAddress || 'unknown';
-
+  // CORS preflight
   if (req.method === 'OPTIONS') {
-    Object.entries(CONFIG.cors).forEach(([key, value]) => res.setHeader(key, value));
+    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
     return res.status(200).end();
   }
 
-  Object.entries(CONFIG.cors).forEach(([key, value]) => res.setHeader(key, value));
-
-  const action = req.query.action || req.body?.action;
-
-  const globalLimit = checkGlobalRateLimit(ip);
-  if (!globalLimit.allowed) {
-    logger.warn(requestId, 'Global rate limit exceeded', { ip, action });
-    res.setHeader('Retry-After', globalLimit.reset.toString());
-    return jsonResponse(res, 429, { success: false, error: 'Слишком много запросов. Попробуйте позже.' }, requestId);
-  }
-
-  if (action && action !== 'health') {
-    const actionLimit = checkRateLimit(ip, action);
-    res.setHeader('X-RateLimit-Limit', actionLimit.limit.toString());
-    res.setHeader('X-RateLimit-Remaining', actionLimit.remaining.toString());
-    res.setHeader('X-RateLimit-Reset', actionLimit.reset.toString());
-  
-    if (!actionLimit.allowed) {
-      logger.warn(requestId, 'Action rate limit exceeded', { ip, action });
-      res.setHeader('Retry-After', actionLimit.reset.toString());
-      return jsonResponse(res, 429, {
-        success: false,
-        error: `Слишком много запросов "${action}". Попробуйте через ${actionLimit.reset} сек.`,
-      }, requestId);
-    }
-  }
+  res.setHeader('Access-Control-Allow-Origin', '*');
 
   try {
-    logger.info(requestId, 'API Request', {
-      action,
-      agentId: req.query.agent_id || req.query.agentId || req.body?.agentId,
-      method: req.method,
-      ip,
-    });
-  
+    // === ЛОГИРОВАНИЕ ДЛЯ ОТЛАДКИ ===
+    console.log('=== API Request ===');
+    console.log('Action:', req.query.action);
+    console.log('Agent ID:', req.query.agent_id || req.query.agentId);
+    console.log('User ID:', req.query.user_id || req.query.userId);
+    console.log('Spreadsheet ID:', SPREADSHEET_ID);
+    console.log('Request method:', req.method);
+    console.log('Query:', JSON.stringify(req.query));
+    console.log('Body:', JSON.stringify(req.body));
+
     const sheets = getSheetsClient();
-    const processedAction = req.query.action || req.body?.action;
+    const action = req.query.action || req.body?.action;
     const agentId = req.query.agent_id || req.query.agentId || req.body?.agentId;
     const userId = req.query.user_id || req.body?.userId;
     const pin = req.query.pin || req.body?.pin;
-  
-    if (processedAction === 'health') {
-      return jsonResponse(res, 200, { success: true, status: 'ok', timestamp: new Date().toISOString() }, requestId);
-    }
-  
-    if (processedAction === 'resolve_agent_by_domain') {
-      const domain = sanitizeInput(req.query.domain, 255);
-      if (!domain) return jsonResponse(res, 400, { success: false, error: 'Домен не указан' }, requestId);
-    
+
+    console.log('Processed action:', action);
+    console.log('Processed agentId:', agentId);
+
+    // 1. Поиск агента по домену
+    if (action === 'resolve_agent_by_domain') {
+      const domain = req.query.domain;
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
         range: 'Agents!A:J',
       });
-    
       const rows = response.data.values;
-      if (!rows) return jsonResponse(res, 404, { success: false, error: 'Агент не найден' }, requestId);
-    
+      if (!rows) return res.json({ success: false, error: 'Агент не найден' });
+
       const headers = rows[0];
       const domainIdx = headers.indexOf('custom_domain');
       const idIdx = headers.indexOf('agent_id');
-    
+
       for (let i = 1; i < rows.length; i++) {
-        if (String(rows[i][domainIdx]).trim().toLowerCase() === domain.toLowerCase()) {
-          return jsonResponse(res, 200, { success: true, agentId: rows[i][idIdx] }, requestId);
+        if (String(rows[i][domainIdx]).trim().toLowerCase() === String(domain).trim().toLowerCase()) {
+          return res.json({ success: true, agentId: rows[i][idIdx] });
         }
       }
-      return jsonResponse(res, 404, { success: false, error: 'Агент не найден' }, requestId);
+      return res.json({ success: false, error: 'Агент не найден' });
     }
-  
-    if (processedAction === 'get_agent_config') {
-      if (!agentId) return jsonResponse(res, 400, { success: false, error: 'agent_id не указан' }, requestId);
-    
-      const result = await getAgentData(sheets, agentId, { checkAccess: true, userId: userId || null });
-      if (result.error) return jsonResponse(res, result.code || 400, { success: false, error: result.error }, requestId);
-    
+
+    // 2. Получение конфига агента
+    if (action === 'get_agent_config') {
+      console.log('Getting agent config for:', agentId);
+      const result = await checkAgentAccess(sheets, agentId, userId || null);
+      console.log('Agent access result:', result);
+      if (!result.allowed) return res.json({ success: false, error: result.error });
       const isOwner = userId && result.telegramUserId && (String(userId) === String(result.telegramUserId));
-      return jsonResponse(res, 200, {
+      return res.json({
         success: true,
         agentId: result.agentId,
         name: result.name,
-        config: result.brandConfig,
-        isOwner,
-      }, requestId);
+        config: result.config,
+        isOwner: isOwner,
+      });
     }
-  
-    if (processedAction === 'verify_pin') {
-      if (!agentId || !pin) return jsonResponse(res, 400, { success: false, error: 'Нет данных' }, requestId);
-      return jsonResponse(res, 200, await verifyAgentPin(sheets, agentId, pin), requestId);
+
+    // 3. Верификация PIN
+    if (action === 'verify_pin') {
+      if (!agentId || !pin) return res.json({ success: false, error: 'Нет данных' });
+      return res.json(await verifyAgentPin(sheets, agentId, pin));
     }
-  
-    let agentData = null;
-    if (processedAction !== 'save_lead') {
-      if (!agentId) return jsonResponse(res, 401, { success: false, error: 'Агент не определён' }, requestId);
-    
-      agentData = await getAgentData(sheets, agentId, { checkAccess: true, userId: userId || null });
-      if (agentData.error) return jsonResponse(res, agentData.code || 403, { success: false, error: agentData.error }, requestId);
-    }
-  
-    if (processedAction === 'get_listings' || !processedAction) {
-      const cacheKey = `listings:${agentId}:${req.query.includeHidden === 'true'}`;
-      const cached = getCache(cacheKey);
-      if (cached) return jsonResponse(res, 200, { success: true, data: cached }, requestId);
-    
+
+    // Проверка доступа для остальных методов
+    const access = await checkAgentAccess(sheets, agentId, userId);
+    if (!access.allowed) return res.json({ success: false, error: access.error, code: 403 });
+
+    // 4. Список объектов
+    if (action === 'get_listings' || !action) {
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
         range: 'Listings!A:Z',
       });
-    
       const rows = response.data.values;
-      if (!rows || rows.length <= 1) return jsonResponse(res, 200, { success: true, data: [] }, requestId);
-    
+      if (!rows || rows.length <= 1) return res.json({ success: true, data: [] });
+
       const headers = rows[0];
       const agentIdIdx = headers.indexOf('agent_id');
       const activeIdx = headers.indexOf('active');
       const includeHidden = req.query.includeHidden === 'true';
-    
+
       const SECRET_COLUMNS = ['Контакты собственника (ФИО, Телефон)', 'Размер комиссии/Условия', 'Заметки для себя (скрытые)'];
       const secretIndexes = SECRET_COLUMNS.map(c => headers.indexOf(c)).filter(i => i !== -1);
-    
+
       const result = [];
       for (let i = 1; i < rows.length; i++) {
         if (String(rows[i][agentIdIdx]).trim() !== String(agentId).trim()) continue;
         if (!includeHidden && activeIdx !== -1 && rows[i][activeIdx] !== 'TRUE' && rows[i][activeIdx] !== true) continue;
-      
+
         const row = {};
         headers.forEach((h, idx) => {
           if (secretIndexes.indexOf(idx) === -1) row[h] = rows[i][idx];
         });
         result.push(row);
       }
-    
-      setCache(cacheKey, result, CONFIG.cache.listingsTTL);
-      return jsonResponse(res, 200, { success: true, data: result }, requestId);
+      return res.json({ success: true, data: result });
     }
-  
-    if (processedAction === 'get_leads') {
+
+    // 5. Заявки
+    if (action === 'get_leads') {
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
         range: 'Leads!A:H',
       });
-    
       const rows = response.data.values;
-      if (!rows || rows.length <= 1) return jsonResponse(res, 200, { success: true, data: [] }, requestId);
-    
+      if (!rows || rows.length <= 1) return res.json({ success: true, data: [] });
+
       const headers = rows[0];
       const agentIdx = headers.indexOf('agent_id');
       const leads = [];
-    
+
       for (let i = 1; i < rows.length; i++) {
         if (String(rows[i][agentIdx]).trim() === String(agentId).trim()) {
           leads.push({
@@ -430,42 +269,44 @@ module.exports = async (req, res) => {
         }
       }
       leads.reverse();
-      return jsonResponse(res, 200, { success: true, data: leads }, requestId);
+      return res.json({ success: true, data: leads });
     }
-  
-    if (processedAction === 'get_agent_profile') {
+
+    // 6. Профиль агента
+    if (action === 'get_agent_profile') {
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
-        range: 'AgentData!A:I',
+        range: 'AgentData!A:H',
       });
       const rows = response.data.values;
-      if (!rows || rows.length < 2) return jsonResponse(res, 200, { success: true, data: {} }, requestId);
-    
+      if (!rows || rows.length < 2) return res.json({ success: true, data: {} });
+
       const headers = rows[0];
       const agentIdx = headers.indexOf('agent_id');
-    
+
       for (let i = 1; i < rows.length; i++) {
         if (String(rows[i][agentIdx]).trim() === String(agentId).trim()) {
           const profile = {};
           headers.forEach((h, idx) => { profile[h] = rows[i][idx]; });
-          return jsonResponse(res, 200, { success: true, data: profile }, requestId);
+          return res.json({ success: true, data: profile });
         }
       }
-      return jsonResponse(res, 200, { success: true, data: {} }, requestId);
+      return res.json({ success: true, data: {} });
     }
-  
-    if (processedAction === 'get_pages') {
+
+    // 7. Страницы
+    if (action === 'get_pages') {
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
         range: 'Pages!A:D',
       });
       const rows = response.data.values;
-      if (!rows || rows.length <= 1) return jsonResponse(res, 200, { success: true, data: [] }, requestId);
-    
+      if (!rows || rows.length <= 1) return res.json({ success: true, data: [] });
+
       const headers = rows[0];
       const agentIdx = headers.indexOf('agent_id');
       const pages = [];
-    
+
       for (let i = 1; i < rows.length; i++) {
         if (String(rows[i][agentIdx]).trim() === String(agentId).trim()) {
           pages.push({
@@ -476,56 +317,59 @@ module.exports = async (req, res) => {
           });
         }
       }
-      return jsonResponse(res, 200, { success: true, data: pages }, requestId);
+      return res.json({ success: true, data: pages });
     }
-  
+
+    // POST методы требуют авторизации
     if (req.method !== 'POST') {
-      return jsonResponse(res, 405, { success: false, error: 'Метод не разрешён' }, requestId);
+      return res.json({ success: false, error: 'Метод не разрешён' });
     }
-  
-    if (processedAction !== 'save_lead') {
-      const initData = req.body?.initData;
-      let isAuthorized = false;
-    
-      if (initData) isAuthorized = true;
-      if (!isAuthorized && req.body?.pin) {
-        const pinResult = await verifyAgentPin(sheets, agentId, req.body.pin);
-        if (pinResult.success) isAuthorized = true;
-      }
-    
-      if (!isAuthorized) return jsonResponse(res, 401, { success: false, error: 'Ошибка авторизации' }, requestId);
+
+    // Авторизация для POST
+    const initData = req.body?.initData;
+    let isAuthorized = false;
+
+    if (initData) {
+      // Проверка initData (упрощённая)
+      isAuthorized = true; // TODO: добавить полную проверку HMAC
     }
-  
-    if (processedAction === 'create') {
+
+    if (!isAuthorized && req.body?.pin) {
+      const pinResult = await verifyAgentPin(sheets, agentId, req.body.pin);
+      if (pinResult.success) isAuthorized = true;
+    }
+
+    if (!isAuthorized) {
+      return res.json({ success: false, error: 'Ошибка авторизации', code: 401 });
+    }
+
+    // 8. Создание объекта
+    if (action === 'create') {
       const data = req.body;
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
         range: 'Listings!1:1',
       });
       const headers = response.data.values[0];
-    
-      const newId = data.id || 'spb-' + Date.now();
-    
+
       const newRow = headers.map(h => {
-        if (h === 'id') return newId;
         if (h === 'agent_id') return agentId;
         if (h === 'created_at' || h === 'updated_at') return formatRussianDate(new Date());
-        if (h === 'active') return data[h] === true || data[h] === 'true' ? 'TRUE' : 'FALSE';
-        return sanitizeInput(data[h], 500) || '';
+        return data[h] || '';
       });
-    
+
       await sheets.spreadsheets.values.append({
         spreadsheetId: SPREADSHEET_ID,
         range: 'Listings!A:Z',
         valueInputOption: 'USER_ENTERED',
         resource: { values: [newRow] },
       });
-    
-      clearCache(`listings:${agentId}`);
-      return jsonResponse(res, 200, { success: true, id: newId }, requestId);
+
+      return res.json({ success: true, id: data.id || 'new-' + Date.now() });
     }
-  
-    if (processedAction === 'update') {
+
+    // 9. Обновление объекта
+    if (action === 'update') {
       const data = req.body;
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
@@ -535,51 +379,34 @@ module.exports = async (req, res) => {
       const headers = rows[0];
       const idIdx = headers.indexOf('id');
       const agentIdx = headers.indexOf('agent_id');
-    
+
       for (let i = 1; i < rows.length; i++) {
         if (String(rows[i][idIdx]).trim() === String(data.id).trim()) {
           if (String(rows[i][agentIdx]).trim() !== String(agentId).trim()) {
-            return jsonResponse(res, 403, { success: false, error: 'Чужой объект' }, requestId);
+            return res.json({ success: false, error: 'Чужой объект' });
           }
-        
+
           const updateRow = headers.map((h, idx) => {
-            if (h === 'agent_id' || h === 'id') return rows[i][idx];
-            if (h === 'created_at') return rows[i][idx];
+            if (data.hasOwnProperty(h) && h !== 'agent_id') return data[h];
             if (h === 'updated_at') return formatRussianDate(new Date());
-           
-            if (h === 'active') {
-              if (data.hasOwnProperty(h)) {
-                return data[h] === true || data[h] === 'true' ? 'TRUE' : 'FALSE';
-              }
-              return rows[i][idx];
-            }
-           
-            if (data.hasOwnProperty(h)) {
-              var val = data[h];
-              if (val === '' || val === null || val === undefined) {
-                return rows[i][idx];
-              }
-              return sanitizeInput(val, 500);
-            }
-           
             return rows[i][idx];
           });
-        
+
           await sheets.spreadsheets.values.update({
             spreadsheetId: SPREADSHEET_ID,
             range: `Listings!A${i + 1}:Z${i + 1}`,
             valueInputOption: 'USER_ENTERED',
             resource: { values: [updateRow] },
           });
-        
-          clearCache(`listings:${agentId}`);
-          return jsonResponse(res, 200, { success: true }, requestId);
+
+          return res.json({ success: true });
         }
       }
-      return jsonResponse(res, 404, { success: false, error: 'Не найдено' }, requestId);
+      return res.json({ success: false, error: 'Не найдено' });
     }
-  
-    if (processedAction === 'delete') {
+
+    // 10. Удаление объекта
+    if (action === 'delete') {
       const data = req.body;
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
@@ -589,20 +416,20 @@ module.exports = async (req, res) => {
       const headers = rows[0];
       const idIdx = headers.indexOf('id');
       const agentIdx = headers.indexOf('agent_id');
-    
+
       for (let i = 1; i < rows.length; i++) {
         if (String(rows[i][idIdx]).trim() === String(data.id).trim()) {
           if (String(rows[i][agentIdx]).trim() !== String(agentId).trim()) {
-            return jsonResponse(res, 403, { success: false, error: 'Чужой объект' }, requestId);
+            return res.json({ success: false, error: 'Чужой объект' });
           }
-        
+
           await sheets.spreadsheets.batchUpdate({
             spreadsheetId: SPREADSHEET_ID,
             resource: {
               requests: [{
                 deleteDimension: {
                   range: {
-                    sheetId: 0,
+                    sheetId: 0, // ID листа Listings
                     dimension: 'ROWS',
                     startIndex: i,
                     endIndex: i + 1,
@@ -611,36 +438,19 @@ module.exports = async (req, res) => {
               }],
             },
           });
-        
-          clearCache(`listings:${agentId}`);
-          return jsonResponse(res, 200, { success: true }, requestId);
+
+          return res.json({ success: true });
         }
       }
-      return jsonResponse(res, 404, { success: false, error: 'Не найдено' }, requestId);
+      return res.json({ success: false, error: 'Не найдено' });
     }
-  
-    if (processedAction === 'save_lead') {
-      const requestData = req.body.data || req.body;
-    
-      const clientName = sanitizeInput(requestData.clientName, 100);
-      if (!clientName || clientName.length < 2) {
-        return jsonResponse(res, 400, { success: false, error: 'Введите имя' }, requestId);
-      }
-    
-      const clientPhone = validatePhone(requestData.clientPhone);
-      if (!clientPhone) {
-        return jsonResponse(res, 400, { success: false, error: 'Введите корректный телефон' }, requestId);
-      }
-    
-      const clientTelegram = sanitizeInput(requestData.clientTelegram || '', 50);
-      const objectName = sanitizeInput(requestData.objectName || '', 200);
-      const phoneForSheets = "'" + clientPhone;
+
+    // 11. Сохранение заявки
+    if (action === 'save_lead') {
+      const data = req.body;
       const timestamp = formatRussianDate(new Date());
       const leadId = 'lead-' + Date.now();
-    
-      const agentInfo = await getAgentData(sheets, agentId);
-      const chatId = agentInfo.chatId || '';
-    
+
       await sheets.spreadsheets.values.append({
         spreadsheetId: SPREADSHEET_ID,
         range: 'Leads!A:H',
@@ -650,43 +460,32 @@ module.exports = async (req, res) => {
             agentId,
             leadId,
             timestamp,
-            objectName,
-            clientName,
-            phoneForSheets,
-            clientTelegram || 'Не указан',
+            data.objectName || '',
+            data.clientName || '',
+            data.clientPhone || '',
+            data.clientTelegram || 'Не указан',
             'Новая',
           ]],
         },
       });
-    
+
+      // Уведомление агенту
       const token = process.env.TELEGRAM_NOTIFICATION_BOT_TOKEN;
+      const chatId = access.chatId;
       if (token && chatId) {
-        const msg = `<b>🔔 Новая заявка!</b>\n\n` +
-                   `<b>Объект:</b> ${objectName || '-'}\n` +
-                   `<b>Имя:</b> ${clientName}\n` +
-                   `<b>Телефон:</b> ${clientPhone}\n` +
-                   `<b>Telegram:</b> ${clientTelegram || '-'}`;
-      
-        try {
-          const tgResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'HTML' }),
-          });
-        
-          if (!tgResponse.ok) {
-            logger.warn(requestId, 'Telegram notification failed', { status: tgResponse.status, chatId });
-          }
-        } catch (tgErr) {
-          logger.warn(requestId, 'Telegram notification error', { error: tgErr.message });
-        }
+        const msg = `<b>🔔 Новая заявка!</b>\n\n🏢 ${data.objectName || '-'}\n👤 ${data.clientName || '-'}\n📞 ${data.clientPhone || '-'}\n💬 ${data.clientTelegram || '-'}`;
+        await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chat_id: chatId, text: msg, parse_mode: 'HTML' }),
+        });
       }
-    
-      logger.info(requestId, 'Lead saved', { leadId, agentId, clientName, clientPhone });
-      return jsonResponse(res, 200, { success: true, id: leadId }, requestId);
+
+      return res.json({ success: true, id: leadId });
     }
-  
-    if (processedAction === 'update_lead_status') {
+
+    // 12. Обновление статуса заявки
+    if (action === 'update_lead_status') {
       const data = req.body;
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
@@ -697,61 +496,52 @@ module.exports = async (req, res) => {
       const idIdx = headers.indexOf('id');
       const agentIdx = headers.indexOf('agent_id');
       const statusIdx = headers.indexOf('status');
-    
+
       const statusMap = {
         'new': 'Новая',
         'contacted': 'Обзвонена',
         'completed': 'Завершена',
         'cancelled': 'Отменена',
       };
-    
+
       for (let i = 1; i < rows.length; i++) {
         if (String(rows[i][idIdx]) === String(data.id)) {
           if (String(rows[i][agentIdx]).trim() !== String(agentId).trim()) {
-            return jsonResponse(res, 403, { success: false, error: 'Чужая заявка' }, requestId);
+            return res.json({ success: false, error: 'Чужая заявка' });
           }
-        
+
           await sheets.spreadsheets.values.update({
             spreadsheetId: SPREADSHEET_ID,
             range: `Leads!${String.fromCharCode(65 + statusIdx)}${i + 1}`,
             valueInputOption: 'USER_ENTERED',
             resource: { values: [[statusMap[data.status] || data.status]] },
           });
-        
-          return jsonResponse(res, 200, { success: true }, requestId);
+
+          return res.json({ success: true });
         }
       }
-      return jsonResponse(res, 404, { success: false, error: 'Заявка не найдена' }, requestId);
+      return res.json({ success: false, error: 'Заявка не найдена' });
     }
-  
-    if (processedAction === 'update_agent_profile') {
+
+    // 13. Обновление профиля
+    if (action === 'update_agent_profile') {
       const data = req.body;
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
-        range: 'AgentData!A:I',
+        range: 'AgentData!A:H',
       });
       const rows = response.data.values;
       const headers = rows[0];
       const agentIdx = headers.indexOf('agent_id');
-    
-      const rowData = [
-        agentId,
-        sanitizeInput(data.name, 100),
-        sanitizeInput(data.surname || '', 100),
-        sanitizeInput(data.role, 100),
-        sanitizeInput(data.agencyName, 200),
-        sanitizeInput(data.agencyAddress, 300),
-        sanitizeInput(data.telegramUsername, 50),
-        sanitizeInput(data.phone, 20),
-        sanitizeInput(data.photoUrl, 500),
-      ];
-    
+
+      const rowData = [agentId, data.name, data.role, data.agencyName, data.agencyAddress, data.telegramUsername, data.phone, data.photoUrl];
+
       let updated = false;
       for (let i = 1; i < rows.length; i++) {
         if (String(rows[i][agentIdx]).trim() === String(agentId).trim()) {
           await sheets.spreadsheets.values.update({
             spreadsheetId: SPREADSHEET_ID,
-            range: `AgentData!A${i + 1}:I${i + 1}`,
+            range: `AgentData!A${i + 1}:H${i + 1}`,
             valueInputOption: 'USER_ENTERED',
             resource: { values: [rowData] },
           });
@@ -759,126 +549,35 @@ module.exports = async (req, res) => {
           break;
         }
       }
-    
+
       if (!updated) {
         await sheets.spreadsheets.values.append({
           spreadsheetId: SPREADSHEET_ID,
-          range: 'AgentData!A:I',
+          range: 'AgentData!A:H',
           valueInputOption: 'USER_ENTERED',
           resource: { values: [rowData] },
         });
       }
-    
-      clearCache(`agent:${agentId}`);
-      return jsonResponse(res, 200, { success: true }, requestId);
+
+      return res.json({ success: true });
     }
-  
-    if (processedAction === 'update_page') {
-      const data = req.body;
-      const response = await sheets.spreadsheets.values.get({
-        spreadsheetId: SPREADSHEET_ID,
-        range: 'Pages!A:D',
-      });
-      const rows = response.data.values;
-      const headers = rows[0];
-      const agentIdx = headers.indexOf('agent_id');
-      const pageIdx = headers.indexOf('page');
-    
-      let updated = false;
-      for (let i = 1; i < rows.length; i++) {
-        if (String(rows[i][agentIdx]).trim() === String(agentId).trim() &&
-            String(rows[i][pageIdx]).trim() === String(data.page).trim()) {
-        
-          await sheets.spreadsheets.values.update({
-            spreadsheetId: SPREADSHEET_ID,
-            range: `Pages!A${i + 1}:D${i + 1}`,
-            valueInputOption: 'USER_ENTERED',
-            resource: {
-              values: [[
-                agentId,
-                data.page,
-                data.title || '',
-                data.content || ''
-              ]],
-            },
-          });
-          updated = true;
-          break;
-        }
-      }
-    
-      if (!updated) {
-        await sheets.spreadsheets.values.append({
-          spreadsheetId: SPREADSHEET_ID,
-          range: 'Pages!A:D',
-          valueInputOption: 'USER_ENTERED',
-          resource: {
-            values: [[
-              agentId,
-              data.page,
-              data.title || '',
-              data.content || ''
-            ]],
-          },
-        });
-      }
-    
-      return jsonResponse(res, 200, { success: true }, requestId);
-    }
-  
-    if (processedAction === 'change_pin') {
-      const data = req.body;
-      if (!data.oldPin || !data.newPin) {
-        return jsonResponse(res, 400, { success: false, error: 'Нет данных' }, requestId);
-      }
-    
-      const verifyResult = await verifyAgentPin(sheets, agentId, data.oldPin);
-      if (!verifyResult.success) {
-        return jsonResponse(res, 403, { success: false, error: 'Неверный текущий PIN' }, requestId);
-      }
-    
-      const newPinHash = hashPin(data.newPin);
-    
-      const response = await sheets.spreadsheets.values.get({
-        spreadsheetId: SPREADSHEET_ID,
-        range: 'Agents!A:D',
-      });
-      const rows = response.data.values;
-      const headers = rows[0];
-      const idIdx = headers.indexOf('agent_id');
-      const hashIdx = headers.indexOf('pin_hash');
-    
-      for (let i = 1; i < rows.length; i++) {
-        if (String(rows[i][idIdx]).trim() === String(agentId).trim()) {
-          await sheets.spreadsheets.values.update({
-            spreadsheetId: SPREADSHEET_ID,
-            range: `Agents!${String.fromCharCode(65 + hashIdx)}${i + 1}`,
-            valueInputOption: 'USER_ENTERED',
-            resource: { values: [[newPinHash]] },
-          });
-          return jsonResponse(res, 200, { success: true }, requestId);
-        }
-      }
-    
-      return jsonResponse(res, 404, { success: false, error: 'Агент не найден' }, requestId);
-    }
-  
-    return jsonResponse(res, 400, { success: false, error: 'Неизвестное действие' }, requestId);
-  
+
+    // Если действие не распознано
+    return res.json({ success: false, error: 'Неизвестное действие' });
+
   } catch (error) {
-    logger.error(requestId, 'API Error', {
-      message: error.message,
-      stack: error.stack,
-      code: error.code,
-    });
-  
-    return jsonResponse(res, 500, {
+    // === ЛОГИРОВАНИЕ ОШИБОК ===
+    console.error('=== API ERROR ===');
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('Error code:', error.code);
+    console.error('Full error:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
+
+    res.status(500).json({
       success: false,
-      error: 'Внутренняя ошибка сервера',
-      ...(process.env.NODE_ENV === 'development' && {
-        stack: error.stack,
-        details: error.message,
-      }),
-    }, requestId);
+      error: error.message,
+      stack: error.stack,
+      code: error.code
+    });
   }
 };
