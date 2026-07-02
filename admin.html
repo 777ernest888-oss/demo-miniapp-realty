@@ -79,24 +79,10 @@
     .pin-input { width: 200px; padding: 14px; font-size: 20px; text-align: center; border: 2px solid var(--border); border-radius: 12px; outline: none; letter-spacing: 8px; margin-bottom: 16px; }
     .pin-input:focus { border-color: var(--accent); }
     .pin-error { color: var(--danger); font-size: 13px; margin-bottom: 12px; display: none; }
-    .color-themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; margin-top: 8px; }
-    .color-theme-option { display: flex; flex-direction: column; align-items: center; padding: 12px; border: 2px solid var(--border); border-radius: 8px; cursor: pointer; transition: all 0.2s; }
-    .color-theme-option:hover { border-color: var(--accent); background: var(--bg); }
-    .color-theme-option.selected { border-color: var(--accent); background: #EBF5FB; }
-    .color-preview { width: 40px; height: 20px; border-radius: 4px; margin-bottom: 6px; }
-    .color-preview:nth-child(1) { background: #3D5266; }
-    .color-preview:nth-child(2) { background: #3498DB; }
-    .color-preview.dark:nth-child(1) { background: #1A1A2E; }
-    .color-preview.dark:nth-child(2) { background: #E94560; }
-    .color-preview.eco:nth-child(1) { background: #2C5F2D; }
-    .color-preview.eco:nth-child(2) { background: #97BC62; }
-    .color-preview.bright:nth-child(1) { background: #4A148C; }
-    .color-preview.bright:nth-child(2) { background: #FF6F00; }
-    .color-preview.sea:nth-child(1) { background: #37474F; }
-    .color-preview.sea:nth-child(2) { background: #26C6DA; }
   </style>
 </head>
 <body>
+  <!-- ЭКРАН PIN -->
   <div id="pinScreen" class="pin-screen" style="display:none;">
     <h1>🔐 Админ-панель</h1>
     <p>Введите PIN-код для доступа</p>
@@ -104,6 +90,8 @@
     <div id="pinError" class="pin-error">❌ Неверный PIN-код</div>
     <button class="btn btn-primary" style="width:200px;" onclick="checkPin()">Войти</button>
   </div>
+
+  <!-- ОСНОВНОЙ КОНТЕНТ -->
   <div id="appContent" style="display:none;">
     <div class="header"><h1>⚙️ Админка</h1><button class="header-btn" onclick="refreshCurrentTab()">↻</button></div>
     <div class="container">
@@ -111,15 +99,28 @@
         <button class="tab active" onclick="switchTab('objects')">🏢 Объекты</button>
         <button class="tab" onclick="switchTab('leads')">📩 Заявки</button>
         <button class="tab" onclick="switchTab('profile')">👤 Профиль</button>
+        <button class="tab" onclick="switchTab('about')">ℹ️ Обо мне</button>
         <button class="tab" onclick="switchTab('settings')">🔒 Настройки</button>
       </div>
-      <div id="tab-objects" class="tab-content active"><div class="loading" id="objectsLoading">Загрузка объектов...</div><div id="objectsList"></div><button class="fab" onclick="openCreateModal()">+</button></div>
-      <div id="tab-leads" class="tab-content"><div class="loading" id="leadsLoading">Загрузка заявок...</div><div id="leadsList"></div></div>
+
+      <!-- Вкладка: Объекты -->
+      <div id="tab-objects" class="tab-content active">
+        <div class="loading" id="objectsLoading">Загрузка объектов...</div>
+        <div id="objectsList"></div>
+        <button class="fab" onclick="openCreateModal()">+</button>
+      </div>
+
+      <!-- Вкладка: Заявки -->
+      <div id="tab-leads" class="tab-content">
+        <div class="loading" id="leadsLoading">Загрузка заявок...</div>
+        <div id="leadsList"></div>
+      </div>
+
+      <!-- Вкладка: Профиль -->
       <div id="tab-profile" class="tab-content">
         <div class="loading" id="profileLoading">Загрузка профиля...</div>
         <form id="profileForm" onsubmit="saveProfile(event)" style="display:none;">
           <div class="form-group"><label class="form-label">Имя *</label><input type="text" class="form-input" id="profileName" required></div>
-          <div class="form-group"><label class="form-label">Фамилия</label><input type="text" class="form-input" id="profileSurname"></div>
           <div class="form-group"><label class="form-label">Должность</label><input type="text" class="form-input" id="profileRole"></div>
           <div class="form-group"><label class="form-label">Агентство</label><input type="text" class="form-input" id="profileAgencyName"></div>
           <div class="form-group"><label class="form-label">Адрес офиса</label><input type="text" class="form-input" id="profileAgencyAddress"></div>
@@ -128,58 +129,36 @@
             <div class="form-group"><label class="form-label">Телефон</label><input type="tel" class="form-input" id="profilePhone"></div>
           </div>
           <div class="photo-section">
-            <label class="form-label">Фото агента</label>
+            <label class="form-label">Фото</label>
             <div class="photo-preview-area" id="profilePhotoPreview"></div>
             <label class="upload-btn">📷 Выбрать фото<input type="file" accept="image/*" onchange="uploadProfilePhoto(this)"></label>
             <input type="hidden" id="profilePhotoUrl">
           </div>
-          <div class="photo-section">
-            <label class="form-label">Фон главной страницы</label>
-            <div class="photo-preview-area" id="welcomeBgPreview"></div>
-            <label class="upload-btn">🖼️ Выбрать фон<input type="file" accept="image/*" onchange="uploadWelcomeBg(this)"></label>
-            <input type="hidden" id="welcomeBgUrl">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Цветовая схема</label>
-            <div class="color-themes">
-              <label class="color-theme-option selected" data-theme="classic"><span class="color-preview"></span><span class="color-preview"></span><span>Классика</span><input type="radio" name="colorTheme" value="classic" checked hidden></label>
-              <label class="color-theme-option" data-theme="dark"><span class="color-preview dark"></span><span class="color-preview dark"></span><span>Тёмная</span><input type="radio" name="colorTheme" value="dark" hidden></label>
-              <label class="color-theme-option" data-theme="eco"><span class="color-preview eco"></span><span class="color-preview eco"></span><span>Эко</span><input type="radio" name="colorTheme" value="eco" hidden></label>
-              <label class="color-theme-option" data-theme="bright"><span class="color-preview bright"></span><span class="color-preview bright"></span><span>Яркая</span><input type="radio" name="colorTheme" value="bright" hidden></label>
-              <label class="color-theme-option" data-theme="sea"><span class="color-preview sea"></span><span class="color-preview sea"></span><span>Морская</span><input type="radio" name="colorTheme" value="sea" hidden></label>
-              <label class="color-theme-option" data-theme="custom"><span class="color-preview" style="background:#ccc"></span><span class="color-preview" style="background:#ccc"></span><span>Свой вариант</span><input type="radio" name="colorTheme" value="custom" hidden></label>
-            </div>
-          </div>
-          <div id="customColorsBlock" style="display:none;">
-            <div class="form-row">
-              <div class="form-group"><label>Основной цвет</label><input type="color" class="form-input" id="profilePrimaryColor" value="#3D5266"></div>
-              <div class="form-group"><label>Акцентный цвет</label><input type="color" class="form-input" id="profileAccentColor" value="#3498DB"></div>
-            </div>
-          </div>
-          <div class="form-group"><label class="form-label">Заголовок главной</label><input type="text" class="form-input" id="profileWelcomeTitle" value="КАТАЛОГ НОВОСТРОЕК"></div>
-          <div class="form-group"><label class="form-label">Подзаголовок</label><input type="text" class="form-input" id="profileWelcomeTagline" value="Подберём квартиру под ваш бюджет"></div>
-          <div class="form-group"><label class="form-label">Текст кнопки</label><input type="text" class="form-input" id="profileButtonText" value="НАЧАТЬ ПОДБОР"></div>
-          <!-- === БЛОК "ОБО МНЕ" ВНУТРИ ПРОФИЛЯ === -->
-          <div class="form-group">
-            <label class="form-label">Заголовок страницы "Обо мне"</label>
-            <input type="text" class="form-input" id="profileAboutTitle" value="Обо мне">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Содержание страницы "Обо мне" (можно использовать HTML)</label>
-            <textarea class="form-textarea" id="profileAboutContent"></textarea>
-            <p style="font-size:12px;color:var(--text-secondary);margin-top:6px;">💡 Подсказка: можно вставлять <b>жирный</b>, <i>курсив</i>, переносы строк и ссылки.</p>
-          </div>
           <button type="submit" class="btn btn-primary">💾 Сохранить профиль</button>
         </form>
       </div>
+
+      <!-- Вкладка: Обо мне -->
+      <div id="tab-about" class="tab-content">
+        <div class="loading" id="aboutLoading">Загрузка...</div>
+        <form id="aboutForm" onsubmit="saveAboutPage(event)" style="display:none;">
+          <div class="form-group"><label class="form-label">Заголовок</label><input type="text" class="form-input" id="aboutTitle"></div>
+          <div class="form-group"><label class="form-label">Содержание</label><textarea class="form-textarea" id="aboutContent"></textarea></div>
+          <button type="submit" class="btn btn-primary">💾 Сохранить страницу</button>
+        </form>
+      </div>
+
+      <!-- Вкладка: Настройки -->
       <div id="tab-settings" class="tab-content">
         <div class="form-group"><label class="form-label">Текущий PIN</label><input type="password" class="form-input" id="currentPin" placeholder="Введите текущий PIN"></div>
         <div class="form-group"><label class="form-label">Новый PIN</label><input type="password" class="form-input" id="newPin" placeholder="Минимум 4 символа"></div>
         <div class="form-group"><label class="form-label">Повторите новый PIN</label><input type="password" class="form-input" id="confirmPin" placeholder="Повторите новый PIN"></div>
         <button class="btn btn-primary" onclick="changePin()">🔒 Сменить PIN-код</button>
-        <p style="text-align:center;font-size:12px;color:var(--text-secondary);margin-top:16px;">После смены PIN вы будете разлогинены и войдёте с новым PIN-кодом.</p>
+        <p style="text-align:center;font-size:12px;color:var(--text-secondary);margin-top:16px;">После смены PIN текущая сессия будет обновлена автоматически.</p>
       </div>
     </div>
+
+    <!-- Модальное окно объекта -->
     <div class="modal-overlay" id="objectModal">
       <div class="modal-content">
         <div class="modal-header">
@@ -216,13 +195,21 @@
     </div>
     <div class="toast" id="toast"></div>
   </div>
+
   <script>
-    var config = { scriptUrl: '', supabaseUrl: '', supabaseAnonKey: '' };
+    // === ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ ===
+    var config = { scriptUrl: '' };
     var objects = [], leads = [], currentAgentData = {}, pagesData = {};
     var currentEditId = null, photoStore = { main: '', gallery: [], plans: [] }, currentStatus = 'true', currentTab = 'objects';
-    var isAuthorized = false, AGENT_ID = '', AGENT_CONFIG = null;
+    var isAuthorized = false;
+    var AGENT_ID = '';
+    var AGENT_CONFIG = null;
+
+    // Telegram WebApp Init
     var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
     if (tg) { tg.ready(); tg.expand(); }
+
+    // Слушатель postMessage от родителя
     window.addEventListener('message', function(event) {
       if (event.origin !== window.location.origin) return;
       if (event.data && event.data.type === 'TELEGRAM_INIT_DATA') {
@@ -230,41 +217,69 @@
         if (!isAuthorized) checkAuth();
       }
     });
+
+    // === ИНИЦИАЛИЗАЦИЯ ===
     document.addEventListener('DOMContentLoaded', async function() {
       await loadConfig();
       var ok = await initAgent();
       if (ok) checkAuth();
     });
+
     async function loadConfig() {
       try {
-        var response = await fetch('client-config.json?v=2.0.5');
+        var response = await fetch('client-config.json?v=2.0.3');
         var data = await response.json();
         config.scriptUrl = data.client.scriptUrl;
-        config.supabaseUrl = data.supabase && data.supabase.url ? data.supabase.url : '';
-        config.supabaseAnonKey = data.supabase && data.supabase.anonKey ? data.supabase.anonKey : '';
-      } catch (e) { showToast('❌ Ошибка конфигурации'); }
+        console.log('[admin loadConfig] ✅', config.scriptUrl);
+      } catch (e) {
+        console.error('[admin loadConfig] ❌', e);
+        showToast('❌ Ошибка конфигурации');
+      }
     }
+
     async function initAgent() {
       var params = new URLSearchParams(window.location.search);
       var agentParam = params.get('agent');
       var hostname = window.location.hostname;
+
       try {
-        if (agentParam) { AGENT_ID = agentParam; }
-        else if (hostname && hostname !== 'prostors.ru' && !hostname.endsWith('.prostors.ru') && !hostname.includes('github.io')) {
+        if (agentParam) {
+          AGENT_ID = agentParam;
+        } else if (hostname && hostname !== 'prostors.ru' && !hostname.endsWith('.prostors.ru') && !hostname.includes('github.io')) {
           var response = await fetch(config.scriptUrl + '?action=resolve_agent_by_domain&domain=' + encodeURIComponent(hostname));
           var data = await response.json();
           if (data.success && data.agentId) { AGENT_ID = data.agentId; }
           else { showErrorScreen('Домен не привязан ни к одному агенту'); return false; }
-        } else { showErrorScreen('Неверная ссылка. Отсутствует параметр agent.'); return false; }
+        } else {
+          showErrorScreen('Неверная ссылка. Отсутствует параметр agent.');
+          return false;
+        }
+
         if (!AGENT_ID) { showErrorScreen('Агент не определён'); return false; }
+
         var userId = params.get('user_id') || '';
-        if (!userId && tg && tg.initDataUnsafe && tg.initDataUnsafe.user) { userId = tg.initDataUnsafe.user.id; }
+        if (!userId && tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
+          userId = tg.initDataUnsafe.user.id;
+        }
+
         var response = await fetch(config.scriptUrl + '?action=get_agent_config&agent_id=' + encodeURIComponent(AGENT_ID) + '&user_id=' + userId);
         var data = await response.json();
-        if (data.success) { AGENT_CONFIG = data.config; applyBrandConfig(AGENT_CONFIG); return true; }
-        else { showErrorScreen('Ошибка: ' + data.error); return false; }
-      } catch (e) { showErrorScreen('Ошибка подключения к серверу'); return false; }
+
+        if (data.success) {
+          AGENT_CONFIG = data.config;
+          applyBrandConfig(AGENT_CONFIG);
+          return true;
+        } else {
+          showErrorScreen('Ошибка: ' + data.error);
+          return false;
+        }
+      } catch (e) {
+        console.error('[admin initAgent] ❌', e);
+        showErrorScreen('Ошибка подключения к серверу');
+        return false;
+      }
     }
+
     function applyBrandConfig(brandConfig) {
       if (!brandConfig) return;
       var root = document.documentElement;
@@ -276,39 +291,94 @@
         if (h) h.textContent = '⚙️ ' + brandConfig.appName;
       }
     }
+
     function showErrorScreen(message) {
       document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;padding:20px;text-align:center;">' +
         '<div style="font-size:48px;margin-bottom:20px;">🔒</div><h1 style="font-size:24px;margin-bottom:12px;">Доступ ограничен</h1>' +
-        '<p style="color:#7F8C8D;margin-bottom:20px;">' + escapeHtml(message) + '</p></div>';
+        '<p style="color:#7F8C8D;margin-bottom:20px;">' + escapeHtml(message) + '</p>' +
+        '<p style="color:#95A5A6;font-size:14px;">Обратитесь к администратору</p></div>';
     }
+
+    // === АВТОРИЗАЦИЯ ===
     function checkAuth() {
       if (sessionStorage.getItem('adminAuth') === 'true') { isAuthorized = true; showApp(); return; }
+     
       var initData = getTelegramInitData();
-      if (initData) { isAuthorized = true; sessionStorage.setItem('adminAuth', 'true'); showApp(); return; }
+      if (initData) {
+        isAuthorized = true;
+        sessionStorage.setItem('adminAuth', 'true');
+        showApp();
+        return;
+      }
+     
       document.getElementById('pinScreen').style.display = 'flex';
       document.getElementById('pinInput').focus();
     }
+
     async function checkPin() {
       var input = document.getElementById('pinInput').value.trim();
       if (!input) return;
+     
       var btn = document.querySelector('#pinScreen button');
       var originalText = btn.textContent;
-      btn.textContent = 'Проверка...'; btn.disabled = true;
+      btn.textContent = 'Проверка...';
+      btn.disabled = true;
       document.getElementById('pinError').style.display = 'none';
+
       try {
+        // ИСПОЛЬЗУЕМ GET ДЛЯ ПРОВЕРКИ PIN (без CORS)
         var url = config.scriptUrl + '?action=verify_pin&agentId=' + encodeURIComponent(AGENT_ID) + '&pin=' + encodeURIComponent(input);
         var response = await fetch(url);
         var data = await response.json();
-        if (data.success) { isAuthorized = true; sessionStorage.setItem('adminAuth', 'true'); sessionStorage.setItem('adminPin', input); showApp(); }
-        else { document.getElementById('pinError').textContent = data.error || '❌ Неверный PIN-код'; document.getElementById('pinError').style.display = 'block'; }
-      } catch (e) { document.getElementById('pinError').textContent = '❌ Ошибка сети'; document.getElementById('pinError').style.display = 'block'; }
-      finally { btn.textContent = originalText; btn.disabled = false; }
+       
+        if (data.success) {
+          isAuthorized = true;
+          sessionStorage.setItem('adminAuth', 'true');
+          sessionStorage.setItem('adminPin', input);
+          showApp();
+        } else {
+          document.getElementById('pinError').textContent = data.error || '❌ Неверный PIN-код';
+          document.getElementById('pinError').style.display = 'block';
+        }
+      } catch (e) {
+        document.getElementById('pinError').textContent = '❌ Ошибка сети';
+        document.getElementById('pinError').style.display = 'block';
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
     }
-    document.getElementById('pinInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') checkPin(); });
-    function showApp() { document.getElementById('pinScreen').style.display = 'none'; document.getElementById('appContent').style.display = 'block'; loadObjects(); }
+
+    document.getElementById('pinInput').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') checkPin();
+    });
+
+    function showApp() {
+      document.getElementById('pinScreen').style.display = 'none';
+      document.getElementById('appContent').style.display = 'block';
+      loadObjects();
+    }
+
+    // === УНИВЕРСАЛЬНЫЙ API ВЫЗОВ (NO-CORS для POST) ===
     async function apiCall(action, params) {
       if (!config.scriptUrl) throw new Error('Script URL не настроен');
-      var payload = Object.assign({}, params, { action: action, agentId: AGENT_ID, initData: getTelegramInitData(), pin: sessionStorage.getItem('adminPin') || '' });
+     
+      var payload = Object.assign({}, params, {
+        action: action,
+        agentId: AGENT_ID,
+        initData: getTelegramInitData(),
+        pin: sessionStorage.getItem('adminPin') || ''
+      });
+
+      // Для всех операций записи используем no-cors (как в app.js)
+      await fetch(config.scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+     
+      // Для чтения данных (get_leads, get_agent_profile) делаем отдельный GET
       if (action === 'get_leads' || action === 'get_agent_profile' || action === 'get_pages') {
         var getUrl = config.scriptUrl + '?action=' + action + '&agent_id=' + encodeURIComponent(AGENT_ID);
         var response = await fetch(getUrl);
@@ -316,12 +386,16 @@
         if (!data.success) throw new Error(data.error || 'Ошибка сервера');
         return data;
       }
-      var response = await fetch(config.scriptUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-      var data = await response.json();
-      if (!data.success) throw new Error(data.error || 'Ошибка сервера');
-      return data;
+     
+      // Для CRUD считаем успешным
+      return { success: true };
     }
-    function getTelegramInitData() { return sessionStorage.getItem('tg_initData') || ''; }
+
+    function getTelegramInitData() {
+      return sessionStorage.getItem('tg_initData') || '';
+    }
+
+    // === НАВИГАЦИЯ ===
     function switchTab(tabName) {
       currentTab = tabName;
       document.querySelectorAll('.tab').forEach(function(t) { t.classList.remove('active'); });
@@ -330,27 +404,47 @@
       document.getElementById('tab-' + tabName).classList.add('active');
       refreshCurrentTab();
     }
+
     function refreshCurrentTab() {
       if (currentTab === 'objects') loadObjects();
       else if (currentTab === 'leads') loadLeads();
       else if (currentTab === 'profile') loadProfile();
+      else if (currentTab === 'about') loadAboutPage();
     }
+
+    // === ОБЪЕКТЫ ===
     async function loadObjects() {
       document.getElementById('objectsLoading').style.display = 'block';
       document.getElementById('objectsList').innerHTML = '';
+     
       try {
+        // Используем GET для чтения
         var url = config.scriptUrl + '?action=get_listings&includeHidden=true&agent_id=' + encodeURIComponent(AGENT_ID);
         var response = await fetch(url);
         var data = await response.json();
-        objects = data.success && Array.isArray(data.data) ? data.data : [];
+       
+        if (data.success && Array.isArray(data.data)) {
+          objects = data.data;
+        } else {
+          objects = [];
+        }
+       
         document.getElementById('objectsLoading').style.display = 'none';
-        if (objects.length === 0) { document.getElementById('objectsList').innerHTML = '<div class="empty-state"><div class="empty-icon">🏗️</div><h3>Нет объектов</h3><p>Нажмите + чтобы добавить первый ЖК</p></div>'; return; }
+       
+        if (objects.length === 0) {
+          document.getElementById('objectsList').innerHTML = '<div class="empty-state"><div class="empty-icon">🏗️</div><h3>Нет объектов</h3><p>Нажмите + чтобы добавить первый ЖК</p></div>';
+          return;
+        }
+       
         objects.forEach(function(obj) {
           var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
           var thumbUrl = obj.image_main || '';
-          var displayThumb = thumbUrl.indexOf('lh3.googleusercontent.com/d/') !== -1 ? 'https://drive.google.com/thumbnail?id=' + thumbUrl.split('/d/')[1] + '&sz=w400' : thumbUrl;
+          var displayThumb = thumbUrl.indexOf('lh3.googleusercontent.com/d/') !== -1
+            ? 'https://drive.google.com/thumbnail?id=' + thumbUrl.split('/d/')[1] + '&sz=w400'
+            : thumbUrl;
           var statusClass = isActive ? 'status-active' : 'status-hidden';
           var statusText = isActive ? 'Активен' : 'Скрыт';
+         
           var card = document.createElement('div');
           card.className = 'object-card' + (isActive ? '' : ' hidden-object');
           card.onclick = function() { openEditModal(obj.id); };
@@ -358,8 +452,12 @@
             '<div class="card-info"><div class="card-title">' + escapeHtml(obj.name || 'Без названия') + '</div><div class="card-address">📍 ' + escapeHtml(obj.address || '') + '</div><span class="card-status ' + statusClass + '">' + statusText + '</span></div>';
           document.getElementById('objectsList').appendChild(card);
         });
-      } catch (e) { document.getElementById('objectsLoading').style.display = 'none'; showToast('❌ Ошибка загрузки объектов'); }
+      } catch (e) {
+        document.getElementById('objectsLoading').style.display = 'none';
+        showToast('❌ Ошибка загрузки объектов');
+      }
     }
+
     function openCreateModal() {
       currentEditId = null;
       document.getElementById('modalTitle').textContent = 'Новый ЖК';
@@ -373,6 +471,7 @@
       ['fieldImageMain','fieldImagesGallery','fieldFloorPlansImages'].forEach(function(id) { document.getElementById(id).value = ''; });
       document.getElementById('objectModal').classList.add('active');
     }
+
     function openEditModal(id) {
       var obj = objects.find(function(o) { return o.id === id; });
       if (!obj) return;
@@ -382,93 +481,251 @@
       document.getElementById('statusToggle').style.display = 'flex';
       document.getElementById('deleteBtn').style.display = 'block';
       document.getElementById('saveBtn').textContent = 'Сохранить изменения';
-      var fieldMap = { fieldName:'name', fieldAddress:'address', fieldDistrict:'district', fieldMetro:'metro', fieldPriceFrom:'price_from', fieldPriceTo:'price_to', fieldPriceSqm:'price_per_sqm', fieldAreaMin:'area_min', fieldAreaMax:'area_max', fieldRooms:'rooms', fieldClass:'class', fieldCompletionSoonest:'completion_soonest', fieldCompletionAll:'completion_all', fieldFinishing:'finishing', fieldStatus:'status', fieldDescription:'description', fieldFeatures:'features', fieldLat:'lat', fieldLng:'lng' };
-      Object.keys(fieldMap).forEach(function(fid) { document.getElementById(fid).value = obj[fieldMap[fid]] || ''; });
+     
+      var fields = ['fieldName','fieldAddress','fieldDistrict','fieldMetro','fieldPriceFrom','fieldPriceTo','fieldPriceSqm','fieldAreaMin','fieldAreaMax','fieldRooms','fieldClass','fieldCompletionSoonest','fieldCompletionAll','fieldFinishing','fieldStatus','fieldDescription','fieldFeatures','fieldLat','fieldLng'];
+      fields.forEach(function(fid) {
+        var key = fid.replace('field','').toLowerCase();
+        document.getElementById(fid).value = obj[key] || '';
+      });
+     
       var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
       setStatus(isActive ? 'true' : 'false');
+     
       photoStore.main = obj.image_main || '';
       document.getElementById('fieldImageMain').value = photoStore.main;
       renderPhotoPreview('main', photoStore.main ? [photoStore.main] : []);
+     
       photoStore.gallery = obj.images_gallery ? String(obj.images_gallery).split(',').filter(Boolean) : [];
       document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(',');
       renderPhotoPreview('gallery', photoStore.gallery);
+     
       photoStore.plans = obj.floor_plans_images ? String(obj.floor_plans_images).split(',').filter(Boolean) : [];
       document.getElementById('fieldFloorPlansImages').value = photoStore.plans.join(',');
       renderPhotoPreview('plans', photoStore.plans);
+     
       document.getElementById('objectModal').classList.add('active');
     }
-    function closeModal() { document.getElementById('objectModal').classList.remove('active'); currentEditId = null; }
-    function setStatus(v) { currentStatus = v; document.querySelectorAll('.toggle-option').forEach(function(el) { el.classList.toggle('selected', el.dataset.value === v); }); }
-    async function saveObject(event) {
-      event.preventDefault();
-      if (!photoStore.main && !currentEditId) { showToast('❌ Главное фото обязательно'); return; }
-      if (!photoStore.main && currentEditId) { showToast('⚠️ Нельзя удалить главное фото. Загрузите новое перед сохранением.'); return; }
-      var btn = document.getElementById('saveBtn'); var ot = btn.textContent; btn.disabled = true; btn.textContent = 'Сохранение...';
-      try {
-        var p = { name: document.getElementById('fieldName').value.trim(), address: document.getElementById('fieldAddress').value.trim(), district: document.getElementById('fieldDistrict').value.trim(), metro: document.getElementById('fieldMetro').value.trim(), price_from: parseFloat(document.getElementById('fieldPriceFrom').value)||'', price_to: parseFloat(document.getElementById('fieldPriceTo').value)||'', price_per_sqm: parseFloat(document.getElementById('fieldPriceSqm').value)||'', area_min: parseFloat(document.getElementById('fieldAreaMin').value)||'', area_max: parseFloat(document.getElementById('fieldAreaMax').value)||'', rooms: document.getElementById('fieldRooms').value.trim(), class: document.getElementById('fieldClass').value, completion_soonest: document.getElementById('fieldCompletionSoonest').value.trim(), completion_all: document.getElementById('fieldCompletionAll').value.trim(), finishing: document.getElementById('fieldFinishing').value, status: document.getElementById('fieldStatus').value, description: document.getElementById('fieldDescription').value.trim(), features: document.getElementById('fieldFeatures').value.trim(), image_main: photoStore.main, images_gallery: photoStore.gallery.join(','), floor_plans_images: photoStore.plans.join(','), lat: parseFloat(document.getElementById('fieldLat').value)||'', lng: parseFloat(document.getElementById('fieldLng').value)||'', active: currentStatus==='true' };
-        if (currentEditId) { p.id = currentEditId; await apiCall('update', p); showToast('✅ Объект обновлён'); }
-        else { await apiCall('create', p); showToast('✅ Объект создан'); }
-        closeModal(); setTimeout(loadObjects, 1000);
-      } catch (e) { showToast('❌ Ошибка: '+ e.message); }
-      finally { btn.disabled = false; btn.textContent = ot; }
+
+    function closeModal() {
+      document.getElementById('objectModal').classList.remove('active');
+      currentEditId = null;
     }
-    async function deleteObject() {
-      if (!currentEditId || !confirm('Удалить объект?')) return;
-      var btn = document.getElementById('deleteBtn'); btn.disabled = true; btn.textContent = 'Удаление...';
-      try { await apiCall('delete', { id: currentEditId }); showToast('✅ Удалён'); closeModal(); setTimeout(loadObjects, 1000); }
-      catch (e) { showToast('❌ Ошибка'); }
-      finally { btn.disabled = false; btn.textContent = 'Удалить объект'; }
-    }
-    async function uploadPhoto(type, input) {
-      if (!input.files || input.files.length === 0) return;
-      if (!config.supabaseUrl || !config.supabaseAnonKey) { showToast('❌ Supabase не настроен'); return; }
-      var files = Array.from(input.files); var btn = input.parentElement; var ot = btn.innerHTML; btn.innerHTML = '⏳ Загрузка...';
-      try {
-        for (var i = 0; i < files.length; i++) {
-          var file = files[i]; var fileName = AGENT_ID + '/' + Date.now() + '_' + i + '_' + file.name.replace(/\s+/g, '_');
-          var uploadUrl = config.supabaseUrl + '/storage/v1/object/property-images/' + fileName;
-          var uploadResponse = await fetch(uploadUrl, { method: 'POST', headers: { 'Authorization': 'Bearer ' + config.supabaseAnonKey, 'Content-Type': file.type, 'x-upsert': 'true' }, body: file });
-          if (!uploadResponse.ok) throw new Error('Ошибка загрузки: ' + uploadResponse.status);
-          var publicUrl = config.supabaseUrl + '/storage/v1/object/public/property-images/' + fileName;
-          addPhotoToField(type, publicUrl);
-        }
-        showToast('✅ Фото загружено');
-      } catch (e) { showToast('❌ Ошибка загрузки: ' + e.message); }
-      finally { btn.innerHTML = ot; setTimeout(function() { input.value = ''; }, 500); }
-    }
-    function addPhotoToField(type, url) {
-      if (type==='main') { photoStore.main=url; document.getElementById('fieldImageMain').value=url; renderPhotoPreview('main',[url]); }
-      else if (type==='gallery') { if (photoStore.gallery.indexOf(url)===-1) photoStore.gallery.push(url); document.getElementById('fieldImagesGallery').value=photoStore.gallery.join(','); renderPhotoPreview('gallery',photoStore.gallery); }
-      else if (type==='plans') { if (photoStore.plans.indexOf(url)===-1) photoStore.plans.push(url); document.getElementById('fieldFloorPlansImages').value=photoStore.plans.join(','); renderPhotoPreview('plans',photoStore.plans); }
-    }
-    function removePhoto(type, idx) {
-      if (type==='main') { photoStore.main=''; document.getElementById('fieldImageMain').value=''; renderPhotoPreview('main',[]); }
-      else if (type==='gallery') { photoStore.gallery.splice(idx,1); document.getElementById('fieldImagesGallery').value=photoStore.gallery.join(','); renderPhotoPreview('gallery',photoStore.gallery); }
-      else if (type==='plans') { photoStore.plans.splice(idx,1); document.getElementById('fieldFloorPlansImages').value=photoStore.plans.join(','); renderPhotoPreview('plans',photoStore.plans); }
-    }
-    function renderPhotoPreview(type, urls) {
-      var cid = type==='main'?'mainPhotoPreview':type==='gallery'?'galleryPreview':'plansPreview';
-      var c = document.getElementById(cid); c.innerHTML = '';
-      urls.forEach(function(url, idx) {
-        if (!url) return;
-        var du = url.indexOf('lh3.googleusercontent.com/d/')!==-1 ? 'https://drive.google.com/thumbnail?id='+url.split('/d/')[1]+'&sz=w400' : url;
-        var w = document.createElement('div'); w.style.position='relative'; w.style.display='inline-block';
-        var img = document.createElement('img'); img.src=du; img.className='photo-thumb'; img.onerror=function(){this.style.background='#E0E6ED';};
-        var rb = document.createElement('button'); rb.className='photo-remove'; rb.textContent='✕'; rb.onclick=function(e){e.stopPropagation();removePhoto(type,idx);};
-        w.appendChild(img); w.appendChild(rb); c.appendChild(w);
+   
+    function setStatus(v) {
+      currentStatus = v;
+      document.querySelectorAll('.toggle-option').forEach(function(el) {
+        el.classList.toggle('selected', el.dataset.value === v);
       });
     }
-    async function loadLeads() {
-      document.getElementById('leadsLoading').style.display='block'; document.getElementById('leadsList').innerHTML='';
+
+    async function saveObject(event) {
+      event.preventDefault();
+      var btn = document.getElementById('saveBtn');
+      var ot = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Сохранение...';
+     
       try {
-        var result = await apiCall('get_leads', {}); leads = result.data || [];
+        var p = {
+          name: document.getElementById('fieldName').value.trim(),
+          address: document.getElementById('fieldAddress').value.trim(),
+          district: document.getElementById('fieldDistrict').value.trim(),
+          metro: document.getElementById('fieldMetro').value.trim(),
+          price_from: parseFloat(document.getElementById('fieldPriceFrom').value)||'',
+          price_to: parseFloat(document.getElementById('fieldPriceTo').value)||'',
+          price_per_sqm: parseFloat(document.getElementById('fieldPriceSqm').value)||'',
+          area_min: parseFloat(document.getElementById('fieldAreaMin').value)||'',
+          area_max: parseFloat(document.getElementById('fieldAreaMax').value)||'',
+          rooms: document.getElementById('fieldRooms').value.trim(),
+          class: document.getElementById('fieldClass').value,
+          completion_soonest: document.getElementById('fieldCompletionSoonest').value.trim(),
+          completion_all: document.getElementById('fieldCompletionAll').value.trim(),
+          finishing: document.getElementById('fieldFinishing').value,
+          status: document.getElementById('fieldStatus').value,
+          description: document.getElementById('fieldDescription').value.trim(),
+          features: document.getElementById('fieldFeatures').value.trim(),
+          image_main: photoStore.main,
+          images_gallery: photoStore.gallery.join(','),
+          floor_plans_images: photoStore.plans.join(','),
+          lat: parseFloat(document.getElementById('fieldLat').value)||'',
+          lng: parseFloat(document.getElementById('fieldLng').value)||'',
+          active: currentStatus==='true'
+        };
+       
+        if (currentEditId) {
+          p.id = currentEditId;
+          await apiCall('update', p);
+          showToast('✅ Объект обновлён');
+        } else {
+          await apiCall('create', p);
+          showToast('✅ Объект создан');
+        }
+        closeModal();
+        setTimeout(loadObjects, 1000);
+      } catch (e) {
+        showToast('❌ Ошибка: '+ e.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = ot;
+      }
+    }
+
+    async function deleteObject() {
+      if (!currentEditId || !confirm('Удалить объект?')) return;
+      var btn = document.getElementById('deleteBtn');
+      btn.disabled = true;
+      btn.textContent = 'Удаление...';
+      try {
+        await apiCall('delete', { id: currentEditId });
+        showToast('✅ Удалён');
+        closeModal();
+        setTimeout(loadObjects, 1000);
+      } catch (e) {
+        showToast('❌ Ошибка');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Удалить объект';
+      }
+    }
+
+    // === ЗАГРУЗКА ФОТО (СИНХРОННАЯ!) ===
+    async function uploadPhoto(type, input) {
+      if (!input.files || input.files.length === 0) return;
+      var files = Array.from(input.files);
+      var btn = input.parentElement;
+      var ot = btn.innerHTML;
+      btn.innerHTML = '⏳ Загрузка...';
+     
+      try {
+        for (var i = 0; i < files.length; i++) {
+          var file = files[i];
+          var base64 = await fileToBase64(file);
+         
+          // Отправляем через no-cors (как в app.js)
+          await fetch(config.scriptUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify({
+              action: 'upload_image',
+              agentId: AGENT_ID,
+              pin: sessionStorage.getItem('adminPin'),
+              data: { image: base64, fileName: file.name }
+            })
+          });
+         
+          // После отправки ждём 1.5 секунды (как в старой версии), чтобы Apps Script успел записать файл
+          await new Promise(resolve => setTimeout(resolve, 1500));
+         
+          // Получаем последний URL через GET
+          var lastRes = await fetch(config.scriptUrl + '?action=get_last_file_url');
+          var lastData = await lastRes.json();
+         
+          if (lastData.url) {
+            addPhotoToField(type, lastData.url);
+          }
+        }
+        showToast('✅ Фото загружено');
+      } catch (e) {
+        showToast('❌ Ошибка загрузки: ' + e.message);
+      } finally {
+        btn.innerHTML = ot;
+        setTimeout(function() { input.value = ''; }, 500);
+      }
+    }
+
+    function fileToBase64(file) {
+      return new Promise(function(res, rej) {
+        var r = new FileReader();
+        r.onload = function() { res(r.result); };
+        r.onerror = function(e) { rej(e); };
+        r.readAsDataURL(file);
+      });
+    }
+   
+    function addPhotoToField(type, url) {
+      if (type==='main') {
+        photoStore.main=url;
+        document.getElementById('fieldImageMain').value=url;
+        renderPhotoPreview('main',[url]);
+      }
+      else if (type==='gallery') {
+        if (photoStore.gallery.indexOf(url)===-1) photoStore.gallery.push(url);
+        document.getElementById('fieldImagesGallery').value=photoStore.gallery.join(',');
+        renderPhotoPreview('gallery',photoStore.gallery);
+      }
+      else if (type==='plans') {
+        if (photoStore.plans.indexOf(url)===-1) photoStore.plans.push(url);
+        document.getElementById('fieldFloorPlansImages').value=photoStore.plans.join(',');
+        renderPhotoPreview('plans',photoStore.plans);
+      }
+    }
+   
+    function removePhoto(type, idx) {
+      if (type==='main') {
+        photoStore.main='';
+        document.getElementById('fieldImageMain').value='';
+        renderPhotoPreview('main',[]);
+      }
+      else if (type==='gallery') {
+        photoStore.gallery.splice(idx,1);
+        document.getElementById('fieldImagesGallery').value=photoStore.gallery.join(',');
+        renderPhotoPreview('gallery',photoStore.gallery);
+      }
+      else if (type==='plans') {
+        photoStore.plans.splice(idx,1);
+        document.getElementById('fieldFloorPlansImages').value=photoStore.plans.join(',');
+        renderPhotoPreview('plans',photoStore.plans);
+      }
+    }
+   
+    function renderPhotoPreview(type, urls) {
+      var cid = type==='main'?'mainPhotoPreview':type==='gallery'?'galleryPreview':'plansPreview';
+      var c = document.getElementById(cid);
+      c.innerHTML = '';
+      urls.forEach(function(url, idx) {
+        if (!url) return;
+        var du = url.indexOf('lh3.googleusercontent.com/d/')!==-1
+          ?'https://drive.google.com/thumbnail?id='+url.split('/d/')[1]+'&sz=w400'
+          :url;
+        var w = document.createElement('div');
+        w.style.position='relative';
+        w.style.display='inline-block';
+        var img = document.createElement('img');
+        img.src=du;
+        img.className='photo-thumb';
+        img.onerror=function(){this.style.background='#E0E6ED';};
+        var rb = document.createElement('button');
+        rb.className='photo-remove';
+        rb.textContent='✕';
+        rb.onclick=function(e){e.stopPropagation();removePhoto(type,idx);};       
+        w.appendChild(img);
+        w.appendChild(rb);
+        c.appendChild(w);
+      });
+    }
+
+    // === ЗАЯВКИ ===
+    async function loadLeads() {
+      document.getElementById('leadsLoading').style.display='block';
+      document.getElementById('leadsList').innerHTML='';
+      try {
+        var result = await apiCall('get_leads', {});
+        leads = result.data || [];
         document.getElementById('leadsLoading').style.display='none';
-        if (leads.length===0) { document.getElementById('leadsList').innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><h3>Нет заявок</h3></div>'; return; }
+       
+        if (leads.length===0) {
+          document.getElementById('leadsList').innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><h3>Нет заявок</h3></div>';
+          return;
+        }
+       
         leads.forEach(function(lead) {
-          var card = document.createElement('div'); card.className='lead-card';
+          var card = document.createElement('div');
+          card.className='lead-card';
           var sc = 'status-'+(lead.status==='Новая'?'new':lead.status==='Обзвонена'?'contacted':lead.status==='Завершена'?'completed':'cancelled');
           var pd = lead.clientPhone && String(lead.clientPhone).indexOf('#ERROR')===-1 ? escapeHtml(lead.clientPhone) : 'Не указан';
           var td = lead.clientTelegram && lead.clientTelegram!=='Не указан' && String(lead.clientTelegram).indexOf('#ERROR')===-1 ? '<div class="lead-info">💬 '+escapeHtml(lead.clientTelegram)+'</div>' : '';
+         
           card.innerHTML = '<div class="lead-header"><div class="lead-object">🏢 '+escapeHtml(lead.objectName||'Не указан')+'</div><div class="lead-status '+sc+'">'+escapeHtml(lead.status||'Новая')+'</div></div>'+
             '<div class="lead-info">👤 '+escapeHtml(lead.clientName||'Не указано')+'</div><div class="lead-info">📞 '+pd+'</div>'+td+
             '<div class="lead-info">🕐 '+escapeHtml(lead.timestamp||'Не указано')+'</div>'+
@@ -478,60 +735,45 @@
             '<button class="status-btn '+(lead.status==='Отменена'?'active':'')+'" onclick="updateLeadStatus(\''+lead.id+'\',\'cancelled\')">❌ Отменена</button></div>';
           document.getElementById('leadsList').appendChild(card);
         });
-      } catch (e) { document.getElementById('leadsLoading').style.display='none'; showToast('❌ Ошибка загрузки заявок'); }
+      } catch (e) {
+        document.getElementById('leadsLoading').style.display='none';
+        showToast('❌ Ошибка загрузки заявок');
+      }
     }
-    async function updateLeadStatus(id, status) { try { await apiCall('update_lead_status',{id:id,status:status}); showToast('✅ Статус обновлён'); loadLeads(); } catch(e) { showToast('❌ Ошибка'); } }
+   
+    async function updateLeadStatus(id, status) {
+      try {
+        await apiCall('update_lead_status',{id:id,status:status});
+        showToast('✅ Статус обновлён');
+        loadLeads();
+      } catch(e) {
+        showToast('❌ Ошибка');
+      }
+    }
+
+    // === ПРОФИЛЬ ===
     async function loadProfile() {
-      document.getElementById('profileLoading').style.display='block';
-      document.getElementById('profileForm').style.display='none';
-      try {
-        // Загружаем профиль агента
-        var profileResult = await apiCall('get_agent_profile',{});
-        currentAgentData = profileResult.data || {};
-
-        // Загружаем страницу "Обо мне" из листа Pages
-        var pagesResult = await apiCall('get_pages',{});
-        var pagesList = pagesResult.data || [];
-        var aboutPage = pagesList.find(function(p){ return p.page === 'about'; });
-
-        document.getElementById('profileLoading').style.display='none';
-        document.getElementById('profileForm').style.display='block';
-
-        // Заполняем поля профиля
-        document.getElementById('profileName').value=currentAgentData.name||'';
-        document.getElementById('profileSurname').value=currentAgentData.surname||'';
-        document.getElementById('profileRole').value=currentAgentData.role||'';
-        document.getElementById('profileAgencyName').value=currentAgentData.agencyName||'';
-        document.getElementById('profileAgencyAddress').value=currentAgentData.agencyAddress||'';
-        document.getElementById('profileTelegram').value=currentAgentData.telegramUsername||'';
-        document.getElementById('profilePhone').value=currentAgentData.phone||'';
-        document.getElementById('profilePhotoUrl').value=currentAgentData.photoUrl||'';
-        document.getElementById('welcomeBgUrl').value=currentAgentData.welcomeBgUrl||'';
-        document.getElementById('profilePrimaryColor').value=currentAgentData.primaryColor||'#3D5266';
-        document.getElementById('profileAccentColor').value=currentAgentData.accentColor||'#3498DB';
-        document.getElementById('profileWelcomeTitle').value=currentAgentData.welcomeTitle||'КАТАЛОГ НОВОСТРОЕК';
-        document.getElementById('profileWelcomeTagline').value=currentAgentData.welcomeTagline||'Подберём квартиру под ваш бюджет';
-        document.getElementById('profileButtonText').value=currentAgentData.buttonText||'НАЧАТЬ ПОДБОР';
-
-        // Установка темы
-        var theme = currentAgentData.colorTheme || 'classic';
-        document.querySelectorAll('.color-theme-option').forEach(function(opt) { opt.classList.remove('selected'); });
-        var selectedOpt = document.querySelector('.color-theme-option[data-theme="' + theme + '"]');
-        if (selectedOpt) selectedOpt.classList.add('selected');
-        document.getElementById('customColorsBlock').style.display = theme === 'custom' ? 'block' : 'none';
-
-        // Заполняем поля "Обо мне" из листа Pages
-        document.getElementById('profileAboutTitle').value = aboutPage ? (aboutPage.title || 'Обо мне') : 'Обо мне';
-        document.getElementById('profileAboutContent').value = aboutPage ? (aboutPage.content || '') : '';
-
-        // Превью фото
-        if (currentAgentData.photoUrl) renderPhotoPreview('profile',[currentAgentData.photoUrl]);
-        if (currentAgentData.welcomeBgUrl) renderPhotoPreview('welcomeBg',[currentAgentData.welcomeBgUrl]);
-      } catch(e) {
-        document.getElementById('profileLoading').style.display='none';
-        showToast('❌ Ошибка загрузки профиля');
-      }
-    }
+      document.getElementById('profileLoading').style.display='block';
+      document.getElementById('profileForm').style.display='none';
+      try {
+        var result = await apiCall('get_agent_profile',{});
+        currentAgentData = result.data || {};
+        document.getElementById('profileLoading').style.display='none';
+        document.getElementById('profileForm').style.display='block';
+        document.getElementById('profileName').value=currentAgentData.name||'';
+        document.getElementById('profileRole').value=currentAgentData.role||'';
+        document.getElementById('profileAgencyName').value=currentAgentData.agencyName||'';
+        document.getElementById('profileAgencyAddress').value=currentAgentData.agencyAddress||'';
+        document.getElementById('profileTelegram').value=currentAgentData.telegramUsername||'';
+        document.getElementById('profilePhone').value=currentAgentData.phone||'';
+        document.getElementById('profilePhotoUrl').value=currentAgentData.photoUrl||'';
+        if (currentAgentData.photoUrl) renderPhotoPreview('profile',[currentAgentData.photoUrl]);
+      } catch(e) {
+        document.getElementById('profileLoading').style.display='none';
+        showToast('❌ Ошибка загрузки профиля');
+      }
+    }
+   
     async function saveProfile(event) {
       event.preventDefault();
       var btn=event.target.querySelector('button[type="submit"]');
@@ -539,88 +781,100 @@
       btn.disabled=true;
       btn.textContent='Сохранение...';
       try {
-        // Сохраняем профиль агента
-        var theme = document.querySelector('.color-theme-option.selected').dataset.theme;
-        var primary = theme === 'custom' ? document.getElementById('profilePrimaryColor').value : '';
-        var accent = theme === 'custom' ? document.getElementById('profileAccentColor').value : '';
-
         await apiCall('update_agent_profile',{
           name:document.getElementById('profileName').value.trim(),
-          surname:document.getElementById('profileSurname').value.trim(),
           role:document.getElementById('profileRole').value.trim(),
           agencyName:document.getElementById('profileAgencyName').value.trim(),
           agencyAddress:document.getElementById('profileAgencyAddress').value.trim(),
           telegramUsername:document.getElementById('profileTelegram').value.trim(),
           phone:document.getElementById('profilePhone').value.trim(),
-          photoUrl:document.getElementById('profilePhotoUrl').value.trim(),
-          welcomeBgUrl:document.getElementById('welcomeBgUrl').value.trim(),
-          colorTheme: theme,
-          primaryColor: primary,
-          accentColor: accent,
-          welcomeTitle:document.getElementById('profileWelcomeTitle').value.trim(),
-          welcomeTagline:document.getElementById('profileWelcomeTagline').value.trim(),
-          buttonText:document.getElementById('profileButtonText').value.trim()
+          photoUrl:document.getElementById('profilePhotoUrl').value.trim()
         });
+        showToast('✅ Профиль сохранён');
+      } catch(e) {
+        showToast('❌ Ошибка');
+      } finally {
+        btn.disabled=false;
+        btn.textContent=ot;
+      }
+    }   
+   
+    async function uploadProfilePhoto(input) {
+      if (!input.files||input.files.length===0) return;
+      var file=input.files[0];
+      var btn=input.parentElement;
+      var ot=btn.innerHTML;
+      btn.innerHTML='⏳ Загрузка...';
+      try {
+        var base64=await fileToBase64(file);
+        await fetch(config.scriptUrl, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify({
+            action: 'upload_image',
+            agentId: AGENT_ID,
+            pin: sessionStorage.getItem('adminPin'),
+            data: { image: base64, fileName: file.name }
+          })
+        });
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        var lastRes = await fetch(config.scriptUrl + '?action=get_last_file_url');
+        var lastData = await lastRes.json();
+        if (lastData.url) {
+          document.getElementById('profilePhotoUrl').value=lastData.url;
+          renderPhotoPreview('profile',[lastData.url]);
+          showToast('✅ Фото загружено');
+        }
+      } catch(e) {
+        showToast('❌ Ошибка');
+      } finally {
+        btn.innerHTML=ot;
+        input.value='';
+      }
+    }
 
-        // Сохраняем страницу "Обо мне" в лист Pages
+    // === СТРАНИЦА "ОБО МНЕ" ===
+    async function loadAboutPage() {
+      document.getElementById('aboutLoading').style.display='block';
+      document.getElementById('aboutForm').style.display='none';
+      try {
+        var result = await apiCall('get_pages',{});
+        pagesData=result.data||[];
+        var aboutPage=pagesData.find(function(p){return p.page==='about';});
+        document.getElementById('aboutLoading').style.display='none';
+        document.getElementById('aboutForm').style.display='block';
+        document.getElementById('aboutTitle').value=aboutPage?aboutPage.title:'Обо мне';
+        document.getElementById('aboutContent').value=aboutPage?aboutPage.content:'';
+      } catch(e) {
+        document.getElementById('aboutLoading').style.display='none';
+        showToast('❌ Ошибка');
+      }
+    }
+   
+    async function saveAboutPage(event) {
+      event.preventDefault();
+      var btn=event.target.querySelector('button[type="submit"]');
+      var ot=btn.textContent;
+      btn.disabled=true;
+      btn.textContent='Сохранение...';
+      try {
         await apiCall('update_page',{
           page:'about',
-          title:document.getElementById('profileAboutTitle').value.trim(),
-          content:document.getElementById('profileAboutContent').value.trim()
+          title:document.getElementById('aboutTitle').value.trim(),
+          content:document.getElementById('aboutContent').value.trim()
         });
-
-        showToast('✅ Профиль и страница "Обо мне" сохранены');
-      } catch(e) {
-        showToast('❌ Ошибка: ' + e.message);
+        showToast('✅ Страница сохранена');
+      }
+      catch(e) {
+        showToast('❌ Ошибка');
       } finally {
         btn.disabled=false;
         btn.textContent=ot;
       }
     }
-    async function uploadProfilePhoto(input) {
-      if (!input.files || input.files.length === 0) return;
-      if (!config.supabaseUrl || !config.supabaseAnonKey) { showToast('❌ Supabase не настроен'); return; }
-      var file = input.files[0]; var btn = input.parentElement; var ot = btn.innerHTML; btn.innerHTML = '⏳ Загрузка...';
-      try {
-        var fileName = AGENT_ID + '/profile_' + Date.now() + '_' + file.name.replace(/\s+/g, '_');
-        var uploadUrl = config.supabaseUrl + '/storage/v1/object/property-images/' + fileName;
-        var uploadResponse = await fetch(uploadUrl, { method: 'POST', headers: { 'Authorization': 'Bearer ' + config.supabaseAnonKey, 'Content-Type': file.type, 'x-upsert': 'true' }, body: file });
-        if (!uploadResponse.ok) throw new Error('Ошибка загрузки: ' + uploadResponse.status);
-        var publicUrl = config.supabaseUrl + '/storage/v1/object/public/property-images/' + fileName;
-        document.getElementById('profilePhotoUrl').value = publicUrl;
-        renderPhotoPreview('profile', [publicUrl]);
-        showToast('✅ Фото загружено');
-      } catch (e) { showToast('❌ Ошибка: ' + e.message); }
-      finally { btn.innerHTML = ot; input.value = ''; }
-    }
-    async function uploadWelcomeBg(input) {
-      if (!input.files || input.files.length === 0) return;
-      if (!config.supabaseUrl || !config.supabaseAnonKey) { showToast('❌ Supabase не настроен'); return; }
-      var file = input.files[0]; var btn = input.parentElement; var ot = btn.innerHTML; btn.innerHTML = '⏳ Загрузка...';
-      try {
-        var fileName = AGENT_ID + '/welcome_bg_' + Date.now() + '_' + file.name.replace(/\s+/g, '_');
-        var uploadUrl = config.supabaseUrl + '/storage/v1/object/property-images/' + fileName;
-        var uploadResponse = await fetch(uploadUrl, { method: 'POST', headers: { 'Authorization': 'Bearer ' + config.supabaseAnonKey, 'Content-Type': file.type, 'x-upsert': 'true' }, body: file });
-        if (!uploadResponse.ok) throw new Error('Ошибка загрузки: ' + uploadResponse.status);
-        var publicUrl = config.supabaseUrl + '/storage/v1/object/public/property-images/' + fileName;
-        document.getElementById('welcomeBgUrl').value = publicUrl;
-        renderPhotoPreview('welcomeBg', [publicUrl]);
-        showToast('✅ Фон загружен');
-      } catch (e) { showToast('❌ Ошибка: ' + e.message); }
-      finally { btn.innerHTML = ot; input.value = ''; }
-    }
-    function renderPhotoPreview(type, urls) {
-      var cid = type==='main'?'mainPhotoPreview':type==='gallery'?'galleryPreview':type==='plans'?'plansPreview':type==='profile'?'profilePhotoPreview':type==='welcomeBg'?'welcomeBgPreview':'';
-      var c = document.getElementById(cid); if (!c) return; c.innerHTML = '';
-      urls.forEach(function(url, idx) {
-        if (!url) return;
-        var du = url.indexOf('lh3.googleusercontent.com/d/')!==-1 ? 'https://drive.google.com/thumbnail?id='+url.split('/d/')[1]+'&sz=w400' : url;
-        var w = document.createElement('div'); w.style.position='relative'; w.style.display='inline-block';
-        var img = document.createElement('img'); img.src=du; img.className='photo-thumb'; img.onerror=function(){this.style.background='#E0E6ED';};
-        var rb = document.createElement('button'); rb.className='photo-remove'; rb.textContent='✕'; rb.onclick=function(e){e.stopPropagation();removePhoto(type,idx);};
-        w.appendChild(img); w.appendChild(rb); c.appendChild(w);
-      });
-    }
+
+    // === СМЕНА PIN ===
     async function changePin() {
       var current=document.getElementById('currentPin').value;
       var newP=document.getElementById('newPin').value;
@@ -628,24 +882,45 @@
       if (!current||!newP||!confirm) { showToast('⚠️ Заполните все поля'); return; }
       if (newP!==confirm) { showToast('⚠️ Новые PIN не совпадают'); return; }
       if (newP.length<4) { showToast('⚠️ PIN минимум 4 символа'); return; }
-      var btn=event.target; var ot=btn.textContent; btn.disabled=true; btn.textContent='Сохранение...';
+     
+      var btn=event.target;
+      var ot=btn.textContent;
+      btn.disabled=true;
+      btn.textContent='Сохранение...';
       try {
         await apiCall('change_pin',{oldPin:current,newPin:newP});
-        showToast('✅ PIN изменён. Перезагрузка...');
-        sessionStorage.removeItem('adminAuth'); sessionStorage.removeItem('adminPin'); sessionStorage.removeItem('tg_initData');
-        setTimeout(function() { location.reload(); }, 1000);
-      } catch(e) { showToast('❌ '+e.message); }
-      finally { btn.disabled=false; btn.textContent=ot; }
+        showToast('✅ PIN изменён');
+        document.getElementById('currentPin').value='';
+        document.getElementById('newPin').value='';
+        document.getElementById('confirmPin').value='';
+        sessionStorage.setItem('adminPin',newP);
+      } catch(e) {
+        showToast('❌ '+e.message);
+      } finally {
+        btn.disabled=false;
+        btn.textContent=ot;
+      }
     }
-    function escapeHtml(t) { if(!t) return ''; var d=document.createElement('div'); d.textContent=String(t); return d.innerHTML; }
-    function showToast(m) { var t=document.getElementById('toast'); t.textContent=m; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); setTimeout(function(){t.classList.remove('show');},3000); }
-    document.getElementById('objectModal').addEventListener('click', function(e) { if(e.target===this) closeModal(); });
-    document.querySelectorAll('.color-theme-option').forEach(function(opt) {
-      opt.addEventListener('click', function() {
-        document.querySelectorAll('.color-theme-option').forEach(function(o) { o.classList.remove('selected'); });
-        this.classList.add('selected');
-        document.getElementById('customColorsBlock').style.display = this.dataset.theme === 'custom' ? 'block' : 'none';
-      });
+
+    // === УТИЛИТЫ ===
+    function escapeHtml(t) {
+      if(!t) return '';
+      var d=document.createElement('div');
+      d.textContent=String(t);
+      return d.innerHTML;
+    }
+   
+    function showToast(m) {
+      var t=document.getElementById('toast');
+      t.textContent=m;
+      t.classList.remove('show');
+      void t.offsetWidth;
+      t.classList.add('show');
+      setTimeout(function(){t.classList.remove('show');},3000);
+    }
+
+    document.getElementById('objectModal').addEventListener('click', function(e) {
+      if(e.target===this) closeModal();
     });
   </script>
 </body>
