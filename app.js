@@ -133,8 +133,9 @@ async function initAgent() {
             applyBrandConfig(AGENT_CONFIG);
             var adminBtn = document.getElementById('adminMenuItem');
             if (adminBtn) {
-                adminBtn.style.display = data.isOwner ? 'block' : 'none';
-                console.log('[initAgent] Кнопка админки:', data.isOwner ? '✅ показана' : '❌ скрыта');
+                var isAdminUrl = params.get('admin') === '1';
+                adminBtn.style.display = (data.isOwner || isAdminUrl) ? 'block' : 'none';
+                console.log('[initAgent] Кнопка админки:', (data.isOwner || isAdminUrl) ? '✅ показана' : '❌ скрыта');
             }
             return true;
         } else {
