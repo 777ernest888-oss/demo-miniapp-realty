@@ -1,4 +1,3 @@
-let config = {};
 let listings = [];
 let currentAgentData = {};
 let pagesData = {};
