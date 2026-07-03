@@ -1,13 +1,14 @@
-let listings = [];
-let currentAgentData = {};
-let pagesData = {};
-let currentModalId = null;
-let map = null;
-let markers = [];
-let currentPage = 'home';
-let tg;
-let AGENT_ID = '';
-let AGENT_CONFIG = null;
+var config = window.config || {};
+var listings = window.listings || [];
+var currentAgentData = window.currentAgentData || {};
+var pagesData = window.pagesData || {};
+var currentModalId = window.currentModalId || null;
+var map = window.map || null;
+var markers = window.markers || [];
+var currentPage = window.currentPage || 'home';
+var tg = window.tg;
+var AGENT_ID = window.AGENT_ID || '';
+var AGENT_CONFIG = window.AGENT_CONFIG || null;
 
 // === КЭШИРОВАНИЕ ===
 const CACHE_KEY = 'app_cache_v1';
