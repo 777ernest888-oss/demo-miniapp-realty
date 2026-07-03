@@ -67,7 +67,7 @@ async function initAgent() {
             AGENT_ID = agentParam;
             console.log('[initAgent] Agent из URL:', AGENT_ID);
         }
-        else if (hostname && hostname !== 'prostors.ru' && !hostname.endsWith('.prostors.ru') && !hostname.includes('github.io')) {
+        else if (hostname && hostname !== 'prostors.ru' && !hostname.endsWith('.prostors.ru')) {
             console.log('[initAgent] Кастомный домен:', hostname);
             var response = await fetch(config.client.scriptUrl + '?action=resolve_agent_by_domain&domain=' + encodeURIComponent(hostname));
             var data = await response.json();
