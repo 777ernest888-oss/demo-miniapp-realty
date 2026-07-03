@@ -186,27 +186,68 @@ async function loadPagesData() {
 }
 
 async function loadPropertiesFromScript() {
-    if (!config.client || !config.client.scriptUrl) { console.log('[loadProperties] No scriptUrl'); return []; }
+    if (!config.client || !config.client.scriptUrl) {
+        console.log('[loadProperties] No scriptUrl');
+        return [];
+    }
     try {
         var url = config.client.scriptUrl;
-        if (AGENT_ID) url += (url.includes('?') ? '&' : '?') + 'agent_id=' + AGENT_ID;
-        console.log('[loadProperties] Fetching:', url);
+        if (AGENT_ID) {
+            url += (url.includes('?') ? '&' : '?') + 'agent_id=' + AGENT_ID;
+        }
+        console.log('[loadProperties] Fetching URL:', url);
+        console.log('[loadProperties] AGENT_ID:', AGENT_ID);
+       
         const response = await fetch(url);
-        if (!response.ok) { console.error('[loadProperties] ❌ HTTP:', response.status); return []; }
+        if (!response.ok) {
+            console.error('[loadProperties] ❌ HTTP error:', response.status);
+            return [];
+        }
+       
         const data = await response.json();
-        if (data.error) { console.error('[loadProperties] ❌ Script error:', data.error); return []; }        if (Array.isArray(data) && data.length > 1) {
-            const headers = data[0];
-            const rows = data.slice(1);
+        console.log('[loadProperties] Raw response:', data);
+       
+        // Проверяем формат ответа
+        let arrayData = null;
+        if (Array.isArray(data)) {
+            arrayData = data;
+        } else if (data && Array.isArray(data.data)) {
+            arrayData = data.data;
+        } else if (data && data.success && Array.isArray(data.properties)) {
+            arrayData = data.properties;
+        } else {
+            console.error('[loadProperties] ❌ Unexpected data format:', typeof data, data);
+            return [];
+        }
+       
+        if (!arrayData || arrayData.length === 0) {
+            console.log('[loadProperties] ⚠️ Empty data');
+            return [];
+        }
+       
+        // Если первый элемент - массив заголовков
+        if (Array.isArray(arrayData[0])) {
+            const headers = arrayData[0];
+            const rows = arrayData.slice(1);
             const result = rows.map(function(row) {
                 const obj = {};
-                headers.forEach(function(header, i) { obj[header] = row[i]; });
+                headers.forEach(function(header, i) {
+                    obj[header] = row[i];
+                });
                 return obj;
             });
-            console.log('[loadProperties] ✅ Loaded', result.length, 'properties');
+            console.log('[loadProperties] ✅ Loaded', result.length, 'properties from array format');
             return result;
         }
+       
+        // Если уже объекты
+        console.log('[loadProperties] ✅ Loaded', arrayData.length, 'properties from object format');
+        return arrayData;
+       
+    } catch (e) {
+        console.error('[loadProperties] ❌ Exception:', e);
         return [];
-    } catch (e) { console.error('[loadProperties] ❌ Exception:', e); return []; }
+    }
 }
 
 function parseCSV(csv) {
