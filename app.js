@@ -11,12 +11,12 @@ var AGENT_ID = window.AGENT_ID || '';
 var AGENT_CONFIG = window.AGENT_CONFIG || null;
 
 // === КЭШИРОВАНИЕ ===
-const CACHE_KEY = 'app_cache_v1';
-const CACHE_TTL = 5 * 60 * 1000; // 5 минут
+var CACHE_KEY = window.CACHE_KEY || 'app_cache_v1';
+var CACHE_TTL = window.CACHE_TTL || (5 * 60 * 1000);
 
 function getCachedData() {
     try {
-        const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
+        var cached = JSON.parse(localStorage.getItem(CACHE_KEY));
         if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
             console.log('[Cache] ✅ Используем кэш');
             return cached.data;
@@ -42,7 +42,7 @@ function getImageUrl(sourceUrl) {
 }
 
 function onImgError(e) {
-    const img = e.target || e;
+    var img = e.target || e;
     if (img && img.tagName === 'IMG') {
         img.onerror = null;
         img.src = 'data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" width="300" height="200"><rect width="300" height="200" fill="%23f0f0f0"/><text x="50%" y="50%" font-family="sans-serif" font-size="14" fill="%23999" text-anchor="middle" dy=".3em">Фото</text></svg>';
@@ -68,7 +68,7 @@ try {
 
 async function loadClientConfig() {
     try {
-        const response = await fetch('client-config.json?v=2.0.1');
+        var response = await fetch('client-config.json?v=2.0.2');
         config = await response.json();
         console.log('[loadClientConfig] ✅ Config загружен:', config);
     } catch (error) {
@@ -188,73 +188,31 @@ function showErrorScreen(message) {
         '<p style="color:#95A5A6;font-size:14px;">Обратитесь к администратору</p></div>';
 }
 
-async function loadAgentData() {
-    try {
-        if (!config.sheets || !config.sheets.agentData) return;
-        const res = await fetch(config.sheets.agentData);
-        if (!res.ok) throw new Error('Network error');
-        const csv = await res.text();
-        const parsed = parseCSV(csv);
-        if (parsed.length > 0) currentAgentData = parsed[0];
-        console.log('[loadAgentData] ✅ Загружено:', currentAgentData);
-    } catch (e) { console.warn('[loadAgentData] ⚠️ Error:', e); }
-}
-
 async function loadPagesData() {
     try {
         if (!config.sheets || !config.sheets.pages) return;
-        const res = await fetch(config.sheets.pages);
+        var res = await fetch(config.sheets.pages);
         if (!res.ok) throw new Error('Network error');
-        const csv = await res.text();
-        const rows = parseCSV(csv);
+        var csv = await res.text();
+        var rows = parseCSV(csv);
         rows.forEach(function(row) {
             if (row.page && row.title) pagesData[row.page] = { title: row.title, content: row.content || '' };
         });
         console.log('[loadPagesData] ✅ Загружено страниц:', Object.keys(pagesData).length);
-    } catch (e) { console.warn('[loadPagesData] ️ Error:', e); }
-}
-
-async function loadPropertiesFromScript() {
-    if (!config.client || !config.client.scriptUrl) {
-        console.log('[loadProperties] No scriptUrl');
-        return [];
-    }
-    try {
-        var url = config.client.scriptUrl + '?action=get_all&agent_id=' + AGENT_ID;
-        console.log('[loadProperties] Fetching URL:', url);
-
-        const response = await fetch(url);
-        if (!response.ok) {
-            console.error('[loadProperties] ❌ HTTP error:', response.status);
-            return [];
-        }
-
-        const data = await response.json();
-        if (data.success && Array.isArray(data.listings)) {
-            console.log('[loadProperties] ✅ Loaded', data.listings.length, 'properties');
-            return data.listings;
-        }
-
-        console.log('[loadProperties] ⚠️ No listings in response');
-        return [];
-
-    } catch (e) {
-        console.error('[loadProperties] ❌ Exception:', e);
-        return [];
-    }
+    } catch (e) { console.warn('[loadPagesData] ⚠️ Error:', e); }
 }
 
 function parseCSV(csv) {
-    const lines = csv.trim().split('\n');
+    var lines = csv.trim().split('\n');
     if (lines.length < 2) return [];
-    const headers = parseCSVLine(lines[0]).map(function(h) { return h.trim(); });
-    const result = [];
-    for (let i = 1; i < lines.length; i++) {
+    var headers = parseCSVLine(lines[0]).map(function(h) { return h.trim(); });
+    var result = [];
+    for (var i = 1; i < lines.length; i++) {
         if (!lines[i].trim()) continue;
-        const values = parseCSVLine(lines[i]);
-        const obj = {};
+        var values = parseCSVLine(lines[i]);
+        var obj = {};
         headers.forEach(function(header, index) {
-            let value = values[index] !== undefined ? values[index].trim() : '';
+            var value = values[index] !== undefined ? values[index].trim() : '';
             if (value === 'TRUE') value = true;
             else if (value === 'FALSE') value = false;
             else if (!isNaN(value) && value !== '') value = Number(value);
@@ -266,9 +224,9 @@ function parseCSV(csv) {
 }
 
 function parseCSVLine(line) {
-    const result = []; let current = ''; let inQuotes = false;
-    for (let i = 0; i < line.length; i++) {
-        const char = line[i];
+    var result = []; var current = ''; var inQuotes = false;
+    for (var i = 0; i < line.length; i++) {
+        var char = line[i];
         if (char === '"') inQuotes = !inQuotes;
         else if (char === ',' && !inQuotes) { result.push(current); current = ''; }
         else current += char;
@@ -301,17 +259,17 @@ function showPage(pageId) {
     if (pageId === 'home') { document.getElementById('mainContent').classList.remove('hidden'); hideBack(); }
     else if (pageId === 'contacts') { renderContactsPage(); document.getElementById('page-contacts').classList.remove('hidden'); showBack(); }
     else {
-        const data = pagesData[pageId];
-        const targetPage = document.getElementById('page-' + pageId);
+        var data = pagesData[pageId];
+        var targetPage = document.getElementById('page-' + pageId);
         if (data && targetPage) {
             targetPage.querySelector('.page-header h2').textContent = data.title;
             targetPage.querySelector('.page-content').innerHTML = data.content;
             if (pageId === 'about') {
-                let imageSrc = AGENT_CONFIG && AGENT_CONFIG.agentPhotoUrl ? AGENT_CONFIG.agentPhotoUrl : (config.branding ? config.branding.agentPhoto : null);
+                var imageSrc = AGENT_CONFIG && AGENT_CONFIG.agentPhotoUrl ? AGENT_CONFIG.agentPhotoUrl : (config.branding ? config.branding.agentPhoto : null);
                 if (!imageSrc && config.branding && config.branding.logo && config.branding.logo !== 'logo.png') imageSrc = config.branding.logo;
                 if (imageSrc) {
-                    const contentDiv = targetPage.querySelector('.page-content');
-                    const img = document.createElement('img');
+                    var contentDiv = targetPage.querySelector('.page-content');
+                    var img = document.createElement('img');
                     img.src = getImageUrl(imageSrc); img.className = 'about-agent-photo'; img.alt = 'Фото'; img.onerror = onImgError;
                     contentDiv.insertBefore(img, contentDiv.firstChild);
                 }
@@ -327,18 +285,19 @@ function showPage(pageId) {
     }
     window.scrollTo(0, 0);
 }
+
 function renderContactsPage() {
-    const data = currentAgentData;
+    var data = currentAgentData;
     document.getElementById('agentName').textContent = data.name || 'Имя Агента';
     document.getElementById('agentRole').textContent = data.role || 'Эксперт по недвижимости';
-    const avatarEl = document.querySelector('.agent-avatar'); avatarEl.innerHTML = '';
-    const agentPhoto = AGENT_CONFIG && AGENT_CONFIG.agentPhotoUrl ? AGENT_CONFIG.agentPhotoUrl : (config.branding ? config.branding.agentPhoto : null);
+    var avatarEl = document.querySelector('.agent-avatar'); avatarEl.innerHTML = '';
+    var agentPhoto = AGENT_CONFIG && AGENT_CONFIG.agentPhotoUrl ? AGENT_CONFIG.agentPhotoUrl : (config.branding ? config.branding.agentPhoto : null);
     if (agentPhoto && agentPhoto.trim() && agentPhoto !== 'logo.png') {
-        const img = document.createElement('img'); img.src = getImageUrl(agentPhoto); img.alt = data.name || 'Агент'; img.onerror = onImgError; avatarEl.appendChild(img);
+        var img = document.createElement('img'); img.src = getImageUrl(agentPhoto); img.alt = data.name || 'Агент'; img.onerror = onImgError; avatarEl.appendChild(img);
     } else if (config.branding && config.branding.logo && config.branding.logo !== 'logo.png') {
-        const img = document.createElement('img'); img.src = getImageUrl(config.branding.logo); img.alt = 'Логотип'; img.onerror = onImgError; avatarEl.appendChild(img);
+        var img = document.createElement('img'); img.src = getImageUrl(config.branding.logo); img.alt = 'Логотип'; img.onerror = onImgError; avatarEl.appendChild(img);
     }
-    const hasAgency = data.agencyName || data.agencyAddress;
+    var hasAgency = data.agencyName || data.agencyAddress;
     document.getElementById('agencyBlock').style.display = hasAgency ? 'block' : 'none';
     document.getElementById('agencyName').textContent = data.agencyName || '';
     document.getElementById('agencyAddress').textContent = data.agencyAddress ? ' ' + data.agencyAddress : '';
@@ -348,32 +307,32 @@ function openMenu() { document.getElementById('menuOverlay').classList.remove('h
 function closeMenu() { document.getElementById('menuOverlay').classList.add('hidden'); document.getElementById('sideMenu').classList.add('hidden'); }
 
 function openDirectChat() {
-    const username = currentAgentData.telegramUsername || '';
+    var username = currentAgentData.telegramUsername || '';
     if (username) { tg.openTelegramLink ? tg.openTelegramLink('https://t.me/' + username) : window.open('https://t.me/' + username); }
     else { tg.showAlert('❌ Telegram не указан'); }
 }
 
 function callAgent() {
-    let phone = currentAgentData.phone;
+    var phone = currentAgentData.phone;
     if (!phone) { tg.showAlert('Телефон не указан'); return; }
-    let cleanPhone = phone.toString().replace(/[^\d+]/g, '');
+    var cleanPhone = phone.toString().replace(/[^\d+]/g, '');
     if (cleanPhone.length === 11 && (cleanPhone.startsWith('7') || cleanPhone.startsWith('8'))) cleanPhone = '+' + cleanPhone;
     if (!cleanPhone.startsWith('+') && cleanPhone.length >= 11) cleanPhone = '+' + cleanPhone;
     window.location.href = 'tel:' + cleanPhone;
 }
 
 function toggleFilters() {
-    const block = document.getElementById('filtersBlock');
-    const btn = document.querySelector('.filters-toggle-btn');
+    var block = document.getElementById('filtersBlock');
+    var btn = document.querySelector('.filters-toggle-btn');
     block.classList.toggle('hidden');
     btn.textContent = block.classList.contains('hidden') ? '🔽 Фильтры' : '🔼 Скрыть фильтры';
 }
 
 function switchView(view) {
-    const listBtn = document.getElementById('listViewBtn');
-    const mapBtn = document.getElementById('mapViewBtn');
-    const listContainer = document.getElementById('listingsContainer');
-    const mapContainer = document.getElementById('mapContainer');
+    var listBtn = document.getElementById('listViewBtn');
+    var mapBtn = document.getElementById('mapViewBtn');
+    var listContainer = document.getElementById('listingsContainer');
+    var mapContainer = document.getElementById('mapContainer');
     if (view === 'list') {
         listBtn.classList.add('active'); mapBtn.classList.remove('active');
         listContainer.classList.remove('hidden'); mapContainer.classList.add('hidden'); hideBack();
@@ -398,15 +357,13 @@ async function init() {
 
         applyTheme(); applyBranding();
 
-        // Пробуем получить из кэша
         var cached = getCachedData();
         if (cached) {
             listings = cached.listings || [];
             currentAgentData = cached.agentData || {};
             console.log('[init] ✅ Загружено из кэша:', listings.length, 'объектов');
         } else {
-            // Загружаем всё одним запросом
-            console.log('[init]  Загружаем данные с сервера...');
+            console.log('[init] 📡 Загружаем данные с сервера...');
             var url = config.client.scriptUrl + '?action=get_all&agent_id=' + AGENT_ID;
             var response = await fetch(url);
             var data = await response.json();
@@ -414,13 +371,7 @@ async function init() {
             if (data.success) {
                 listings = data.listings || [];
                 currentAgentData = data.agentData || {};
-
-                // Сохраняем в кэш
-                setCachedData({
-                    listings: listings,
-                    agentData: currentAgentData
-                });
-
+                setCachedData({ listings: listings, agentData: currentAgentData });
                 console.log('[init] ✅ Загружено с сервера:', listings.length, 'объектов');
             } else {
                 console.error('[init] ❌ Ошибка загрузки:', data.error);
@@ -428,7 +379,6 @@ async function init() {
             }
         }
 
-        // Загружаем страницы отдельно (они из CSV)
         await loadPagesData();
 
         renderWelcome(); renderFilters();
@@ -470,12 +420,18 @@ function renderWelcome() {
 }
 
 function renderFilters() {
-    const districts = [...new Set(listings.map(function(l) { return l.district; }).filter(Boolean))].sort();
+    var districts = [];
+    listings.forEach(function(l) { if (l.district && districts.indexOf(l.district) === -1) districts.push(l.district); });
+    districts.sort();
     var dc = document.getElementById('districtCheckboxes');
     if (dc) { dc.innerHTML = ''; districts.forEach(function(d) { var label = document.createElement('label'); label.className = 'checkbox-label'; label.innerHTML = '<input type="checkbox" value="' + escapeHtml(d) + '" class="filter-checkbox" data-filter="district"><span>' + escapeHtml(d) + '</span>'; dc.appendChild(label); }); }
-    const metros = [...new Set(listings.map(function(l) { return l.metro; }).filter(Boolean))].sort();
+
+    var metros = [];
+    listings.forEach(function(l) { if (l.metro && metros.indexOf(l.metro) === -1) metros.push(l.metro); });
+    metros.sort();
     var mc = document.getElementById('metroCheckboxes');
     if (mc) { mc.innerHTML = ''; metros.forEach(function(m) { var label = document.createElement('label'); label.className = 'checkbox-label'; label.innerHTML = '<input type="checkbox" value="' + escapeHtml(m) + '" class="filter-checkbox" data-filter="metro"><span>' + escapeHtml(m) + '</span>'; mc.appendChild(label); }); }
+
     var rc = document.getElementById('roomsCheckboxes');
     if (rc) {
         var allRooms = [];
@@ -494,13 +450,12 @@ function renderFilters() {
 }
 
 function filterListings() {
-    const activeBtn = document.querySelector('.price-btn.active');
-    const maxPrice = activeBtn ? parseFloat(activeBtn.dataset.price) / 1000000 : Infinity;
-    console.log('[filterListings] maxPrice (млн):', maxPrice);
-    const selectedDistricts = Array.from(document.querySelectorAll('input[data-filter="district"]:checked')).map(function(cb) { return cb.value; });
-    const selectedMetros = Array.from(document.querySelectorAll('input[data-filter="metro"]:checked')).map(function(cb) { return cb.value; });
-    const selectedRooms = Array.from(document.querySelectorAll('input[data-filter="rooms"]:checked')).map(function(cb) { return cb.value; });
-    const filtered = listings.filter(function(item) {
+    var activeBtn = document.querySelector('.price-btn.active');
+    var maxPrice = activeBtn ? parseFloat(activeBtn.dataset.price) / 1000000 : Infinity;
+    var selectedDistricts = Array.from(document.querySelectorAll('input[data-filter="district"]:checked')).map(function(cb) { return cb.value; });
+    var selectedMetros = Array.from(document.querySelectorAll('input[data-filter="metro"]:checked')).map(function(cb) { return cb.value; });
+    var selectedRooms = Array.from(document.querySelectorAll('input[data-filter="rooms"]:checked')).map(function(cb) { return cb.value; });
+    var filtered = listings.filter(function(item) {
         if (!item.active) return false;
         if (typeof item.price_from === 'number' && item.price_from > maxPrice) return false;
         if (selectedDistricts.length > 0 && selectedDistricts.indexOf(item.district) === -1) return false;
@@ -511,7 +466,6 @@ function filterListings() {
         }
         return true;
     });
-    console.log('[filterListings] Показано:', filtered.length, 'из', listings.length);
     renderListings(filtered);
     var mapContainer = document.getElementById('mapContainer');
     if (mapContainer && !mapContainer.classList.contains('hidden')) updateMapMarkers(filtered);
@@ -674,9 +628,6 @@ function submitConsultForm(event) {
         if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) { tg.showAlert('❌ Telegram только латиницей'); return; }
         if (!AGENT_ID) { tg.showAlert('❌ Ошибка: агент не определён'); return; }
 
-        console.log('[submitConsultForm] ✅ Данные собраны');
-        console.log('[submitConsultForm] AGENT_ID:', AGENT_ID);
-
         var sb = event.target.querySelector('button[type="submit"]');
         var originalText = sb.textContent;
         sb.textContent = 'Отправка...';
@@ -685,12 +636,7 @@ function submitConsultForm(event) {
         var payload = {
             action: 'save_lead',
             agentId: AGENT_ID,
-            data: {
-                objectName: item.name,
-                clientName: name,
-                clientPhone: phone,
-                clientTelegram: telegram || 'Не указан'
-            }
+            data: { objectName: item.name, clientName: name, clientPhone: phone, clientTelegram: telegram || 'Не указан' }
         };
 
         fetch(config.client.scriptUrl, {
@@ -700,7 +646,6 @@ function submitConsultForm(event) {
             body: JSON.stringify(payload)
         })
         .then(function() {
-            console.log('[submitConsultForm] ✅ Запрос отправлен (opaque response)');
             sb.textContent = originalText;
             sb.disabled = false;
             document.getElementById('consultForm').reset();
@@ -708,16 +653,15 @@ function submitConsultForm(event) {
             setTimeout(function() { tg.showAlert('✅ Заявка отправлена!'); }, 100);
         })
         .catch(function(err) {
-            console.error('[submitConsultForm]  Error:', err);
-            tg.showAlert('️ Ошибка отправки: ' + err.message);
+            tg.showAlert('❌ Ошибка отправки: ' + err.message);
             sb.textContent = originalText;
             sb.disabled = false;
         });
     } catch (e) {
-        console.error('[submitConsultForm] ❌ Exception:', e);
         tg.showAlert('⚠️ Произошла ошибка.');
     }
 }
+
 function escapeHtml(text) { if (!text) return ''; var div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
 
 if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', init); } else { init(); }
