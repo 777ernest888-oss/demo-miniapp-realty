@@ -10,6 +10,31 @@ let tg;
 let AGENT_ID = '';
 let AGENT_CONFIG = null;
 
+// === КЭШИРОВАНИЕ ===
+const CACHE_KEY = 'app_cache_v1';
+const CACHE_TTL = 5 * 60 * 1000; // 5 минут
+
+function getCachedData() {
+    try {
+        const cached = JSON.parse(localStorage.getItem(CACHE_KEY));
+        if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+            console.log('[Cache] ✅ Используем кэш');
+            return cached.data;
+        }
+    } catch(e) {}
+    return null;
+}
+
+function setCachedData(data) {
+    try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+            timestamp: Date.now(),
+            data: data
+        }));
+        console.log('[Cache] 💾 Сохранено в кэш');
+    } catch(e) {}
+}
+
 function getImageUrl(sourceUrl) {
     if (!sourceUrl) return '';
     if (sourceUrl.startsWith('http://') || sourceUrl.startsWith('https://')) return sourceUrl;
@@ -47,45 +72,21 @@ async function loadClientConfig() {
         config = await response.json();
         console.log('[loadClientConfig] ✅ Config загружен:', config);
     } catch (error) {
-        console.error('[loadClientConfig] ❌ Error:', error);        alert('Ошибка загрузки конфигурации!');
+        console.error('[loadClientConfig] ❌ Error:', error);
+        alert('Ошибка загрузки конфигурации!');
     }
 }
 
-async function init() {
-    try {
-        console.log('[init] 🚀 Начинаю загрузку...');
-        await loadClientConfig();
-       
-        var agentOk = await initAgent();
-        if (!agentOk) {
-            var loadingScreen = document.getElementById('loadingScreen');
-            if (loadingScreen) loadingScreen.classList.add('hidden');
-            return;
-        }
-       
-        applyTheme(); applyBranding();
-       
-        // Загружаем всё ПАРАЛЛЕЛЬНО
-        await Promise.all([
-            loadAgentData(),
-            loadPagesData(),
-            loadPropertiesFromScript()
-        ]);
-       
-        if (!listings || listings.length === 0) listings = [];
-        renderWelcome(); renderFilters();
-        renderListings(listings.filter(function(l) { return l.active; }));
-        initPhoneMask(); initTelegramMask(); hideBack();
-       
-        var loadingScreen = document.getElementById('loadingScreen');
-        if (loadingScreen) loadingScreen.classList.add('hidden');
-        console.log('[init] ✅ Загрузка завершена');
-    } catch (error) {
-        console.error('[init] ❌ Init Error:', error);
-        var loadingScreen = document.getElementById('loadingScreen');
-        if (loadingScreen) loadingScreen.classList.add('hidden');
+async function initAgent() {
+    var params = new URLSearchParams(window.location.search);
+    var agentParam = params.get('agent');
+    var hostname = window.location.hostname;
+
+    if (!config.client || !config.client.scriptUrl) {
+        console.error('[initAgent] ❌ Config не загружен:', config);
+        showErrorScreen('Ошибка загрузки конфигурации. Обновите страницу.');
+        return false;
     }
-}
 
     try {
         if (agentParam) {
@@ -121,7 +122,8 @@ async function init() {
         var response = await fetch(config.client.scriptUrl + '?action=get_agent_config&agent_id=' + encodeURIComponent(AGENT_ID) + '&user_id=' + userId);
         if (!response.ok) {
             console.error('[initAgent] ❌ HTTP error:', response.status);
-            showErrorScreen('Ошибка сервера: ' + response.status);            return false;
+            showErrorScreen('Ошибка сервера: ' + response.status);
+            return false;
         }
         var data = await response.json();
         console.log('[initAgent] Ответ сервера:', data);
@@ -170,7 +172,8 @@ function applyBrandConfig(brandConfig) {
         var companyName = document.getElementById('companyName');
         if (companyName) companyName.textContent = brandConfig.appName;
     }
-    if (brandConfig.welcomeTitle) { var el = document.getElementById('welcomeTitle'); if (el) el.textContent = brandConfig.welcomeTitle; }    if (brandConfig.tagline) { var el = document.getElementById('welcomeTagline'); if (el) el.textContent = brandConfig.tagline; }
+    if (brandConfig.welcomeTitle) { var el = document.getElementById('welcomeTitle'); if (el) el.textContent = brandConfig.welcomeTitle; }
+    if (brandConfig.tagline) { var el = document.getElementById('welcomeTagline'); if (el) el.textContent = brandConfig.tagline; }
     if (brandConfig.buttonText) { var el = document.getElementById('welcomeButton'); if (el) el.textContent = brandConfig.buttonText; }
     if (brandConfig.logoUrl) { var el = document.querySelector('#headerBrand .brand-logo'); if (el) { el.src = getImageUrl(brandConfig.logoUrl); el.onerror = onImgError; } }
     if (brandConfig.agentPhotoUrl) { var el = document.querySelector('.agent-photo'); if (el) el.src = getImageUrl(brandConfig.agentPhotoUrl); }
@@ -207,7 +210,7 @@ async function loadPagesData() {
             if (row.page && row.title) pagesData[row.page] = { title: row.title, content: row.content || '' };
         });
         console.log('[loadPagesData] ✅ Загружено страниц:', Object.keys(pagesData).length);
-    } catch (e) { console.warn('[loadPagesData] ⚠️ Error:', e); }
+    } catch (e) { console.warn('[loadPagesData] ️ Error:', e); }
 }
 
 async function loadPropertiesFromScript() {
@@ -216,59 +219,24 @@ async function loadPropertiesFromScript() {
         return [];
     }
     try {
-        var url = config.client.scriptUrl;
-        if (AGENT_ID) {
-            url += (url.includes('?') ? '&' : '?') + 'agent_id=' + AGENT_ID;
-        }
+        var url = config.client.scriptUrl + '?action=get_all&agent_id=' + AGENT_ID;
         console.log('[loadProperties] Fetching URL:', url);
-        console.log('[loadProperties] AGENT_ID:', AGENT_ID);
-       
+
         const response = await fetch(url);
         if (!response.ok) {
             console.error('[loadProperties] ❌ HTTP error:', response.status);
             return [];
         }
-       
+
         const data = await response.json();
-        console.log('[loadProperties] Raw response:', data);
-       
-        // Проверяем формат ответа
-        let arrayData = null;
-        if (Array.isArray(data)) {
-            arrayData = data;
-        } else if (data && Array.isArray(data.data)) {
-            arrayData = data.data;
-        } else if (data && data.success && Array.isArray(data.properties)) {
-            arrayData = data.properties;
-        } else {
-            console.error('[loadProperties] ❌ Unexpected data format:', typeof data, data);
-            return [];
+        if (data.success && Array.isArray(data.listings)) {
+            console.log('[loadProperties] ✅ Loaded', data.listings.length, 'properties');
+            return data.listings;
         }
-       
-        if (!arrayData || arrayData.length === 0) {
-            console.log('[loadProperties] ⚠️ Empty data');
-            return [];
-        }
-       
-        // Если первый элемент - массив заголовков
-        if (Array.isArray(arrayData[0])) {
-            const headers = arrayData[0];
-            const rows = arrayData.slice(1);
-            const result = rows.map(function(row) {
-                const obj = {};
-                headers.forEach(function(header, i) {
-                    obj[header] = row[i];
-                });
-                return obj;
-            });
-            console.log('[loadProperties] ✅ Loaded', result.length, 'properties from array format');
-            return result;
-        }
-       
-        // Если уже объекты
-        console.log('[loadProperties] ✅ Loaded', arrayData.length, 'properties from object format');
-        return arrayData;
-       
+
+        console.log('[loadProperties] ⚠️ No listings in response');
+        return [];
+
     } catch (e) {
         console.error('[loadProperties] ❌ Exception:', e);
         return [];
@@ -372,7 +340,7 @@ function renderContactsPage() {
     const hasAgency = data.agencyName || data.agencyAddress;
     document.getElementById('agencyBlock').style.display = hasAgency ? 'block' : 'none';
     document.getElementById('agencyName').textContent = data.agencyName || '';
-    document.getElementById('agencyAddress').textContent = data.agencyAddress ? '📍 ' + data.agencyAddress : '';
+    document.getElementById('agencyAddress').textContent = data.agencyAddress ? ' ' + data.agencyAddress : '';
 }
 
 function openMenu() { document.getElementById('menuOverlay').classList.remove('hidden'); document.getElementById('sideMenu').classList.remove('hidden'); }
@@ -407,7 +375,8 @@ function switchView(view) {
     const mapContainer = document.getElementById('mapContainer');
     if (view === 'list') {
         listBtn.classList.add('active'); mapBtn.classList.remove('active');
-        listContainer.classList.remove('hidden'); mapContainer.classList.add('hidden'); hideBack();    } else {
+        listContainer.classList.remove('hidden'); mapContainer.classList.add('hidden'); hideBack();
+    } else {
         listBtn.classList.remove('active'); mapBtn.classList.add('active');
         listContainer.classList.add('hidden'); mapContainer.classList.remove('hidden'); showBack();
         setTimeout(function() { initMap(); }, 100);
@@ -418,21 +387,53 @@ async function init() {
     try {
         console.log('[init] 🚀 Начинаю загрузку...');
         await loadClientConfig();
-        console.log('[init] Config загружен:', config);
+
         var agentOk = await initAgent();
         if (!agentOk) {
             var loadingScreen = document.getElementById('loadingScreen');
             if (loadingScreen) loadingScreen.classList.add('hidden');
             return;
         }
+
         applyTheme(); applyBranding();
-        await loadAgentData(); await loadPagesData();
-        let propertiesData = await loadPropertiesFromScript();
-        if (!propertiesData || propertiesData.length === 0) propertiesData = [];
-        listings = propertiesData;
+
+        // Пробуем получить из кэша
+        var cached = getCachedData();
+        if (cached) {
+            listings = cached.listings || [];
+            currentAgentData = cached.agentData || {};
+            console.log('[init] ✅ Загружено из кэша:', listings.length, 'объектов');
+        } else {
+            // Загружаем всё одним запросом
+            console.log('[init]  Загружаем данные с сервера...');
+            var url = config.client.scriptUrl + '?action=get_all&agent_id=' + AGENT_ID;
+            var response = await fetch(url);
+            var data = await response.json();
+
+            if (data.success) {
+                listings = data.listings || [];
+                currentAgentData = data.agentData || {};
+
+                // Сохраняем в кэш
+                setCachedData({
+                    listings: listings,
+                    agentData: currentAgentData
+                });
+
+                console.log('[init] ✅ Загружено с сервера:', listings.length, 'объектов');
+            } else {
+                console.error('[init] ❌ Ошибка загрузки:', data.error);
+                listings = [];
+            }
+        }
+
+        // Загружаем страницы отдельно (они из CSV)
+        await loadPagesData();
+
         renderWelcome(); renderFilters();
         renderListings(listings.filter(function(l) { return l.active; }));
         initPhoneMask(); initTelegramMask(); hideBack();
+
         var loadingScreen = document.getElementById('loadingScreen');
         if (loadingScreen) loadingScreen.classList.add('hidden');
         console.log('[init] ✅ Загрузка завершена');
@@ -456,7 +457,8 @@ function applyBranding() {
     el = document.getElementById('welcomeTitle'); if (el && config.branding.welcomeTitle) el.textContent = config.branding.welcomeTitle;
     el = document.getElementById('welcomeTagline'); if (el && config.branding.tagline) el.textContent = config.branding.tagline;
     el = document.getElementById('welcomeButton'); if (el && config.branding.buttonText) el.textContent = config.branding.buttonText;
-    el = document.getElementById('headerTitle'); if (el && config.branding.name) el.textContent = config.branding.name.toUpperCase();    el = document.querySelector('#headerBrand .brand-logo'); if (el && config.branding.logo) { el.src = getImageUrl(config.branding.logo); el.onerror = onImgError; }
+    el = document.getElementById('headerTitle'); if (el && config.branding.name) el.textContent = config.branding.name.toUpperCase();
+    el = document.querySelector('#headerBrand .brand-logo'); if (el && config.branding.logo) { el.src = getImageUrl(config.branding.logo); el.onerror = onImgError; }
 }
 
 function renderWelcome() {
@@ -505,7 +507,8 @@ function filterListings() {
         if (selectedRooms.length > 0 && item.rooms) {
             var itemRooms = String(item.rooms).split(',').map(function(r) { return r.trim(); });
             if (!selectedRooms.some(function(r) { return itemRooms.indexOf(r) !== -1; })) return false;
-        }        return true;
+        }
+        return true;
     });
     console.log('[filterListings] Показано:', filtered.length, 'из', listings.length);
     renderListings(filtered);
@@ -554,7 +557,8 @@ function initMap() {
     if (!mapContainer) return;
     if (!map) { map = L.map('mapContainer').setView([59.9343, 30.3351], 11); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map); }
     filterListings();
-    setTimeout(function() { map.invalidateSize(); }, 150);}
+    setTimeout(function() { map.invalidateSize(); }, 150);
+}
 
 function updateMapMarkers(filteredItems) {
     if (!map) return;
@@ -603,7 +607,8 @@ function openDetails(id) {
         var t = document.createElement('h3'); t.className = 'plans-section-title'; t.textContent = '📐 Планировки'; pc.appendChild(t);
         var pt = document.createElement('div'); pt.className = 'carousel-track';
         plansImages.forEach(function(url) { var s = document.createElement('div'); s.className = 'slide'; s.style.flex = '0 0 85%'; var img = document.createElement('img'); img.src = getImageUrl(url); img.style.height = '200px'; img.onclick = function() { window.open(getImageUrl(url), '_blank'); }; img.onerror = onImgError; s.appendChild(img); pt.appendChild(s); });
-        pc.appendChild(pt);    } else if (item.floor_plans_text) { pc.innerHTML = '<h3 class="plans-section-title">📐 Планировки</h3><p class="floor-plans-text">' + item.floor_plans_text + '</p>'; }
+        pc.appendChild(pt);
+    } else if (item.floor_plans_text) { pc.innerHTML = '<h3 class="plans-section-title"> Планировки</h3><p class="floor-plans-text">' + item.floor_plans_text + '</p>'; }
     var mc = document.querySelector('#detailsModal .modal-content');
     var btn = document.getElementById('modalConsultBtn');
     if (!btn) { btn = document.createElement('button'); btn.id = 'modalConsultBtn'; btn.className = 'tg-btn'; btn.style.marginTop = '20px'; btn.style.marginBottom = '40px'; mc.appendChild(btn); }
@@ -652,7 +657,8 @@ function initTelegramMask() {
         if (val.includes('@') && !val.startsWith('@')) val = '@' + val.replace(/@/g, '');
         if (val.length > 32) val = val.slice(0, 32);
         e.target.value = val;
-    });}
+    });
+}
 
 function submitConsultForm(event) {
     event.preventDefault();
@@ -666,15 +672,15 @@ function submitConsultForm(event) {
         if (phone.replace(/\D/g, '').length < 10) { tg.showAlert('❌ Введите корректный телефон'); return; }
         if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) { tg.showAlert('❌ Telegram только латиницей'); return; }
         if (!AGENT_ID) { tg.showAlert('❌ Ошибка: агент не определён'); return; }
-       
+
         console.log('[submitConsultForm] ✅ Данные собраны');
         console.log('[submitConsultForm] AGENT_ID:', AGENT_ID);
-       
+
         var sb = event.target.querySelector('button[type="submit"]');
         var originalText = sb.textContent;
         sb.textContent = 'Отправка...';
         sb.disabled = true;
-       
+
         var payload = {
             action: 'save_lead',
             agentId: AGENT_ID,
@@ -685,8 +691,7 @@ function submitConsultForm(event) {
                 clientTelegram: telegram || 'Не указан'
             }
         };
-       
-        // ← КЛЮЧЕВОЕ: text/plain + no-cors обходит CORS
+
         fetch(config.client.scriptUrl, {
             method: 'POST',
             mode: 'no-cors',
