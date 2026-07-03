@@ -51,16 +51,41 @@ async function loadClientConfig() {
     }
 }
 
-async function initAgent() {
-    var params = new URLSearchParams(window.location.search);
-    var agentParam = params.get('agent');
-    var hostname = window.location.hostname;
-
-    if (!config.client || !config.client.scriptUrl) {
-        console.error('[initAgent] ❌ Config не загружен:', config);
-        showErrorScreen('Ошибка загрузки конфигурации. Обновите страницу.');
-        return false;
+async function init() {
+    try {
+        console.log('[init] 🚀 Начинаю загрузку...');
+        await loadClientConfig();
+       
+        var agentOk = await initAgent();
+        if (!agentOk) {
+            var loadingScreen = document.getElementById('loadingScreen');
+            if (loadingScreen) loadingScreen.classList.add('hidden');
+            return;
+        }
+       
+        applyTheme(); applyBranding();
+       
+        // Загружаем всё ПАРАЛЛЕЛЬНО
+        await Promise.all([
+            loadAgentData(),
+            loadPagesData(),
+            loadPropertiesFromScript()
+        ]);
+       
+        if (!listings || listings.length === 0) listings = [];
+        renderWelcome(); renderFilters();
+        renderListings(listings.filter(function(l) { return l.active; }));
+        initPhoneMask(); initTelegramMask(); hideBack();
+       
+        var loadingScreen = document.getElementById('loadingScreen');
+        if (loadingScreen) loadingScreen.classList.add('hidden');
+        console.log('[init] ✅ Загрузка завершена');
+    } catch (error) {
+        console.error('[init] ❌ Init Error:', error);
+        var loadingScreen = document.getElementById('loadingScreen');
+        if (loadingScreen) loadingScreen.classList.add('hidden');
     }
+}
 
     try {
         if (agentParam) {
