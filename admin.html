@@ -5,16 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Админка | Просторы</title>
   <script>
-    // Асинхронная загрузка Telegram SDK с таймаутом
+    // Асинхронная загрузка Telegram SDK с таймаутом 3 сек
     (function() {
+      var loaded = false;
       var tgScript = document.createElement('script');
       tgScript.src = 'https://telegram.org/js/telegram-web-app.js';
-      tgScript.onload = function() { window.tgSdkLoaded = true; };
+      tgScript.onload = function() { loaded = true; window.tgSdkLoaded = true; };
       tgScript.onerror = function() { console.log('[Telegram SDK] Failed to load'); };
       document.head.appendChild(tgScript);
       setTimeout(function() {
-        if (!window.tgSdkLoaded) console.log('[Telegram SDK] Timeout, continuing without it');
-      }, 5000);
+        if (!loaded) {
+          console.log('[Telegram SDK] Timeout, continuing without it');
+          window.tgSdkLoaded = false;
+        }
+      }, 3000);
     })();
   </script>
   <style>
@@ -240,20 +244,28 @@
 
     // === ИНИЦИАЛИЗАЦИЯ ===
     document.addEventListener('DOMContentLoaded', async function() {
-      await loadConfig();
-      var ok = await initAgent();
-      if (ok) checkAuth();
+      try {
+        await Promise.race([
+          loadConfig(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('Config timeout')), 5000))
+        ]);
+        var ok = await initAgent();
+        if (ok) checkAuth();
+      } catch (e) {
+        console.error('[Init] Error:', e);
+        showErrorScreen('Ошибка инициализации: ' + e.message);
+      }
     });
 
     async function loadConfig() {
       try {
-        var response = await fetch('client-config.json?v=2.0.4');
+        var response = await fetch('client-config.json?v=2.0.5');
         var data = await response.json();
         config.scriptUrl = data.client.scriptUrl;
         console.log('[admin loadConfig] ✅', config.scriptUrl);
       } catch (e) {
         console.error('[admin loadConfig] ❌', e);
-        showToast('❌ Ошибка конфигурации');
+        throw new Error('Не удалось загрузить конфигурацию');
       }
     }
 
@@ -431,14 +443,19 @@
       else if (currentTab === 'about') loadAboutPage();
     }
 
-    // === ОБЪЕКТЫ ===
+    // === ОБЪЕКТЫ (С ТАЙМАУТОМ 10 СЕК) ===
     async function loadObjects() {
       document.getElementById('objectsLoading').style.display = 'block';
       document.getElementById('objectsList').innerHTML = '';
     
       try {
+        var controller = new AbortController();
+        var timeoutId = setTimeout(() => controller.abort(), 10000);
+       
         var url = config.scriptUrl + '?action=get_listings&includeHidden=true&agent_id=' + encodeURIComponent(AGENT_ID);
-        var response = await fetch(url);
+        var response = await fetch(url, { signal: controller.signal });
+        clearTimeout(timeoutId);
+       
         var data = await response.json();
       
         if (data.success && Array.isArray(data.data)) {
@@ -457,9 +474,10 @@
         objects.forEach(function(obj) {
           var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
           var thumbUrl = obj.image_main || '';
+          // ЗАМЕНА SUPABASE НА ПУСТОЙ URL ЕСЛИ НЕДОСТУПЕН
           var displayThumb = thumbUrl.indexOf('lh3.googleusercontent.com/d/') !== -1
             ? 'https://drive.google.com/thumbnail?id=' + thumbUrl.split('/d/')[1] + '&sz=w400'
-            : thumbUrl;
+            : (thumbUrl.indexOf('supabase') !== -1 ? '' : thumbUrl);
           var statusClass = isActive ? 'status-active' : 'status-hidden';
           var statusText = isActive ? 'Активен' : 'Скрыт';
         
@@ -471,8 +489,9 @@
           document.getElementById('objectsList').appendChild(card);
         });
       } catch (e) {
+        console.error('[loadObjects] Error:', e);
         document.getElementById('objectsLoading').style.display = 'none';
-        showToast('❌ Ошибка загрузки объектов');
+        document.getElementById('objectsList').innerHTML = '<div class="empty-state"><div class="empty-icon">❌</div><h3>Ошибка загрузки</h3><p>Попробуйте обновить страницу</p></div>';
       }
     }
 
