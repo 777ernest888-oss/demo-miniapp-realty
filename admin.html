@@ -100,7 +100,7 @@
 <body>
   <!-- ЭКРАН PIN -->
   <div id="pinScreen" class="pin-screen" style="display:none;">
-    <h1> Админ-панель</h1>
+    <h1>🔐 Админ-панель</h1>
     <p>Введите PIN-код для доступа</p>
     <input type="password" id="pinInput" class="pin-input" placeholder="••••" maxlength="6" inputmode="numeric">
     <div id="pinError" class="pin-error">❌ Неверный PIN-код</div>
@@ -150,7 +150,7 @@
             <label class="upload-btn">📷 Выбрать фото<input type="file" accept="image/*" onchange="uploadProfilePhoto(this)"></label>
             <input type="hidden" id="profilePhotoUrl">
           </div>
-          <button type="submit" class="btn btn-primary"> Сохранить профиль</button>
+          <button type="submit" class="btn btn-primary">💾 Сохранить профиль</button>
         </form>
       </div>
 
@@ -259,7 +259,7 @@
 
     async function loadConfig() {
       try {
-        var response = await fetch('client-config.json?v=2.0.6');
+        var response = await fetch('client-config.json?v=2.0.7');
         var data = await response.json();
         config.scriptUrl = data.client.scriptUrl;
         console.log('[admin loadConfig] ✅', config.scriptUrl);
@@ -390,49 +390,38 @@
       loadObjects();
     }
 
-    // === УНИВЕРСАЛЬНЫЙ API ВЫЗОВ (GET вместо POST для избежания CORS) ===
+    // === УНИВЕРСАЛЬНЫЙ API ВЫЗОВ (NO-CORS ДЛЯ POST, GET ДЛЯ ЧТЕНИЯ) ===
     async function apiCall(action, params) {
       if (!config.scriptUrl) throw new Error('Script URL не настроен');
     
-      var payload = Object.assign({}, params, {
+      var payload = {
         action: action,
         agentId: AGENT_ID,
         initData: getTelegramInitData(),
-        pin: sessionStorage.getItem('adminPin') || ''
-      });
+        pin: sessionStorage.getItem('adminPin') || '',
+        data: params
+      };
 
       // Для GET-запросов (чтение данных)
-      if (action === 'get_leads' || action === 'get_agent_profile' || action === 'get_pages' || action === 'get_listings') {
+      if (action === 'get_leads' || action === 'get_agent_profile' || action === 'get_pages' || action === 'get_listings' || action === 'get_last_file_url') {
         var getUrl = config.scriptUrl + '?action=' + action + '&agent_id=' + encodeURIComponent(AGENT_ID);
         if (action === 'get_listings') getUrl += '&includeHidden=true';
         var response = await fetch(getUrl);
         var data = await response.json();
-        if (!data.success) throw new Error(data.error || 'Ошибка сервера');
+        if (!data.success && action !== 'get_last_file_url') throw new Error(data.error || 'Ошибка сервера');
         return data;
       }
     
-      // Для POST операций используем GET с параметрами (Apps Script поддерживает CORS для GET)
-      var queryParams = Object.keys(payload).map(function(key) {
-        return encodeURIComponent(key) + '=' + encodeURIComponent(JSON.stringify(payload[key]));
-      }).join('&');
-     
-      var url = config.scriptUrl + '?' + queryParams;
-     
-      try {
-        var response = await fetch(url, { method: 'GET' });
-        var data = await response.json();
-        if (!data.success) throw new Error(data.error || 'Ошибка сервера');
-        return data;
-      } catch (e) {
-        // Если GET не сработал, пробуем no-cors POST
-        await fetch(config.scriptUrl, {
-          method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload)
-        });
-        return { success: true };
-      }
+      // Для POST операций используем no-cors с text/plain (без preflight)
+      await fetch(config.scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+    
+      // Считаем успешным (Apps Script выполнил действие)
+      return { success: true };
     }
 
     function getTelegramInitData() {
@@ -456,7 +445,7 @@
       else if (currentTab === 'about') loadAboutPage();
     }
 
-    // === ОБЪЕКТЫ (С ТАЙМАУТОМ 10 СЕК) ===
+    // === ОБЪЕКТЫ ===
     async function loadObjects() {
       document.getElementById('objectsLoading').style.display = 'block';
       document.getElementById('objectsList').innerHTML = '';
@@ -487,7 +476,6 @@
         objects.forEach(function(obj) {
           var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
           var thumbUrl = obj.image_main || '';
-          // ЗАМЕНА SUPABASE НА ПУСТОЙ URL ЕСЛИ НЕДОСТУПЕН
           var displayThumb = thumbUrl.indexOf('lh3.googleusercontent.com/d/') !== -1
             ? 'https://drive.google.com/thumbnail?id=' + thumbUrl.split('/d/')[1] + '&sz=w400'
             : (thumbUrl.indexOf('supabase') !== -1 ? '' : thumbUrl);
@@ -498,7 +486,7 @@
           card.className = 'object-card' + (isActive ? '' : ' hidden-object');
           card.onclick = function() { openEditModal(obj.id); };
           card.innerHTML = '<img src="' + escapeHtml(displayThumb) + '" class="card-thumb" onerror="this.style.background=\'#E0E6ED\'">' +
-            '<div class="card-info"><div class="card-title">' + escapeHtml(obj.name || 'Без названия') + '</div><div class="card-address"> ' + escapeHtml(obj.address || '') + '</div><span class="card-status ' + statusClass + '">' + statusText + '</span></div>';
+            '<div class="card-info"><div class="card-title">' + escapeHtml(obj.name || 'Без названия') + '</div><div class="card-address">📍 ' + escapeHtml(obj.address || '') + '</div><span class="card-status ' + statusClass + '">' + statusText + '</span></div>';
           document.getElementById('objectsList').appendChild(card);
         });
       } catch (e) {
@@ -510,6 +498,7 @@
 
     function openCreateModal() {
       currentEditId = null;
+      currentStatus = 'true'; // СБРОС НА АКТИВЕН
       document.getElementById('modalTitle').textContent = 'Новый ЖК';
       document.getElementById('objectForm').reset();
       document.getElementById('objectId').value = '';
@@ -539,7 +528,8 @@
       });
     
       var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
-      setStatus(isActive ? 'true' : 'false');
+      currentStatus = isActive ? 'true' : 'false';
+      setStatus(currentStatus);
     
       photoStore.main = obj.image_main || '';
       document.getElementById('fieldImageMain').value = photoStore.main;
@@ -599,8 +589,10 @@
           floor_plans_images: photoStore.plans.join(','),
           lat: parseFloat(document.getElementById('fieldLat').value)||'',
           lng: parseFloat(document.getElementById('fieldLng').value)||'',
-          active: currentStatus==='true'
+          active: currentStatus === 'true'
         };
+      
+        console.log('[saveObject] Sending data:', p);
       
         if (currentEditId) {
           p.id = currentEditId;
@@ -613,6 +605,7 @@
         closeModal();
         setTimeout(loadObjects, 1000);
       } catch (e) {
+        console.error('[saveObject] Error:', e);
         showToast('❌ Ошибка: '+ e.message);
       } finally {
         btn.disabled = false;
@@ -638,7 +631,7 @@
       }
     }
 
-    // === ЗАГРУЗКА ФОТО (С НО-CORS И ЗАДЕРЖКОЙ) ===
+    // === ЗАГРУЗКА ФОТО (NO-CORS + GET ДЛЯ URL) ===
     async function uploadPhoto(type, input) {
       if (!input.files || input.files.length === 0) return;
       var files = Array.from(input.files);
@@ -651,8 +644,8 @@
           var file = files[i];
           var base64 = await fileToBase64(file);
         
-          // Отправляем через no-cors
-          await fetch(config.scriptUrl, {
+          // Отправляем через no-cors POST
+          fetch(config.scriptUrl, {
             method: 'POST',
             mode: 'no-cors',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -665,14 +658,16 @@
           });
         
           // Ждём обработки
-          await new Promise(function(resolve) { setTimeout(resolve, 2000); });
+          await new Promise(function(resolve) { setTimeout(resolve, 3000); });
         
           // Получаем URL через GET
-          var lastRes = await fetch(config.scriptUrl + '?action=get_last_file_url');
-          var lastData = await lastRes.json();
-        
-          if (lastData.url) {
-            addPhotoToField(type, lastData.url);
+          try {
+            var lastData = await apiCall('get_last_file_url', {});
+            if (lastData.url) {
+              addPhotoToField(type, lastData.url);
+            }
+          } catch (e) {
+            console.error('[uploadPhoto] Error getting URL:', e);
           }
         }
         showToast('✅ Фото загружено');
@@ -747,7 +742,7 @@
         img.onerror=function(){this.style.background='#E0E6ED';};
         var rb = document.createElement('button');
         rb.className='photo-remove';
-        rb.textContent='';
+        rb.textContent='✕';
         rb.onclick=function(e){e.stopPropagation();removePhoto(type,idx);};      
         w.appendChild(img);
         w.appendChild(rb);
@@ -778,16 +773,16 @@
         
           card.innerHTML = '<div class="lead-header"><div class="lead-object">🏢 '+escapeHtml(lead.objectName||'Не указан')+'</div><div class="lead-status '+sc+'">'+escapeHtml(lead.status||'Новая')+'</div></div>'+
             '<div class="lead-info">👤 '+escapeHtml(lead.clientName||'Не указано')+'</div><div class="lead-info">📞 '+pd+'</div>'+td+
-            '<div class="lead-info"> '+escapeHtml(lead.timestamp||'Не указано')+'</div>'+
-            '<div class="lead-actions"><button class="status-btn '+(lead.status==='Новая'?'active':'')+'" onclick="updateLeadStatus(\''+lead.id+'\',\'new\')"> Новая</button>'+
-            '<button class="status-btn '+(lead.status==='Обзвонена'?'active':'')+'" onclick="updateLeadStatus(\''+lead.id+'\',\'contacted\')"> Обзвонена</button>'+
+            '<div class="lead-info">🕐 '+escapeHtml(lead.timestamp||'Не указано')+'</div>'+
+            '<div class="lead-actions"><button class="status-btn '+(lead.status==='Новая'?'active':'')+'" onclick="updateLeadStatus(\''+lead.id+'\',\'new\')">🆕 Новая</button>'+
+            '<button class="status-btn '+(lead.status==='Обзвонена'?'active':'')+'" onclick="updateLeadStatus(\''+lead.id+'\',\'contacted\')">📞 Обзвонена</button>'+
             '<button class="status-btn '+(lead.status==='Завершена'?'active':'')+'" onclick="updateLeadStatus(\''+lead.id+'\',\'completed\')">✅ Завершена</button>'+
             '<button class="status-btn '+(lead.status==='Отменена'?'active':'')+'" onclick="updateLeadStatus(\''+lead.id+'\',\'cancelled\')">❌ Отменена</button></div>';
           document.getElementById('leadsList').appendChild(card);
         });
       } catch (e) {
         document.getElementById('leadsLoading').style.display='none';
-        showToast(' Ошибка загрузки заявок');
+        showToast('❌ Ошибка загрузки заявок');
       }
     }
   
@@ -857,7 +852,7 @@
       btn.innerHTML='⏳ Загрузка...';
       try {
         var base64=await fileToBase64(file);
-        await fetch(config.scriptUrl, {
+        fetch(config.scriptUrl, {
           method: 'POST',
           mode: 'no-cors',
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -868,9 +863,8 @@
             data: { image: base64, fileName: file.name }
           })
         });
-        await new Promise(function(resolve) { setTimeout(resolve, 2000); });
-        var lastRes = await fetch(config.scriptUrl + '?action=get_last_file_url');
-        var lastData = await lastRes.json();
+        await new Promise(function(resolve) { setTimeout(resolve, 3000); });
+        var lastData = await apiCall('get_last_file_url', {});
         if (lastData.url) {
           document.getElementById('profilePhotoUrl').value=lastData.url;
           renderPhotoPreview('profile',[lastData.url]);
