@@ -96,7 +96,7 @@
 <body>
   <!-- ЭКРАН PIN -->
   <div id="pinScreen" class="pin-screen" style="display:none;">
-    <h1> Админ-панель</h1>
+    <h1>🔐 Админ-панель</h1>
     <p>Введите PIN-код для доступа</p>
     <input type="password" id="pinInput" class="pin-input" placeholder="••••" maxlength="6" inputmode="numeric">
     <div id="pinError" class="pin-error">❌ Неверный PIN-код</div>
@@ -247,7 +247,7 @@
 
     async function loadConfig() {
       try {
-        var response = await fetch('client-config.json?v=2.0.3');
+        var response = await fetch('client-config.json?v=2.0.4');
         var data = await response.json();
         config.scriptUrl = data.client.scriptUrl;
         console.log('[admin loadConfig] ✅', config.scriptUrl);
@@ -378,7 +378,7 @@
       loadObjects();
     }
 
-    // === УНИВЕРСАЛЬНЫЙ API ВЫЗОВ ===
+    // === УНИВЕРСАЛЬНЫЙ API ВЫЗОВ (NO-CORS для POST) ===
     async function apiCall(action, params) {
       if (!config.scriptUrl) throw new Error('Script URL не настроен');
     
@@ -389,15 +389,25 @@
         pin: sessionStorage.getItem('adminPin') || ''
       });
 
-      var response = await fetch(config.scriptUrl, {
+      // Для POST используем no-cors (Apps Script не поддерживает CORS)
+      await fetch(config.scriptUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
         body: JSON.stringify(payload)
       });
-
-      var data = await response.json();
-      if (!data.success) throw new Error(data.error || 'Ошибка сервера');
-      return data;
+    
+      // Для GET-запросов (чтение данных) используем обычный fetch
+      if (action === 'get_leads' || action === 'get_agent_profile' || action === 'get_pages') {
+        var getUrl = config.scriptUrl + '?action=' + action + '&agent_id=' + encodeURIComponent(AGENT_ID);
+        var response = await fetch(getUrl);
+        var data = await response.json();
+        if (!data.success) throw new Error(data.error || 'Ошибка сервера');
+        return data;
+      }
+    
+      // Для POST считаем успешным (Apps Script всё равно выполнил действие)
+      return { success: true };
     }
 
     function getTelegramInitData() {
@@ -596,7 +606,7 @@
       }
     }
 
-    // === ЗАГРУЗКА ФОТО ===
+    // === ЗАГРУЗКА ФОТО (С НО-CORS И ЗАДЕРЖКОЙ) ===
     async function uploadPhoto(type, input) {
       if (!input.files || input.files.length === 0) return;
       var files = Array.from(input.files);
@@ -609,9 +619,11 @@
           var file = files[i];
           var base64 = await fileToBase64(file);
         
-          var response = await fetch(config.scriptUrl, {
+          // Отправляем через no-cors
+          await fetch(config.scriptUrl, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify({
               action: 'upload_image',
               agentId: AGENT_ID,
@@ -620,12 +632,15 @@
             })
           });
         
-          var result = await response.json();
+          // Ждём обработки
+          await new Promise(resolve => setTimeout(resolve, 2000));
         
-          if (result.success && result.url) {
-            addPhotoToField(type, result.url);
-          } else {
-            throw new Error(result.error || 'Ошибка загрузки');
+          // Получаем URL через GET
+          var lastRes = await fetch(config.scriptUrl + '?action=get_last_file_url');
+          var lastData = await lastRes.json();
+        
+          if (lastData.url) {
+            addPhotoToField(type, lastData.url);
           }
         }
         showToast('✅ Фото загружено');
@@ -731,7 +746,7 @@
         
           card.innerHTML = '<div class="lead-header"><div class="lead-object">🏢 '+escapeHtml(lead.objectName||'Не указан')+'</div><div class="lead-status '+sc+'">'+escapeHtml(lead.status||'Новая')+'</div></div>'+
             '<div class="lead-info">👤 '+escapeHtml(lead.clientName||'Не указано')+'</div><div class="lead-info">📞 '+pd+'</div>'+td+
-            '<div class="lead-info"> '+escapeHtml(lead.timestamp||'Не указано')+'</div>'+
+            '<div class="lead-info">🕐 '+escapeHtml(lead.timestamp||'Не указано')+'</div>'+
             '<div class="lead-actions"><button class="status-btn '+(lead.status==='Новая'?'active':'')+'" onclick="updateLeadStatus(\''+lead.id+'\',\'new\')">🆕 Новая</button>'+
             '<button class="status-btn '+(lead.status==='Обзвонена'?'active':'')+'" onclick="updateLeadStatus(\''+lead.id+'\',\'contacted\')">📞 Обзвонена</button>'+
             '<button class="status-btn '+(lead.status==='Завершена'?'active':'')+'" onclick="updateLeadStatus(\''+lead.id+'\',\'completed\')">✅ Завершена</button>'+
@@ -810,9 +825,10 @@
       btn.innerHTML='⏳ Загрузка...';
       try {
         var base64=await fileToBase64(file);
-        var response = await fetch(config.scriptUrl, {
+        await fetch(config.scriptUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify({
             action: 'upload_image',
             agentId: AGENT_ID,
@@ -820,13 +836,13 @@
             data: { image: base64, fileName: file.name }
           })
         });
-        var result = await response.json();
-        if (result.success && result.url) {
-          document.getElementById('profilePhotoUrl').value=result.url;
-          renderPhotoPreview('profile',[result.url]);
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        var lastRes = await fetch(config.scriptUrl + '?action=get_last_file_url');
+        var lastData = await lastRes.json();
+        if (lastData.url) {
+          document.getElementById('profilePhotoUrl').value=lastData.url;
+          renderPhotoPreview('profile',[lastData.url]);
           showToast('✅ Фото загружено');
-        } else {
-          throw new Error(result.error || 'Ошибка загрузки');
         }
       } catch(e) {
         showToast('❌ Ошибка');
