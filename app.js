@@ -412,7 +412,7 @@ function applyBranding() {
     var el;
     el = document.getElementById('companyName'); if (el && config.branding.name) el.textContent = config.branding.name;
     el = document.getElementById('welcomeTitle'); if (el && config.branding.welcomeTitle) el.textContent = config.branding.welcomeTitle;
-    el = document.getElementById('welcomeTagline'); if (el && config.branding.tagline) el.textContent = brandConfig.tagline; }
+    el = document.getElementById('welcomeTagline'); if (el && config.branding.tagline) el.textContent = config.branding.tagline;
     el = document.getElementById('welcomeButton'); if (el && config.branding.buttonText) el.textContent = config.branding.buttonText;
     el = document.getElementById('headerTitle'); if (el && config.branding.name) el.textContent = config.branding.name.toUpperCase();
     el = document.querySelector('#headerBrand .brand-logo'); if (el && config.branding.logo) { el.src = getImageUrl(config.branding.logo); el.onerror = onImgError; }
