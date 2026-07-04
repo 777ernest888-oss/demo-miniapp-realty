@@ -1,205 +1,172 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <title>КАТАЛОГ НОВОСТРОЕК</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="styles.css?v=2.0.2">
-  <style>
-    .admin-frame { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 9999; background: white; display: none; }
-    .admin-frame.active { display: block; }
-    .admin-frame iframe { width: 100%; height: 100%; border: none; }
-    .admin-close-btn { position: fixed; top: 10px; left: 10px; z-index: 10000; background: rgba(61, 82, 102, 0.9); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-size: 14px; display: flex; align-items: center; gap: 5px; backdrop-filter: blur(10px); box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
-    .admin-close-btn:hover { background: rgba(61, 82, 102, 1); }
-  </style>
-  <script>
-    var ADMIN_USER_ID = 2038206387;
-    function checkAdminAccess() {
-  var params = new URLSearchParams(window.location.search);
-  if (params.get('admin') === '1') { window.isAdmin = true; return true; }
-  if (window.Telegram && window.Telegram.WebApp) {
-    var tg = window.Telegram.WebApp;
-    var user = tg.initDataUnsafe && tg.initDataUnsafe.user;
-    if (user && user.id === ADMIN_USER_ID) { window.isAdmin = true; return true; }
-  }
-  window.isAdmin = false; return false;
-}
-    function openAdminPanel() {
-      if (!window.isAdmin) {
-        alert('⛔ Доступ запрещён!');
-        return;
-      }
-      closeMenu();
-      var adminFrame = document.getElementById('adminFrame');
-      if (adminFrame) {
-        adminFrame.classList.add('active');
-        var iframe = document.getElementById('adminIframe');
-        if (iframe) {
-          var agentParam = '';
-          if (typeof AGENT_ID !== 'undefined' && AGENT_ID) {
-            agentParam = '&agent=' + encodeURIComponent(AGENT_ID);
-          }
-          var userIdParam = '';
-          if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initDataUnsafe && window.Telegram.WebApp.initDataUnsafe.user) {
-            userIdParam = '&user_id=' + window.Telegram.WebApp.initDataUnsafe.user.id;
-          }
-          iframe.src = 'admin.html?v=2.0.2' + agentParam + userIdParam;
-        }
-      }
-    }
-    function closeAdminPanel() {
-      var adminFrame = document.getElementById('adminFrame');
-      if (adminFrame) adminFrame.classList.remove('active');
-    }
-    if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', checkAdminAccess); }
-    else { checkAdminAccess(); }
-  </script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Каталог новостроек</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="style.css?v=2.0.8">
 </head>
 <body>
-  <div id="ecosystemPage" class="screen hidden" style="min-height:100vh;background:linear-gradient(135deg,#3D5266 0%,#3498DB 100%);display:none;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;color:white;">
-    <div style="font-size:72px;margin-bottom:20px;">🏙️</div>
-    <h1 style="font-size:48px;font-weight:700;margin-bottom:12px;letter-spacing:2px;">ПРОСТОРЫ</h1>
-    <p style="font-size:20px;margin-bottom:40px;opacity:0.9;">Экосистема решений для рынка недвижимости</p>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:20px;max-width:900px;width:100%;margin-bottom:40px;">
-      <div style="background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:30px;border-radius:16px;border:1px solid rgba(255,255,255,0.2);">
-        <div style="font-size:48px;margin-bottom:12px;">🏢</div>
-        <h3 style="font-size:20px;margin-bottom:8px;">Новостройки</h3>
-        <p style="font-size:14px;opacity:0.8;">Каталог новостроек Санкт-Петербурга с фильтрами и картой</p>
-      </div>
-      <div style="background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:30px;border-radius:16px;border:1px solid rgba(255,255,255,0.2);">
-        <div style="font-size:48px;margin-bottom:12px;">🏬</div>
-        <h3 style="font-size:20px;margin-bottom:8px;">Коммерческая недвижимость</h3>
-        <p style="font-size:14px;opacity:0.8;">Офисы, торговые помещения, склады</p>
-      </div>
-      <div style="background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:30px;border-radius:16px;border:1px solid rgba(255,255,255,0.2);">
-        <div style="font-size:48px;margin-bottom:12px;">💰</div>
-        <h3 style="font-size:20px;margin-bottom:8px;">ГАБ Калькулятор</h3>
-        <p style="font-size:14px;opacity:0.8;">Готовый арендный бизнес для пассивного дохода</p>
-      </div>
+    <!-- Экран загрузки -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="spinner"></div>
+        <p>Загрузка...</p>
     </div>
-    <div style="background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);padding:30px;border-radius:16px;border:1px solid rgba(255,255,255,0.2);max-width:600px;">
-      <h3 style="font-size:22px;margin-bottom:12px;">🚀 Для агентов</h3>
-      <p style="font-size:16px;margin-bottom:20px;">Получите персональное приложение для работы с клиентами</p>
-      <a href="https://t.me/prostors_support" style="display:inline-block;background:white;color:#3D5266;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:16px;">Связаться с нами</a>
-    </div>
-    <p style="margin-top:40px;opacity:0.6;font-size:12px;">© 2026 Просторы. Все права защищены.</p>
-  </div>
 
-  <div id="welcomeScreen" class="screen welcome">
-    <div id="welcomeBrand" class="welcome-brand">
-      <img src="logo.png" alt="Logo" class="brand-logo">
-      <span class="brand-company" id="companyName"></span>
-    </div>
-    <img id="welcomeImage" class="welcome-img" src="welcome-bg.jpg" alt="Welcome">
-    <div class="welcome-bottom">
-      <h1 class="welcome-main-title" id="welcomeTitle">КАТАЛОГ НОВОСТРОЕК</h1>
-      <p class="welcome-sub" id="welcomeTagline">Подберём квартиру под ваш бюджет</p>
-      <button class="btn-primary" id="welcomeButton" onclick="startApp()">НАЧАТЬ ПОДБОР</button>
-    </div>
-  </div>
-  <div id="loadingScreen" class="screen loading hidden">
-    <div class="loading-spinner"></div>
-    <p class="loading-text">Загружаем объекты...</p>
-  </div>
-  <div id="mainContent" class="screen hidden">
-    <header id="headerBrand" class="header">
-      <button class="menu-btn" onclick="openMenu()">☰</button>
-      <button id="headerBackBtn" class="header-back-btn hidden" onclick="appBack()">
-        <span class="back-arrow">←</span><span>Назад</span>
-      </button>
-      <div class="header-brand">
-        <img src="logo.png" alt="Logo" class="brand-logo">
-        <h1 class="brand-title" id="headerTitle"></h1>
-      </div>
-    </header>
-    <div class="filters-toggle">
-      <button class="filters-toggle-btn" onclick="toggleFilters()">🔽 Фильтры</button>
-    </div>
-    <div id="filtersBlock" class="filters-block hidden">
-      <div class="filter-group">
-        <label>💰 Цена до (млн ₽)</label>
-        <div class="price-buttons">
-          <button class="price-btn" data-price="5000000">До 5 млн</button>
-          <button class="price-btn" data-price="10000000">До 10 млн</button>
-          <button class="price-btn" data-price="20000000">До 20 млн</button>
-          <button class="price-btn" data-price="50000000">До 50 млн</button>
-          <button class="price-btn" data-price="100000000">До 100 млн</button>
+    <!-- Приветственный экран -->
+    <div id="welcomeScreen" class="welcome-screen hidden">
+        <div class="welcome-content">
+            <div id="headerBrand" class="brand-logo-container">
+                <img src="logo.png" alt="Logo" class="brand-logo" onerror="this.style.display='none'">
+            </div>
+            <h1 id="welcomeTitle">КАТАЛОГ НОВОСТРОЕК</h1>
+            <p id="welcomeTagline">Подберём квартиру под ваш бюджет</p>
+            <button id="welcomeButton" class="btn-primary" onclick="startApp()">НАЧАТЬ ПОДБОР</button>
         </div>
-      </div>
-      <div class="filter-group"><label>📍 Районы</label><div id="districtCheckboxes" class="checkbox-group"></div></div>
-      <div class="filter-group"><label>🚇 Метро</label><div id="metroCheckboxes" class="checkbox-group"></div></div>
-      <div class="filter-group"><label>🚪 Комнаты</label><div id="roomsCheckboxes" class="checkbox-group"></div></div>
     </div>
-    <div class="view-toggle">
-      <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>
-      <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺️ Карта</button>
+
+    <!-- Основной контент -->
+    <div id="mainContent" class="main-content hidden">
+        <!-- Шапка -->
+        <header class="header">
+            <button id="headerBackBtn" class="back-btn hidden" onclick="appBack()">← Назад</button>
+            <div id="headerBrand" class="brand-logo-container">
+                <img src="logo.png" alt="Logo" class="brand-logo" onerror="this.style.display='none'">
+            </div>
+            <h1 id="headerTitle">КАТАЛОГ НОВОСТРОЕК</h1>
+            <button class="menu-btn" onclick="openMenu()">☰</button>
+        </header>
+
+        <!-- Боковое меню -->
+        <div id="menuOverlay" class="menu-overlay hidden" onclick="closeMenu()"></div>
+        <div id="sideMenu" class="side-menu hidden">
+            <div class="menu-header">
+                <h3>Меню</h3>
+                <button class="close-menu-btn" onclick="closeMenu()">✕</button>
+            </div>
+            <div class="menu-items">
+                <a href="#" onclick="showPage('home'); return false;">🏠 Главная</a>
+                <a href="#" onclick="showPage('about'); return false;">ℹ️ Обо мне</a>
+                <a href="#" onclick="showPage('contacts'); return false;">📞 Контакты</a>
+                <!-- ✅ ИСПРАВЛЕНО: добавлен &admin=1 для входа с телефона -->
+                <a id="adminMenuItem" href="admin.html?agent=23062026-001&admin=1" style="display:none;">⚙️ Админка</a>
+            </div>
+        </div>
+
+        <!-- Фильтры -->
+        <div class="filters-container">
+            <button class="filters-toggle-btn" onclick="toggleFilters()">🔽 Фильтры</button>
+            <div id="filtersBlock" class="filters-block hidden">
+                <div class="filter-section">
+                    <h4>Район</h4>
+                    <div id="districtCheckboxes" class="checkbox-group"></div>
+                </div>
+                <div class="filter-section">
+                    <h4>Метро</h4>
+                    <div id="metroCheckboxes" class="checkbox-group"></div>
+                </div>
+                <div class="filter-section">
+                    <h4>Комнатность</h4>
+                    <div id="roomsCheckboxes" class="checkbox-group"></div>
+                </div>
+                <div class="filter-section">
+                    <h4>Цена</h4>
+                    <div class="price-buttons">
+                        <button class="price-btn" data-price="5000000">до 5 млн</button>
+                        <button class="price-btn" data-price="10000000">до 10 млн</button>
+                        <button class="price-btn" data-price="15000000">до 15 млн</button>
+                        <button class="price-btn" data-price="20000000">до 20 млн</button>
+                    </div>
+                </div>
+                <button class="btn-reset" onclick="resetFilters()">Сбросить фильтры</button>
+            </div>
+        </div>
+
+        <!-- Переключатель вида -->
+        <div class="view-switcher">
+            <button id="listViewBtn" class="view-btn active" onclick="switchView('list')"> Список</button>
+            <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺️ Карта</button>
+        </div>
+
+        <!-- Список объектов -->
+        <div id="listingsContainer" class="listings-container"></div>
+
+        <!-- Карта -->
+        <div id="mapContainer" class="map-container hidden"></div>
+
+        <!-- Страница "Обо мне" -->
+        <div id="page-about" class="page-content-wrapper hidden">
+            <div class="page-header"><h2>Обо мне</h2></div>
+            <div class="page-content"></div>
+        </div>
+
+        <!-- Страница "Контакты" -->
+        <div id="page-contacts" class="page-content-wrapper hidden">
+            <div class="page-header"><h2>Контакты</h2></div>
+            <div class="contacts-content">
+                <div class="agent-card">
+                    <div class="agent-avatar"></div>
+                    <h3 id="agentName">Имя Агента</h3>
+                    <p id="agentRole">Эксперт по недвижимости</p>
+                    <div id="agencyBlock" class="agency-info" style="display:none;">
+                        <p id="agencyName"></p>
+                        <p id="agencyAddress"></p>
+                    </div>
+                    <div class="contact-buttons">
+                        <button class="btn-contact" onclick="openDirectChat()">💬 Написать в Telegram</button>
+                        <button class="btn-contact" onclick="callAgent()">📞 Позвонить</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
-    <div id="listingsContainer" class="listings"></div>
-    <div id="mapContainer" class="map-container hidden"></div>
-  </div>
-  <div id="detailsModal" class="modal hidden">
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeModal()">×</button>
-      <div id="modalGallery" class="modal-gallery"></div>
-      <h2 id="modalTitle"></h2>
-      <div id="modalPrice" class="modal-price"></div>
-      <div id="modalMeta" class="modal-meta"></div>
-      <h3>📖 Описание</h3><div id="modalDescription" class="modal-desc"></div>
-      <h3>✨ Преимущества</h3><div id="modalFeatures" class="modal-features"></div>
-      <h3>📐 Планировки</h3><div id="modalFloorPlans" class="floor-plans"></div>
-      <button id="modalConsultBtn" class="tg-btn">Заказать консультацию</button>
+
+    <!-- Модальное окно деталей объекта -->
+    <div id="detailsModal" class="modal hidden">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeModal()">✕</button>
+            <h2 id="modalTitle"></h2>
+            <div id="modalPrice" class="modal-price"></div>
+            <div id="modalMeta" class="modal-meta"></div>
+            <div id="modalGallery" class="modal-gallery"></div>
+            <div class="modal-section">
+                <h3>Описание</h3>
+                <p id="modalDescription"></p>
+            </div>
+            <div class="modal-section">
+                <h3>Преимущества</h3>
+                <div id="modalFeatures"></div>
+            </div>
+            <div id="modalFloorPlans" class="modal-section"></div>
+        </div>
     </div>
-  </div>
-  <div id="consultModal" class="modal form-modal hidden">
-    <div class="modal-content">
-      <button class="modal-close" onclick="closeConsultModal()">×</button>
-      <h3>Заказать консультацию</h3>
-      <p id="consultObjectName" class="form-object"></p>
-      <p class="form-hint">Оставьте контакты — мы перезвоним и ответим на все вопросы по объекту</p>
-      <form id="consultForm" onsubmit="submitConsultForm(event)">
-        <input id="consultName" type="text" placeholder="Ваше имя" required>
-        <input id="consultPhone" type="tel" placeholder="+7 (___) ___-__-__" required>
-        <input id="consultTelegram" type="text" placeholder="Telegram (необязательно)">
-        <button type="submit" class="tg-btn">Отправить заявку</button>
-      </form>
+
+    <!-- Модальное окно консультации -->
+    <div id="consultModal" class="modal hidden">
+        <div class="modal-content">
+            <button class="modal-close" onclick="closeConsultModal()">✕</button>
+            <h2>Заявка на консультацию</h2>
+            <p id="consultObjectName" class="consult-object-name"></p>
+            <form id="consultForm" onsubmit="submitConsultForm(event)">
+                <div class="form-group">
+                    <label>Ваше имя *</label>
+                    <input type="text" id="consultName" required>
+                </div>
+                <div class="form-group">
+                    <label>Телефон *</label>
+                    <input type="tel" id="consultPhone" required>
+                </div>
+                <div class="form-group">
+                    <label>Telegram (необязательно)</label>
+                    <input type="text" id="consultTelegram" placeholder="@username">
+                </div>
+                <button type="submit" class="btn-primary">Отправить заявку</button>
+            </form>
+        </div>
     </div>
-  </div>
-  <div id="menuOverlay" class="menu-overlay hidden" onclick="closeMenu()"></div>
-  <div id="sideMenu" class="side-menu hidden">
-    <button class="menu-close" onclick="closeMenu()">×</button>
-    <nav class="menu-nav">
-      <button onclick="showPage('home')">🏢 Каталог</button>
-      <button onclick="showPage('about')">👤 Обо мне</button>
-      <button onclick="showPage('contacts')">📞 Контакты</button>
-      <button id="adminMenuItem" onclick="openAdminPanel()" style="display: none; border-top: 2px solid #ddd; margin-top: 15px; padding-top: 15px; color: #667eea; font-weight: 600;">⚙️ Админ-панель</button>
-    </nav>
-  </div>
-  <div id="page-about" class="page hidden">
-    <div class="page-header"><button class="page-back-btn" onclick="appBack()">← Назад</button><h2>Обо мне</h2></div>
-    <div class="page-content">
-      <p>Привет! Я — брокер по недвижимости. Помогаю подбирать объекты с максимальной доходностью и юридической чистотой.</p>
-      <h3>🔍 Как я работаю:</h3>
-      <ul><li>Проверяю документы и историю застройщика.</li><li>Торгуюсь за скидку (часто до 5-10%).</li><li>Помогаю с ипотекой и одобрением.</li></ul>
-    </div>
-  </div>
-  <div id="page-contacts" class="page hidden">
-    <div class="page-header"><button class="page-back-btn" onclick="appBack()">← Назад</button><h2>Контакты</h2></div>
-    <div class="page-content">
-      <div class="contact-card"><div class="agent-avatar"></div><div class="agent-info"><h3 id="agentName">Имя Агента</h3><p id="agentRole">Эксперт по недвижимости</p></div></div>
-      <div id="agencyBlock" class="agency-block"><h4>🏢 Агентство</h4><p id="agencyName">Название АН</p><p id="agencyAddress" class="address-text">📍 Адрес офиса</p></div>
-      <div class="contact-actions"><button class="btn-tg" onclick="openDirectChat()">✈️ Написать в Telegram</button><button class="btn-phone" onclick="callAgent()">📞 Позвонить</button></div>
-    </div>
-  </div>
-  <div id="adminFrame" class="admin-frame">
-    <button class="admin-close-btn" onclick="closeAdminPanel()"><span>←</span><span>Назад</span></button>
-    <iframe id="adminIframe"></iframe>
-  </div>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="app.js?v=2.0.2"></script>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="app.js?v=2.0.8"></script>
 </body>
 </html>
