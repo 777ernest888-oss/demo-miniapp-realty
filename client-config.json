@@ -19,7 +19,7 @@
     "buttonText": "НАЧАТЬ ПОДБОР"
   },
   "features": {
-    "showWelcomeScreen": true,
+    "showWelcomeScreen": false,
     "enableMap": true,
     "enableFilters": true
   }
