@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Каталог новостроек</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- ВАЖНО: styles.css с буквой s -->
     <link rel="stylesheet" href="styles.css?v=2.0.8">
 </head>
 <body>
@@ -15,7 +14,7 @@
         <p>Загрузка...</p>
     </div>
 
-    <!-- Приветственный экран -->
+    <!-- Приветственный экран (показывается первым) -->
     <div id="welcomeScreen" class="welcome-screen">
         <div class="welcome-content">
             <div id="headerBrand" class="brand-logo-container">
@@ -27,9 +26,8 @@
         </div>
     </div>
 
-    <!-- Основной контент (скрыт по умолчанию через JS) -->
+    <!-- Основной контент (скрыт до нажатия кнопки) -->
     <div id="mainContent" class="main-content hidden">
-        <!-- Шапка -->
         <header class="header">
             <button id="headerBackBtn" class="back-btn hidden" onclick="appBack()">← Назад</button>
             <div id="headerBrand" class="brand-logo-container">
@@ -39,7 +37,6 @@
             <button class="menu-btn" onclick="openMenu()">☰</button>
         </header>
 
-        <!-- Боковое меню -->
         <div id="menuOverlay" class="menu-overlay hidden" onclick="closeMenu()"></div>
         <div id="sideMenu" class="side-menu hidden">
             <div class="menu-header">
@@ -50,27 +47,16 @@
                 <a href="#" onclick="showPage('home'); return false;">🏠 Главная</a>
                 <a href="#" onclick="showPage('about'); return false;">ℹ️ Обо мне</a>
                 <a href="#" onclick="showPage('contacts'); return false;">📞 Контакты</a>
-                <!-- Ссылка на админку с параметром admin=1 для входа с телефона -->
                 <a id="adminMenuItem" href="admin.html?agent=23062026-001&admin=1" style="display:none;">⚙️ Админка</a>
             </div>
         </div>
 
-        <!-- Фильтры -->
         <div class="filters-container">
             <button class="filters-toggle-btn" onclick="toggleFilters()">🔽 Фильтры</button>
             <div id="filtersBlock" class="filters-block hidden">
-                <div class="filter-section">
-                    <h4>Район</h4>
-                    <div id="districtCheckboxes" class="checkbox-group"></div>
-                </div>
-                <div class="filter-section">
-                    <h4>Метро</h4>
-                    <div id="metroCheckboxes" class="checkbox-group"></div>
-                </div>
-                <div class="filter-section">
-                    <h4>Комнатность</h4>
-                    <div id="roomsCheckboxes" class="checkbox-group"></div>
-                </div>
+                <div class="filter-section"><h4>Район</h4><div id="districtCheckboxes" class="checkbox-group"></div></div>
+                <div class="filter-section"><h4>Метро</h4><div id="metroCheckboxes" class="checkbox-group"></div></div>
+                <div class="filter-section"><h4>Комнатность</h4><div id="roomsCheckboxes" class="checkbox-group"></div></div>
                 <div class="filter-section">
                     <h4>Цена</h4>
                     <div class="price-buttons">
@@ -84,25 +70,19 @@
             </div>
         </div>
 
-        <!-- Переключатель вида -->
         <div class="view-switcher">
             <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>
             <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺️ Карта</button>
         </div>
 
-        <!-- Список объектов -->
         <div id="listingsContainer" class="listings-container"></div>
-
-        <!-- Карта -->
         <div id="mapContainer" class="map-container hidden"></div>
 
-        <!-- Страница "Обо мне" -->
         <div id="page-about" class="page-content-wrapper hidden">
             <div class="page-header"><h2>Обо мне</h2></div>
             <div class="page-content"></div>
         </div>
 
-        <!-- Страница "Контакты" -->
         <div id="page-contacts" class="page-content-wrapper hidden">
             <div class="page-header"><h2>Контакты</h2></div>
             <div class="contacts-content">
@@ -123,7 +103,6 @@
         </div>
     </div>
 
-    <!-- Модальное окно деталей объекта -->
     <div id="detailsModal" class="modal hidden">
         <div class="modal-content">
             <button class="modal-close" onclick="closeModal()">✕</button>
@@ -131,37 +110,21 @@
             <div id="modalPrice" class="modal-price"></div>
             <div id="modalMeta" class="modal-meta"></div>
             <div id="modalGallery" class="modal-gallery"></div>
-            <div class="modal-section">
-                <h3>Описание</h3>
-                <p id="modalDescription"></p>
-            </div>
-            <div class="modal-section">
-                <h3>Преимущества</h3>
-                <div id="modalFeatures"></div>
-            </div>
+            <div class="modal-section"><h3>Описание</h3><p id="modalDescription"></p></div>
+            <div class="modal-section"><h3>Преимущества</h3><div id="modalFeatures"></div></div>
             <div id="modalFloorPlans" class="modal-section"></div>
         </div>
     </div>
 
-    <!-- Модальное окно консультации -->
     <div id="consultModal" class="modal hidden">
         <div class="modal-content">
             <button class="modal-close" onclick="closeConsultModal()">✕</button>
             <h2>Заявка на консультацию</h2>
             <p id="consultObjectName" class="consult-object-name"></p>
             <form id="consultForm" onsubmit="submitConsultForm(event)">
-                <div class="form-group">
-                    <label>Ваше имя *</label>
-                    <input type="text" id="consultName" required>
-                </div>
-                <div class="form-group">
-                    <label>Телефон *</label>
-                    <input type="tel" id="consultPhone" required>
-                </div>
-                <div class="form-group">
-                    <label>Telegram (необязательно)</label>
-                    <input type="text" id="consultTelegram" placeholder="@username">
-                </div>
+                <div class="form-group"><label>Ваше имя *</label><input type="text" id="consultName" required></div>
+                <div class="form-group"><label>Телефон *</label><input type="tel" id="consultPhone" required></div>
+                <div class="form-group"><label>Telegram (необязательно)</label><input type="text" id="consultTelegram" placeholder="@username"></div>
                 <button type="submit" class="btn-primary">Отправить заявку</button>
             </form>
         </div>
