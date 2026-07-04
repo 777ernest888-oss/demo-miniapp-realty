@@ -14,8 +14,8 @@
         <p>Загрузка...</p>
     </div>
 
-    <!-- Приветственный экран -->
-    <div id="welcomeScreen" class="welcome-screen hidden">
+    <!-- Приветственный экран - БЕЗ класса hidden, показывается первым -->
+    <div id="welcomeScreen" class="welcome-screen">
         <div class="welcome-content">
             <div id="headerBrand" class="brand-logo-container">
                 <img src="logo.png" alt="Logo" class="brand-logo" onerror="this.style.display='none'">
@@ -26,7 +26,7 @@
         </div>
     </div>
 
-    <!-- Основной контент -->
+    <!-- Основной контент - с классом hidden, скрыт по умолчанию -->
     <div id="mainContent" class="main-content hidden">
         <!-- Шапка -->
         <header class="header">
@@ -43,13 +43,12 @@
         <div id="sideMenu" class="side-menu hidden">
             <div class="menu-header">
                 <h3>Меню</h3>
-                <button class="close-menu-btn" onclick="closeMenu()">✕</button>
+                <button class="close-menu-btn" onclick="closeMenu()"></button>
             </div>
             <div class="menu-items">
-                <a href="#" onclick="showPage('home'); return false;">🏠 Главная</a>
+                <a href="#" onclick="showPage('home'); return false;"> Главная</a>
                 <a href="#" onclick="showPage('about'); return false;">ℹ️ Обо мне</a>
                 <a href="#" onclick="showPage('contacts'); return false;">📞 Контакты</a>
-                <!-- ✅ ИСПРАВЛЕНО: добавлен &admin=1 для входа с телефона -->
                 <a id="adminMenuItem" href="admin.html?agent=23062026-001&admin=1" style="display:none;">⚙️ Админка</a>
             </div>
         </div>
@@ -85,7 +84,7 @@
 
         <!-- Переключатель вида -->
         <div class="view-switcher">
-            <button id="listViewBtn" class="view-btn active" onclick="switchView('list')"> Список</button>
+            <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>
             <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺️ Карта</button>
         </div>
 
