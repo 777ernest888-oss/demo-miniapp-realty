@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Каталог новостроек</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- ВАЖНО: styles.css с буквой s -->
     <link rel="stylesheet" href="styles.css?v=2.0.8">
 </head>
 <body>
@@ -14,7 +15,7 @@
         <p>Загрузка...</p>
     </div>
 
-    <!-- Приветственный экран - БЕЗ класса hidden, показывается первым -->
+    <!-- Приветственный экран -->
     <div id="welcomeScreen" class="welcome-screen">
         <div class="welcome-content">
             <div id="headerBrand" class="brand-logo-container">
@@ -26,7 +27,7 @@
         </div>
     </div>
 
-    <!-- Основной контент - с классом hidden, скрыт по умолчанию -->
+    <!-- Основной контент (скрыт по умолчанию через JS) -->
     <div id="mainContent" class="main-content hidden">
         <!-- Шапка -->
         <header class="header">
@@ -43,12 +44,13 @@
         <div id="sideMenu" class="side-menu hidden">
             <div class="menu-header">
                 <h3>Меню</h3>
-                <button class="close-menu-btn" onclick="closeMenu()"></button>
+                <button class="close-menu-btn" onclick="closeMenu()">✕</button>
             </div>
             <div class="menu-items">
-                <a href="#" onclick="showPage('home'); return false;"> Главная</a>
+                <a href="#" onclick="showPage('home'); return false;">🏠 Главная</a>
                 <a href="#" onclick="showPage('about'); return false;">ℹ️ Обо мне</a>
                 <a href="#" onclick="showPage('contacts'); return false;">📞 Контакты</a>
+                <!-- Ссылка на админку с параметром admin=1 для входа с телефона -->
                 <a id="adminMenuItem" href="admin.html?agent=23062026-001&admin=1" style="display:none;">⚙️ Админка</a>
             </div>
         </div>
