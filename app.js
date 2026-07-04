@@ -418,9 +418,18 @@ function applyBranding() {
 }
 
 function renderWelcome() {
-    if (!config.features || !config.features.showWelcomeScreen) {
-        document.getElementById('welcomeScreen').classList.add('hidden');
-        document.getElementById('mainContent').classList.remove('hidden');
+    // Всегда скрываем welcome screen и показываем основной контент
+    var welcomeScreen = document.getElementById('welcomeScreen');
+    var mainContent = document.getElementById('mainContent');
+    var loadingScreen = document.getElementById('loadingScreen');
+   
+    // Проверяем настройку, но по умолчанию скрываем welcome
+    var showWelcome = config.features && config.features.showWelcomeScreen === true;
+   
+    if (!showWelcome) {
+        if (welcomeScreen) welcomeScreen.classList.add('hidden');
+        if (loadingScreen) loadingScreen.classList.add('hidden');
+        if (mainContent) mainContent.classList.remove('hidden');
     }
 }
 
