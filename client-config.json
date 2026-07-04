@@ -17,5 +17,10 @@
     "name": "Демонстрационная версия",
     "tagline": "Подберём квартиру под ваш бюджет",
     "buttonText": "НАЧАТЬ ПОДБОР"
+  },
+  "features": {
+    "showWelcomeScreen": true,
+    "enableMap": true,
+    "enableFilters": true
   }
 }
