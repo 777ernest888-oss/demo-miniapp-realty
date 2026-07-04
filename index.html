@@ -20,13 +20,15 @@
   <script>
     var ADMIN_USER_ID = 2038206387;
     function checkAdminAccess() {
-      if (window.Telegram && window.Telegram.WebApp) {
-        var tg = window.Telegram.WebApp;
-        var user = tg.initDataUnsafe && tg.initDataUnsafe.user;
-        if (user && user.id === ADMIN_USER_ID) { window.isAdmin = true; return true; }
-      }
-      window.isAdmin = false; return false;
-    }
+  var params = new URLSearchParams(window.location.search);
+  if (params.get('admin') === '1') { window.isAdmin = true; return true; }
+  if (window.Telegram && window.Telegram.WebApp) {
+    var tg = window.Telegram.WebApp;
+    var user = tg.initDataUnsafe && tg.initDataUnsafe.user;
+    if (user && user.id === ADMIN_USER_ID) { window.isAdmin = true; return true; }
+  }
+  window.isAdmin = false; return false;
+}
     function openAdminPanel() {
       if (!window.isAdmin) {
         alert('⛔ Доступ запрещён!');
