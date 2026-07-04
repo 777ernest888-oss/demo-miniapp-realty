@@ -281,12 +281,30 @@
     }
 
     function checkAuth() {
-      if (sessionStorage.getItem('adminAuth') === 'true') { isAuthorized = true; showApp(); return; }
-      var initData = getTelegramInitData();
-      if (initData) { isAuthorized = true; sessionStorage.setItem('adminAuth', 'true'); showApp(); return; }
-      document.getElementById('pinScreen').style.display = 'flex';
-      document.getElementById('pinInput').focus();
-    }
+  // Если уже авторизован в этой сессии — сразу показываем приложение
+  if (sessionStorage.getItem('adminAuth') === 'true') {
+    isAuthorized = true;
+    showApp();
+    return;
+  }
+ 
+  // Проверяем URL параметр admin=1
+  var urlParams = new URLSearchParams(window.location.search);
+  var isAdminMode = urlParams.get('admin') === '1';
+ 
+  // Если есть Telegram initData (вход через Telegram WebApp) — авторизуем автоматически
+  var initData = getTelegramInitData();
+  if (initData && !isAdminMode) {
+    isAuthorized = true;
+    sessionStorage.setItem('adminAuth', 'true');
+    showApp();
+    return;
+  }
+ 
+  // Иначе показываем экран PIN-кода
+  document.getElementById('pinScreen').style.display = 'flex';
+  document.getElementById('pinInput').focus();
+}
 
     async function checkPin() {
   var input = document.getElementById('pinInput').value.trim();
