@@ -68,7 +68,7 @@ try {
 
 async function loadClientConfig() {
     try {
-        var response = await fetch('client-config.json?v=2.0.2');
+        var response = await fetch('client-config.json?v=2.0.8');
         config = await response.json();
         console.log('[loadClientConfig] ✅ Config загружен:', config);
     } catch (error) {
@@ -190,11 +190,15 @@ function showErrorScreen(message) {
 
 async function loadPagesData() {
     try {
-        if (!config.sheets || !config.sheets.pages) return;
-        var res = await fetch(config.sheets.pages);
+        // ЗАГРУЗКА СТРАНИЦ ЧЕРЕЗ API ВМЕСТО CSV
+        if (!config.client || !config.client.scriptUrl) return;
+        var url = config.client.scriptUrl + '?action=get_pages&agent_id=' + encodeURIComponent(AGENT_ID);
+        var res = await fetch(url);
         if (!res.ok) throw new Error('Network error');
-        var csv = await res.text();
-        var rows = parseCSV(csv);
+        var result = await res.json();
+        if (!result.success) throw new Error(result.error);
+       
+        var rows = result.data || [];
         rows.forEach(function(row) {
             if (row.page && row.title) pagesData[row.page] = { title: row.title, content: row.content || '' };
         });
@@ -364,13 +368,15 @@ async function init() {
             console.log('[init] ✅ Загружено из кэша:', listings.length, 'объектов');
         } else {
             console.log('[init] 📡 Загружаем данные с сервера...');
-            var url = config.client.scriptUrl + '?action=get_all&agent_id=' + AGENT_ID;
+            // ИСПРАВЛЕНО: используем action=get_listings и data вместо listings
+            var url = config.client.scriptUrl + '?action=get_listings&agent_id=' + encodeURIComponent(AGENT_ID);
             var response = await fetch(url);
             var data = await response.json();
 
             if (data.success) {
-                listings = data.listings || [];
-                currentAgentData = data.agentData || {};
+                // ИСПРАВЛЕНО: data.data вместо data.listings
+                listings = data.data || [];
+                currentAgentData = {}; // agentData больше не возвращается отдельно
                 setCachedData({ listings: listings, agentData: currentAgentData });
                 console.log('[init] ✅ Загружено с сервера:', listings.length, 'объектов');
             } else {
@@ -406,7 +412,7 @@ function applyBranding() {
     var el;
     el = document.getElementById('companyName'); if (el && config.branding.name) el.textContent = config.branding.name;
     el = document.getElementById('welcomeTitle'); if (el && config.branding.welcomeTitle) el.textContent = config.branding.welcomeTitle;
-    el = document.getElementById('welcomeTagline'); if (el && config.branding.tagline) el.textContent = config.branding.tagline;
+    el = document.getElementById('welcomeTagline'); if (el && config.branding.tagline) el.textContent = brandConfig.tagline; }
     el = document.getElementById('welcomeButton'); if (el && config.branding.buttonText) el.textContent = config.branding.buttonText;
     el = document.getElementById('headerTitle'); if (el && config.branding.name) el.textContent = config.branding.name.toUpperCase();
     el = document.querySelector('#headerBrand .brand-logo'); if (el && config.branding.logo) { el.src = getImageUrl(config.branding.logo); el.onerror = onImgError; }
@@ -563,7 +569,7 @@ function openDetails(id) {
         var pt = document.createElement('div'); pt.className = 'carousel-track';
         plansImages.forEach(function(url) { var s = document.createElement('div'); s.className = 'slide'; s.style.flex = '0 0 85%'; var img = document.createElement('img'); img.src = getImageUrl(url); img.style.height = '200px'; img.onclick = function() { window.open(getImageUrl(url), '_blank'); }; img.onerror = onImgError; s.appendChild(img); pt.appendChild(s); });
         pc.appendChild(pt);
-    } else if (item.floor_plans_text) { pc.innerHTML = '<h3 class="plans-section-title"> Планировки</h3><p class="floor-plans-text">' + item.floor_plans_text + '</p>'; }
+    } else if (item.floor_plans_text) { pc.innerHTML = '<h3 class="plans-section-title">📐 Планировки</h3><p class="floor-plans-text">' + item.floor_plans_text + '</p>'; }
     var mc = document.querySelector('#detailsModal .modal-content');
     var btn = document.getElementById('modalConsultBtn');
     if (!btn) { btn = document.createElement('button'); btn.id = 'modalConsultBtn'; btn.className = 'tg-btn'; btn.style.marginTop = '20px'; btn.style.marginBottom = '40px'; mc.appendChild(btn); }
