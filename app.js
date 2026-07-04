@@ -418,19 +418,47 @@ function applyBranding() {
 }
 
 function renderWelcome() {
-    // Всегда скрываем welcome screen и показываем основной контент
+    console.log('[renderWelcome] Вызвана');
+   
     var welcomeScreen = document.getElementById('welcomeScreen');
     var mainContent = document.getElementById('mainContent');
     var loadingScreen = document.getElementById('loadingScreen');
    
-    // Проверяем настройку, но по умолчанию скрываем welcome
-    var showWelcome = config.features && config.features.showWelcomeScreen === true;
-   
-    if (!showWelcome) {
-        if (welcomeScreen) welcomeScreen.classList.add('hidden');
-        if (loadingScreen) loadingScreen.classList.add('hidden');
-        if (mainContent) mainContent.classList.remove('hidden');
+    // Проверяем настройку
+    var showWelcome = false;
+    if (config.features && config.features.showWelcomeScreen === true) {
+        showWelcome = true;
     }
+   
+    console.log('[renderWelcome] showWelcome:', showWelcome);
+   
+    if (showWelcome) {
+        // Показываем welcome screen
+        if (welcomeScreen) {
+            welcomeScreen.classList.remove('hidden');
+            welcomeScreen.style.display = 'flex';
+        }
+        if (mainContent) {
+            mainContent.classList.add('hidden');
+            mainContent.style.display = 'none';
+        }
+    } else {
+        // Скрываем welcome, показываем main content
+        if (welcomeScreen) {
+            welcomeScreen.classList.add('hidden');
+            welcomeScreen.style.display = 'none';
+        }
+        if (loadingScreen) {
+            loadingScreen.classList.add('hidden');
+            loadingScreen.style.display = 'none';
+        }
+        if (mainContent) {
+            mainContent.classList.remove('hidden');
+            mainContent.style.display = 'block';
+        }
+    }
+   
+    console.log('[renderWelcome] Готово');
 }
 
 function renderFilters() {
