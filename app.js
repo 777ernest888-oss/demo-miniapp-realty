@@ -418,47 +418,19 @@ function applyBranding() {
 }
 
 function renderWelcome() {
-    console.log('[renderWelcome] Вызвана');
-   
-    var welcomeScreen = document.getElementById('welcomeScreen');
-    var mainContent = document.getElementById('mainContent');
-    var loadingScreen = document.getElementById('loadingScreen');
-   
-    // Проверяем настройку
-    var showWelcome = false;
-    if (config.features && config.features.showWelcomeScreen === true) {
-        showWelcome = true;
-    }
-   
-    console.log('[renderWelcome] showWelcome:', showWelcome);
+    // Если showWelcomeScreen = true, показываем welcome screen
+    // Если false или не указано - сразу показываем каталог
+    var showWelcome = config.features && config.features.showWelcomeScreen === true;
    
     if (showWelcome) {
-        // Показываем welcome screen
-        if (welcomeScreen) {
-            welcomeScreen.classList.remove('hidden');
-            welcomeScreen.style.display = 'flex';
-        }
-        if (mainContent) {
-            mainContent.classList.add('hidden');
-            mainContent.style.display = 'none';
-        }
+        // Показываем welcome screen, скрываем main content
+        document.getElementById('welcomeScreen').classList.remove('hidden');
+        document.getElementById('mainContent').classList.add('hidden');
     } else {
-        // Скрываем welcome, показываем main content
-        if (welcomeScreen) {
-            welcomeScreen.classList.add('hidden');
-            welcomeScreen.style.display = 'none';
-        }
-        if (loadingScreen) {
-            loadingScreen.classList.add('hidden');
-            loadingScreen.style.display = 'none';
-        }
-        if (mainContent) {
-            mainContent.classList.remove('hidden');
-            mainContent.style.display = 'block';
-        }
+        // Скрываем welcome screen, показываем main content
+        document.getElementById('welcomeScreen').classList.add('hidden');
+        document.getElementById('mainContent').classList.remove('hidden');
     }
-   
-    console.log('[renderWelcome] Готово');
 }
 
 function renderFilters() {
