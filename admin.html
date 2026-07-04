@@ -106,7 +106,7 @@
     <div class="header"><h1>⚙️ Админка</h1><button class="header-btn" onclick="refreshCurrentTab()">↻</button></div>
     <div class="container">
       <div class="tabs">
-        <button class="tab active" onclick="switchTab('objects')">🏢 Объекты</button>
+        <button class="tab active" onclick="switchTab('objects')"> Объекты</button>
         <button class="tab" onclick="switchTab('leads')">📩 Заявки</button>
         <button class="tab" onclick="switchTab('profile')">👤 Профиль</button>
         <button class="tab" onclick="switchTab('about')">ℹ️ Обо мне</button>
@@ -158,7 +158,7 @@
         <div class="form-group"><label class="form-label">Текущий PIN</label><input type="password" class="form-input" id="currentPin" placeholder="Введите текущий PIN"></div>
         <div class="form-group"><label class="form-label">Новый PIN</label><input type="password" class="form-input" id="newPin" placeholder="Минимум 4 символа"></div>
         <div class="form-group"><label class="form-label">Повторите новый PIN</label><input type="password" class="form-input" id="confirmPin" placeholder="Повторите новый PIN"></div>
-        <button class="btn btn-primary" onclick="changePin()">🔒 Сменить PIN-код</button>
+        <button class="btn btn-primary" onclick="changePin()"> Сменить PIN-код</button>
         <p style="text-align:center;font-size:12px;color:var(--text-secondary);margin-top:16px;">После смены PIN текущая сессия будет обновлена автоматически.</p>
       </div>
     </div>
@@ -296,7 +296,12 @@
       btn.textContent = 'Проверка...'; btn.disabled = true;
       document.getElementById('pinError').style.display = 'none';
       try {
+        var urlParams = new URLSearchParams(window.location.search);
+        var isAdminMode = urlParams.get('admin') === '1';
+       
         var url = config.scriptUrl + '?action=verify_pin&agentId=' + encodeURIComponent(AGENT_ID) + '&pin=' + encodeURIComponent(input);
+        if (isAdminMode) url += '&admin=1';
+       
         var response = await fetch(url);
         var data = await response.json();
         if (data.success) { isAuthorized = true; sessionStorage.setItem('adminAuth', 'true'); sessionStorage.setItem('adminPin', input); showApp(); }
@@ -315,15 +320,23 @@
 
     async function apiCall(action, params) {
       if (!config.scriptUrl) throw new Error('Script URL не настроен');
-      var payload = { action: action, agentId: AGENT_ID, initData: getTelegramInitData(), pin: sessionStorage.getItem('adminPin') || '', data: params };
+     
+      var urlParams = new URLSearchParams(window.location.search);
+      var isAdminMode = urlParams.get('admin') === '1';
+     
+      var payload = { action: action, agentId: AGENT_ID, initData: getTelegramInitData(), pin: sessionStorage.getItem('adminPin') || '', data: params, isAdminMode: isAdminMode };
+     
       if (action === 'get_leads' || action === 'get_agent_profile' || action === 'get_pages' || action === 'get_listings' || action === 'get_last_file_url') {
         var getUrl = config.scriptUrl + '?action=' + action + '&agent_id=' + encodeURIComponent(AGENT_ID);
         if (action === 'get_listings') getUrl += '&includeHidden=true';
+        if (isAdminMode) getUrl += '&admin=1';
+       
         var response = await fetch(getUrl);
         var data = await response.json();
         if (!data.success && action !== 'get_last_file_url') throw new Error(data.error || 'Ошибка сервера');
         return data;
       }
+     
       await fetch(config.scriptUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
       return { success: true };
     }
@@ -346,7 +359,6 @@
       else if (currentTab === 'about') loadAboutPage();
     }
 
-    // Форматирование даты: дд.мм.гггг чч:мм
     function formatDate(dateStr) {
       if (!dateStr) return '';
       var d = new Date(dateStr);
@@ -501,20 +513,50 @@
     }
 
     async function loadLeads() {
-      document.getElementById('leadsLoading').style.display='block'; document.getElementById('leadsList').innerHTML='';
+      document.getElementById('leadsLoading').style.display='block';
+      document.getElementById('leadsList').innerHTML='';
       try {
-        var result = await apiCall('get_leads', {}); leads = result.data || [];
+        var urlParams = new URLSearchParams(window.location.search);
+        var isAdminMode = urlParams.get('admin') === '1';
+       
+        var url = config.scriptUrl + '?action=get_leads&agent_id=' + encodeURIComponent(AGENT_ID);
+        if (isAdminMode) url += '&admin=1';
+       
+        var response = await fetch(url);
+        var result = await response.json();
+       
+        leads = result.data || [];
         document.getElementById('leadsLoading').style.display='none';
-        if (leads.length===0) { document.getElementById('leadsList').innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><h3>Нет заявок</h3></div>'; return; }
+       
+        if (leads.length===0) {
+          document.getElementById('leadsList').innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><h3>Нет заявок</h3></div>';
+          return;
+        }
+       
         leads.forEach(function(lead) {
-          var card = document.createElement('div'); card.className='lead-card';
+          var card = document.createElement('div');
+          card.className='lead-card';
           var sc = 'status-'+(lead.status==='Новая'?'new':lead.status==='Обзвонена'?'contacted':lead.status==='Завершена'?'completed':'cancelled');
           var pd = lead.clientPhone && String(lead.clientPhone).indexOf('#ERROR')===-1 ? escapeHtml(lead.clientPhone) : 'Не указан';
+          var tgInfo = lead.clientTelegram && lead.clientTelegram !== 'Не указан' ? '<div class="lead-info">💬 '+escapeHtml(lead.clientTelegram)+'</div>' : '';
           var formattedTime = lead.formattedTime || formatDate(lead.timestamp);
-          card.innerHTML = '<div class="lead-header"><div class="lead-object">🏢 '+escapeHtml(lead.objectName||'Не указан')+'</div><div class="lead-status '+sc+'">'+escapeHtml(lead.status||'Новая')+'</div></div>'+'<div class="lead-info">👤 '+escapeHtml(lead.clientName||'Не указано')+'</div><div class="lead-info">📞 '+pd+'</div>'+'<div class="lead-info">🕐 '+formattedTime+'</div>'+'<div class="lead-actions"><button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'new\')">🆕 Новая</button>'+'<button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'contacted\')">📞 Обзвонена</button>'+'<button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'completed\')">✅ Завершена</button>'+'<button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'cancelled\')">❌ Отменена</button></div>';
+         
+          card.innerHTML = '<div class="lead-header"><div class="lead-object">🏢 '+escapeHtml(lead.objectName||'Не указан')+'</div><div class="lead-status '+sc+'">'+escapeHtml(lead.status||'Новая')+'</div></div>'+
+            '<div class="lead-info">👤 '+escapeHtml(lead.clientName||'Не указано')+'</div>'+
+            '<div class="lead-info">📞 '+pd+'</div>'+
+            tgInfo+
+            '<div class="lead-info"> '+formattedTime+'</div>'+
+            '<div class="lead-actions"><button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'new\')">🆕 Новая</button>'+
+            '<button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'contacted\')"> Обзвонена</button>'+
+            '<button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'completed\')">✅ Завершена</button>'+
+            '<button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'cancelled\')">❌ Отменена</button></div>';
+         
           document.getElementById('leadsList').appendChild(card);
         });
-      } catch (e) { document.getElementById('leadsLoading').style.display='none'; showToast('❌ Ошибка загрузки заявок'); }
+      } catch (e) {
+        document.getElementById('leadsLoading').style.display='none';
+        showToast(' Ошибка загрузки заявок: ' + e.message);
+      }
     }
 
     async function updateLeadStatus(id, status) {
@@ -571,7 +613,7 @@
       if (newP.length<4) { showToast('⚠️ PIN минимум 4 символа'); return; }
       var btn=event.target; var ot=btn.textContent; btn.disabled=true; btn.textContent='Сохранение...';
       try { await apiCall('change_pin',{oldPin:current,newPin:newP}); showToast('✅ PIN изменён'); document.getElementById('currentPin').value=''; document.getElementById('newPin').value=''; document.getElementById('confirmPin').value=''; sessionStorage.setItem('adminPin',newP); }
-      catch(e) { showToast('❌ '+e.message); } finally { btn.disabled=false; btn.textContent=ot; }
+      catch(e) { showToast(' '+e.message); } finally { btn.disabled=false; btn.textContent=ot; }
     }
 
     function escapeHtml(text) { if (!text) return ''; var div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
