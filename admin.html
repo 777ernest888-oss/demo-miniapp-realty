@@ -4,7 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Админка | Просторы</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script>
+    // Асинхронная загрузка Telegram SDK с таймаутом
+    (function() {
+      var tgScript = document.createElement('script');
+      tgScript.src = 'https://telegram.org/js/telegram-web-app.js';
+      tgScript.onload = function() { window.tgSdkLoaded = true; };
+      tgScript.onerror = function() { console.log('[Telegram SDK] Failed to load'); };
+      document.head.appendChild(tgScript);
+      setTimeout(function() {
+        if (!window.tgSdkLoaded) console.log('[Telegram SDK] Timeout, continuing without it');
+      }, 5000);
+    })();
+  </script>
   <style>
     :root { --primary: #3D5266; --accent: #3498DB; --bg: #F5F7FA; --card-bg: #FFFFFF; --text: #2C3E50; --text-secondary: #7F8C8D; --border: #E0E6ED; --danger: #E74C3C; --success: #27AE60; --warning: #F39C12; --radius: 12px; --shadow: 0 2px 8px rgba(0,0,0,0.08); }
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
@@ -84,7 +96,7 @@
 <body>
   <!-- ЭКРАН PIN -->
   <div id="pinScreen" class="pin-screen" style="display:none;">
-    <h1>🔐 Админ-панель</h1>
+    <h1> Админ-панель</h1>
     <p>Введите PIN-код для доступа</p>
     <input type="password" id="pinInput" class="pin-input" placeholder="••••" maxlength="6" inputmode="numeric">
     <div id="pinError" class="pin-error">❌ Неверный PIN-код</div>
@@ -205,9 +217,17 @@
     var AGENT_ID = '';
     var AGENT_CONFIG = null;
 
-    // Telegram WebApp Init
-    var tg = window.Telegram && window.Telegram.WebApp ? window.Telegram.WebApp : null;
-    if (tg) { tg.ready(); tg.expand(); }
+    // Telegram WebApp Init (безопасная инициализация)
+    var tg = null;
+    try {
+      if (window.Telegram && window.Telegram.WebApp) {
+        tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+      }
+    } catch(e) {
+      console.log('[Telegram] Init error:', e);
+    }
 
     // Слушатель postMessage от родителя
     window.addEventListener('message', function(event) {
@@ -302,7 +322,7 @@
     // === АВТОРИЗАЦИЯ ===
     function checkAuth() {
       if (sessionStorage.getItem('adminAuth') === 'true') { isAuthorized = true; showApp(); return; }
-     
+    
       var initData = getTelegramInitData();
       if (initData) {
         isAuthorized = true;
@@ -310,7 +330,7 @@
         showApp();
         return;
       }
-     
+    
       document.getElementById('pinScreen').style.display = 'flex';
       document.getElementById('pinInput').focus();
     }
@@ -318,7 +338,7 @@
     async function checkPin() {
       var input = document.getElementById('pinInput').value.trim();
       if (!input) return;
-     
+    
       var btn = document.querySelector('#pinScreen button');
       var originalText = btn.textContent;
       btn.textContent = 'Проверка...';
@@ -326,11 +346,10 @@
       document.getElementById('pinError').style.display = 'none';
 
       try {
-        // ИСПОЛЬЗУЕМ GET ДЛЯ ПРОВЕРКИ PIN (без CORS)
         var url = config.scriptUrl + '?action=verify_pin&agentId=' + encodeURIComponent(AGENT_ID) + '&pin=' + encodeURIComponent(input);
         var response = await fetch(url);
         var data = await response.json();
-       
+      
         if (data.success) {
           isAuthorized = true;
           sessionStorage.setItem('adminAuth', 'true');
@@ -359,10 +378,10 @@
       loadObjects();
     }
 
-    // === УНИВЕРСАЛЬНЫЙ API ВЫЗОВ (NO-CORS для POST) ===
+    // === УНИВЕРСАЛЬНЫЙ API ВЫЗОВ ===
     async function apiCall(action, params) {
       if (!config.scriptUrl) throw new Error('Script URL не настроен');
-     
+    
       var payload = Object.assign({}, params, {
         action: action,
         agentId: AGENT_ID,
@@ -370,25 +389,15 @@
         pin: sessionStorage.getItem('adminPin') || ''
       });
 
-      // Для всех операций записи используем no-cors (как в app.js)
-      await fetch(config.scriptUrl, {
+      var response = await fetch(config.scriptUrl, {
         method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-     
-      // Для чтения данных (get_leads, get_agent_profile) делаем отдельный GET
-      if (action === 'get_leads' || action === 'get_agent_profile' || action === 'get_pages') {
-        var getUrl = config.scriptUrl + '?action=' + action + '&agent_id=' + encodeURIComponent(AGENT_ID);
-        var response = await fetch(getUrl);
-        var data = await response.json();
-        if (!data.success) throw new Error(data.error || 'Ошибка сервера');
-        return data;
-      }
-     
-      // Для CRUD считаем успешным
-      return { success: true };
+
+      var data = await response.json();
+      if (!data.success) throw new Error(data.error || 'Ошибка сервера');
+      return data;
     }
 
     function getTelegramInitData() {
@@ -416,26 +425,25 @@
     async function loadObjects() {
       document.getElementById('objectsLoading').style.display = 'block';
       document.getElementById('objectsList').innerHTML = '';
-     
+    
       try {
-        // Используем GET для чтения
         var url = config.scriptUrl + '?action=get_listings&includeHidden=true&agent_id=' + encodeURIComponent(AGENT_ID);
         var response = await fetch(url);
         var data = await response.json();
-       
+      
         if (data.success && Array.isArray(data.data)) {
           objects = data.data;
         } else {
           objects = [];
         }
-       
+      
         document.getElementById('objectsLoading').style.display = 'none';
-       
+      
         if (objects.length === 0) {
           document.getElementById('objectsList').innerHTML = '<div class="empty-state"><div class="empty-icon">🏗️</div><h3>Нет объектов</h3><p>Нажмите + чтобы добавить первый ЖК</p></div>';
           return;
         }
-       
+      
         objects.forEach(function(obj) {
           var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
           var thumbUrl = obj.image_main || '';
@@ -444,7 +452,7 @@
             : thumbUrl;
           var statusClass = isActive ? 'status-active' : 'status-hidden';
           var statusText = isActive ? 'Активен' : 'Скрыт';
-         
+        
           var card = document.createElement('div');
           card.className = 'object-card' + (isActive ? '' : ' hidden-object');
           card.onclick = function() { openEditModal(obj.id); };
@@ -481,28 +489,28 @@
       document.getElementById('statusToggle').style.display = 'flex';
       document.getElementById('deleteBtn').style.display = 'block';
       document.getElementById('saveBtn').textContent = 'Сохранить изменения';
-     
+    
       var fields = ['fieldName','fieldAddress','fieldDistrict','fieldMetro','fieldPriceFrom','fieldPriceTo','fieldPriceSqm','fieldAreaMin','fieldAreaMax','fieldRooms','fieldClass','fieldCompletionSoonest','fieldCompletionAll','fieldFinishing','fieldStatus','fieldDescription','fieldFeatures','fieldLat','fieldLng'];
       fields.forEach(function(fid) {
         var key = fid.replace('field','').toLowerCase();
         document.getElementById(fid).value = obj[key] || '';
       });
-     
+    
       var isActive = obj.active === true || String(obj.active).toUpperCase() === 'TRUE';
       setStatus(isActive ? 'true' : 'false');
-     
+    
       photoStore.main = obj.image_main || '';
       document.getElementById('fieldImageMain').value = photoStore.main;
       renderPhotoPreview('main', photoStore.main ? [photoStore.main] : []);
-     
+    
       photoStore.gallery = obj.images_gallery ? String(obj.images_gallery).split(',').filter(Boolean) : [];
       document.getElementById('fieldImagesGallery').value = photoStore.gallery.join(',');
       renderPhotoPreview('gallery', photoStore.gallery);
-     
+    
       photoStore.plans = obj.floor_plans_images ? String(obj.floor_plans_images).split(',').filter(Boolean) : [];
       document.getElementById('fieldFloorPlansImages').value = photoStore.plans.join(',');
       renderPhotoPreview('plans', photoStore.plans);
-     
+    
       document.getElementById('objectModal').classList.add('active');
     }
 
@@ -510,7 +518,7 @@
       document.getElementById('objectModal').classList.remove('active');
       currentEditId = null;
     }
-   
+  
     function setStatus(v) {
       currentStatus = v;
       document.querySelectorAll('.toggle-option').forEach(function(el) {
@@ -524,7 +532,7 @@
       var ot = btn.textContent;
       btn.disabled = true;
       btn.textContent = 'Сохранение...';
-     
+    
       try {
         var p = {
           name: document.getElementById('fieldName').value.trim(),
@@ -551,7 +559,7 @@
           lng: parseFloat(document.getElementById('fieldLng').value)||'',
           active: currentStatus==='true'
         };
-       
+      
         if (currentEditId) {
           p.id = currentEditId;
           await apiCall('update', p);
@@ -588,24 +596,22 @@
       }
     }
 
-    // === ЗАГРУЗКА ФОТО (СИНХРОННАЯ!) ===
+    // === ЗАГРУЗКА ФОТО ===
     async function uploadPhoto(type, input) {
       if (!input.files || input.files.length === 0) return;
       var files = Array.from(input.files);
       var btn = input.parentElement;
       var ot = btn.innerHTML;
       btn.innerHTML = '⏳ Загрузка...';
-     
+    
       try {
         for (var i = 0; i < files.length; i++) {
           var file = files[i];
           var base64 = await fileToBase64(file);
-         
-          // Отправляем через no-cors (как в app.js)
-          await fetch(config.scriptUrl, {
+        
+          var response = await fetch(config.scriptUrl, {
             method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               action: 'upload_image',
               agentId: AGENT_ID,
@@ -613,16 +619,13 @@
               data: { image: base64, fileName: file.name }
             })
           });
-         
-          // После отправки ждём 1.5 секунды (как в старой версии), чтобы Apps Script успел записать файл
-          await new Promise(resolve => setTimeout(resolve, 1500));
-         
-          // Получаем последний URL через GET
-          var lastRes = await fetch(config.scriptUrl + '?action=get_last_file_url');
-          var lastData = await lastRes.json();
-         
-          if (lastData.url) {
-            addPhotoToField(type, lastData.url);
+        
+          var result = await response.json();
+        
+          if (result.success && result.url) {
+            addPhotoToField(type, result.url);
+          } else {
+            throw new Error(result.error || 'Ошибка загрузки');
           }
         }
         showToast('✅ Фото загружено');
@@ -642,7 +645,7 @@
         r.readAsDataURL(file);
       });
     }
-   
+  
     function addPhotoToField(type, url) {
       if (type==='main') {
         photoStore.main=url;
@@ -660,7 +663,7 @@
         renderPhotoPreview('plans',photoStore.plans);
       }
     }
-   
+  
     function removePhoto(type, idx) {
       if (type==='main') {
         photoStore.main='';
@@ -678,7 +681,7 @@
         renderPhotoPreview('plans',photoStore.plans);
       }
     }
-   
+  
     function renderPhotoPreview(type, urls) {
       var cid = type==='main'?'mainPhotoPreview':type==='gallery'?'galleryPreview':'plansPreview';
       var c = document.getElementById(cid);
@@ -698,7 +701,7 @@
         var rb = document.createElement('button');
         rb.className='photo-remove';
         rb.textContent='✕';
-        rb.onclick=function(e){e.stopPropagation();removePhoto(type,idx);};       
+        rb.onclick=function(e){e.stopPropagation();removePhoto(type,idx);};      
         w.appendChild(img);
         w.appendChild(rb);
         c.appendChild(w);
@@ -713,22 +716,22 @@
         var result = await apiCall('get_leads', {});
         leads = result.data || [];
         document.getElementById('leadsLoading').style.display='none';
-       
+      
         if (leads.length===0) {
           document.getElementById('leadsList').innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><h3>Нет заявок</h3></div>';
           return;
         }
-       
+      
         leads.forEach(function(lead) {
           var card = document.createElement('div');
           card.className='lead-card';
           var sc = 'status-'+(lead.status==='Новая'?'new':lead.status==='Обзвонена'?'contacted':lead.status==='Завершена'?'completed':'cancelled');
           var pd = lead.clientPhone && String(lead.clientPhone).indexOf('#ERROR')===-1 ? escapeHtml(lead.clientPhone) : 'Не указан';
           var td = lead.clientTelegram && lead.clientTelegram!=='Не указан' && String(lead.clientTelegram).indexOf('#ERROR')===-1 ? '<div class="lead-info">💬 '+escapeHtml(lead.clientTelegram)+'</div>' : '';
-         
+        
           card.innerHTML = '<div class="lead-header"><div class="lead-object">🏢 '+escapeHtml(lead.objectName||'Не указан')+'</div><div class="lead-status '+sc+'">'+escapeHtml(lead.status||'Новая')+'</div></div>'+
             '<div class="lead-info">👤 '+escapeHtml(lead.clientName||'Не указано')+'</div><div class="lead-info">📞 '+pd+'</div>'+td+
-            '<div class="lead-info">🕐 '+escapeHtml(lead.timestamp||'Не указано')+'</div>'+
+            '<div class="lead-info"> '+escapeHtml(lead.timestamp||'Не указано')+'</div>'+
             '<div class="lead-actions"><button class="status-btn '+(lead.status==='Новая'?'active':'')+'" onclick="updateLeadStatus(\''+lead.id+'\',\'new\')">🆕 Новая</button>'+
             '<button class="status-btn '+(lead.status==='Обзвонена'?'active':'')+'" onclick="updateLeadStatus(\''+lead.id+'\',\'contacted\')">📞 Обзвонена</button>'+
             '<button class="status-btn '+(lead.status==='Завершена'?'active':'')+'" onclick="updateLeadStatus(\''+lead.id+'\',\'completed\')">✅ Завершена</button>'+
@@ -740,7 +743,7 @@
         showToast('❌ Ошибка загрузки заявок');
       }
     }
-   
+  
     async function updateLeadStatus(id, status) {
       try {
         await apiCall('update_lead_status',{id:id,status:status});
@@ -773,7 +776,7 @@
         showToast('❌ Ошибка загрузки профиля');
       }
     }
-   
+  
     async function saveProfile(event) {
       event.preventDefault();
       var btn=event.target.querySelector('button[type="submit"]');
@@ -797,8 +800,8 @@
         btn.disabled=false;
         btn.textContent=ot;
       }
-    }   
-   
+    }  
+  
     async function uploadProfilePhoto(input) {
       if (!input.files||input.files.length===0) return;
       var file=input.files[0];
@@ -807,10 +810,9 @@
       btn.innerHTML='⏳ Загрузка...';
       try {
         var base64=await fileToBase64(file);
-        await fetch(config.scriptUrl, {
+        var response = await fetch(config.scriptUrl, {
           method: 'POST',
-          mode: 'no-cors',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             action: 'upload_image',
             agentId: AGENT_ID,
@@ -818,13 +820,13 @@
             data: { image: base64, fileName: file.name }
           })
         });
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        var lastRes = await fetch(config.scriptUrl + '?action=get_last_file_url');
-        var lastData = await lastRes.json();
-        if (lastData.url) {
-          document.getElementById('profilePhotoUrl').value=lastData.url;
-          renderPhotoPreview('profile',[lastData.url]);
+        var result = await response.json();
+        if (result.success && result.url) {
+          document.getElementById('profilePhotoUrl').value=result.url;
+          renderPhotoPreview('profile',[result.url]);
           showToast('✅ Фото загружено');
+        } else {
+          throw new Error(result.error || 'Ошибка загрузки');
         }
       } catch(e) {
         showToast('❌ Ошибка');
@@ -851,7 +853,7 @@
         showToast('❌ Ошибка');
       }
     }
-   
+  
     async function saveAboutPage(event) {
       event.preventDefault();
       var btn=event.target.querySelector('button[type="submit"]');
@@ -882,7 +884,7 @@
       if (!current||!newP||!confirm) { showToast('⚠️ Заполните все поля'); return; }
       if (newP!==confirm) { showToast('⚠️ Новые PIN не совпадают'); return; }
       if (newP.length<4) { showToast('⚠️ PIN минимум 4 символа'); return; }
-     
+    
       var btn=event.target;
       var ot=btn.textContent;
       btn.disabled=true;
@@ -909,7 +911,7 @@
       d.textContent=String(t);
       return d.innerHTML;
     }
-   
+  
     function showToast(m) {
       var t=document.getElementById('toast');
       t.textContent=m;
