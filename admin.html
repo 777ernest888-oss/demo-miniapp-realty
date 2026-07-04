@@ -316,7 +316,6 @@
     async function apiCall(action, params) {
       if (!config.scriptUrl) throw new Error('Script URL не настроен');
       var payload = { action: action, agentId: AGENT_ID, initData: getTelegramInitData(), pin: sessionStorage.getItem('adminPin') || '', data: params };
-      // GET запросы для чтения
       if (action === 'get_leads' || action === 'get_agent_profile' || action === 'get_pages' || action === 'get_listings' || action === 'get_last_file_url') {
         var getUrl = config.scriptUrl + '?action=' + action + '&agent_id=' + encodeURIComponent(AGENT_ID);
         if (action === 'get_listings') getUrl += '&includeHidden=true';
@@ -325,7 +324,6 @@
         if (!data.success && action !== 'get_last_file_url') throw new Error(data.error || 'Ошибка сервера');
         return data;
       }
-      // POST через no-cors для записи
       await fetch(config.scriptUrl, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
       return { success: true };
     }
@@ -346,6 +344,18 @@
       else if (currentTab === 'leads') loadLeads();
       else if (currentTab === 'profile') loadProfile();
       else if (currentTab === 'about') loadAboutPage();
+    }
+
+    // Форматирование даты: дд.мм.гггг чч:мм
+    function formatDate(dateStr) {
+      if (!dateStr) return '';
+      var d = new Date(dateStr);
+      var day = ('0' + d.getDate()).slice(-2);
+      var month = ('0' + (d.getMonth() + 1)).slice(-2);
+      var year = d.getFullYear();
+      var hours = ('0' + d.getHours()).slice(-2);
+      var minutes = ('0' + d.getMinutes()).slice(-2);
+      return day + '.' + month + '.' + year + ' ' + hours + ':' + minutes;
     }
 
     async function loadObjects() {
@@ -500,7 +510,8 @@
           var card = document.createElement('div'); card.className='lead-card';
           var sc = 'status-'+(lead.status==='Новая'?'new':lead.status==='Обзвонена'?'contacted':lead.status==='Завершена'?'completed':'cancelled');
           var pd = lead.clientPhone && String(lead.clientPhone).indexOf('#ERROR')===-1 ? escapeHtml(lead.clientPhone) : 'Не указан';
-          card.innerHTML = '<div class="lead-header"><div class="lead-object">🏢 '+escapeHtml(lead.objectName||'Не указан')+'</div><div class="lead-status '+sc+'">'+escapeHtml(lead.status||'Новая')+'</div></div>'+'<div class="lead-info">👤 '+escapeHtml(lead.clientName||'Не указано')+'</div><div class="lead-info">📞 '+pd+'</div>'+'<div class="lead-info">🕐 '+escapeHtml(lead.timestamp||'Не указано')+'</div>'+'<div class="lead-actions"><button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'new\')">🆕 Новая</button>'+'<button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'contacted\')">📞 Обзвонена</button>'+'<button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'completed\')">✅ Завершена</button>'+'<button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'cancelled\')">❌ Отменена</button></div>';
+          var formattedTime = lead.formattedTime || formatDate(lead.timestamp);
+          card.innerHTML = '<div class="lead-header"><div class="lead-object">🏢 '+escapeHtml(lead.objectName||'Не указан')+'</div><div class="lead-status '+sc+'">'+escapeHtml(lead.status||'Новая')+'</div></div>'+'<div class="lead-info">👤 '+escapeHtml(lead.clientName||'Не указано')+'</div><div class="lead-info">📞 '+pd+'</div>'+'<div class="lead-info">🕐 '+formattedTime+'</div>'+'<div class="lead-actions"><button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'new\')">🆕 Новая</button>'+'<button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'contacted\')">📞 Обзвонена</button>'+'<button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'completed\')">✅ Завершена</button>'+'<button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'cancelled\')">❌ Отменена</button></div>';
           document.getElementById('leadsList').appendChild(card);
         });
       } catch (e) { document.getElementById('leadsLoading').style.display='none'; showToast('❌ Ошибка загрузки заявок'); }
@@ -563,7 +574,7 @@
       catch(e) { showToast('❌ '+e.message); } finally { btn.disabled=false; btn.textContent=ot; }
     }
 
-    function escapeHtml(t) { if(!t) return ''; var d=document.createElement('div'); d.textContent=String(t); return d.innerHTML; }
+    function escapeHtml(text) { if (!text) return ''; var div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
     function showToast(m) { var t=document.getElementById('toast'); t.textContent=m; t.classList.remove('show'); void t.offsetWidth; t.classList.add('show'); setTimeout(function(){t.classList.remove('show');},3000); }
     document.getElementById('objectModal').addEventListener('click', function(e) { if(e.target===this) closeModal(); });
   </script>
