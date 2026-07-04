@@ -5,13 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Каталог новостроек</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <!-- ИСПРАВЛЕНО: style.css -> styles.css -->
-    <link rel="stylesheet" href="styles.css?v=2.0.8">
-   
-    <!-- Inline стили для .hidden чтобы точно работало даже если styles.css не загрузится -->
-    <style>
-        .hidden { display: none !important; }
-    </style>
+    <link rel="stylesheet" href="style.css?v=2.0.8">
 </head>
 <body>
     <!-- Экран загрузки -->
@@ -55,6 +49,7 @@
                 <a href="#" onclick="showPage('home'); return false;">🏠 Главная</a>
                 <a href="#" onclick="showPage('about'); return false;">ℹ️ Обо мне</a>
                 <a href="#" onclick="showPage('contacts'); return false;">📞 Контакты</a>
+                <!-- ✅ ИСПРАВЛЕНО: добавлен &admin=1 для входа с телефона -->
                 <a id="adminMenuItem" href="admin.html?agent=23062026-001&admin=1" style="display:none;">⚙️ Админка</a>
             </div>
         </div>
@@ -90,8 +85,8 @@
 
         <!-- Переключатель вида -->
         <div class="view-switcher">
-            <button id="listViewBtn" class="view-btn active" onclick="switchView('list')">📋 Список</button>
-            <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">️ Карта</button>
+            <button id="listViewBtn" class="view-btn active" onclick="switchView('list')"> Список</button>
+            <button id="mapViewBtn" class="view-btn" onclick="switchView('map')">🗺️ Карта</button>
         </div>
 
         <!-- Список объектов -->
