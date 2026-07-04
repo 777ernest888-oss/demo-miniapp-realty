@@ -418,19 +418,28 @@ function applyBranding() {
 }
 
 function renderWelcome() {
-    // Если showWelcomeScreen = true, показываем welcome screen
-    // Если false или не указано - сразу показываем каталог
-    var showWelcome = config.features && config.features.showWelcomeScreen === true;
-   
-    if (showWelcome) {
-        // Показываем welcome screen, скрываем main content
-        document.getElementById('welcomeScreen').classList.remove('hidden');
-        document.getElementById('mainContent').classList.add('hidden');
-    } else {
-        // Скрываем welcome screen, показываем main content
-        document.getElementById('welcomeScreen').classList.add('hidden');
-        document.getElementById('mainContent').classList.remove('hidden');
+    // Проверяем, есть ли настройка в конфиге. Если нет - показываем Welcome Screen.
+    var showWelcome = true;
+    if (config.features && config.features.showWelcomeScreen === false) {
+        showWelcome = false;
     }
+
+    var welcomeScreen = document.getElementById('welcomeScreen');
+    var mainContent = document.getElementById('mainContent');
+    var loadingScreen = document.getElementById('loadingScreen');
+
+    if (showWelcome) {
+        // Показываем приветствие
+        if (welcomeScreen) welcomeScreen.classList.remove('hidden');
+        if (mainContent) mainContent.classList.add('hidden');
+    } else {
+        // Сразу показываем каталог
+        if (welcomeScreen) welcomeScreen.classList.add('hidden');
+        if (mainContent) mainContent.classList.remove('hidden');
+    }
+   
+    // Всегда скрываем лоадер после инициализации
+    if (loadingScreen) loadingScreen.classList.add('hidden');
 }
 
 function renderFilters() {
