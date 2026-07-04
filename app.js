@@ -139,7 +139,7 @@ async function initAgent() {
             }
             return true;
         } else {
-            console.error('[initAgent] ❌ Ошибка:', data.error);
+            console.error('[initAgent]  Ошибка:', data.error);
             showErrorScreen('Ошибка: ' + data.error);
             return false;
         }
@@ -350,7 +350,6 @@ async function init() {
     try {
         console.log('[init] 🚀 Начинаю загрузку...');
        
-        // ✅ ПОКАЗЫВАЕМ SPINNER
         var loadingScreen = document.getElementById('loadingScreen');
         if (loadingScreen) loadingScreen.classList.remove('hidden');
        
@@ -381,7 +380,7 @@ async function init() {
                 setCachedData({ listings: listings, agentData: currentAgentData });
                 console.log('[init] ✅ Загружено с сервера:', listings.length, 'объектов');
             } else {
-                console.error('[init] ❌ Ошибка загрузки:', data.error);
+                console.error('[init]  Ошибка загрузки:', data.error);
                 listings = [];
             }
         }
@@ -392,11 +391,10 @@ async function init() {
         renderListings(listings.filter(function(l) { return l.active; }));
         initPhoneMask(); initTelegramMask(); hideBack();
 
-        // ✅ СКРЫВАЕМ SPINNER
         if (loadingScreen) loadingScreen.classList.add('hidden');
         console.log('[init] ✅ Загрузка завершена');
     } catch (error) {
-        console.error('[init] ❌ Init Error:', error);
+        console.error('[init]  Init Error:', error);
         var loadingScreen = document.getElementById('loadingScreen');
         if (loadingScreen) loadingScreen.classList.add('hidden');
     }
@@ -538,14 +536,15 @@ function updateMapMarkers(filteredItems) {
 }
 
 function openDetails(id) {
-    var item = listings.find(function(l) { return l.id === id; }); if (!item) return;
+    var item = listings.find(function(l) { return l.id === id; });
+    if (!item) return;
     currentModalId = id;
     document.getElementById('modalTitle').textContent = item.name || '';
     var priceDisplay = '?';
     if (typeof item.price_from === 'number') priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
     var ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
     document.getElementById('modalPrice').innerHTML = 'от <b>' + priceDisplay + '</b> млн ₽' + (ppsqm ? '<span class="price-per-sqm">~' + ppsqm + ' ₽/м²</span>' : '');
-    document.getElementById('modalMeta').innerHTML = '<div class="meta-row"><span>📍 ' + (escapeHtml(item.address) || '') + '</span></div><div class="meta-row"><span>🚇 м. ' + (escapeHtml(item.metro) || '') + '</span></div><div class="meta-row"><span>🏗️ Класс: ' + (escapeHtml(item.class) || '') + '</span></div><div class="meta-row"><span>🎨 Отделка: ' + (escapeHtml(item.finishing) || '') + '</span></div><div class="meta-row"><span>📅 Срок сдачи: ' + (escapeHtml(item.completion_soonest) || '') + (item.completion_soonest && item.completion_all ? ' - ' : '') + (escapeHtml(item.completion_all) || '') + '</span></div>';
+    document.getElementById('modalMeta').innerHTML = '<div class="meta-row"><span>📍 ' + (escapeHtml(item.address) || '') + '</span></div><div class="meta-row"><span> м. ' + (escapeHtml(item.metro) || '') + '</span></div><div class="meta-row"><span>🏗️ Класс: ' + (escapeHtml(item.class) || '') + '</span></div><div class="meta-row"><span> Отделка: ' + (escapeHtml(item.finishing) || '') + '</span></div><div class="meta-row"><span>📅 Срок сдачи: ' + (escapeHtml(item.completion_soonest) || '') + (item.completion_soonest && item.completion_all ? ' - ' : '') + (escapeHtml(item.completion_all) || '') + '</span></div>';
     document.getElementById('modalDescription').textContent = item.description || 'Описание отсутствует';
     document.getElementById('modalFeatures').innerHTML = item.features ? '<ul>' + item.features.split(',').map(function(f) { return '<li>' + escapeHtml(f.trim()) + '</li>'; }).join('') + '</ul>' : '<p style="color:var(--text-secondary);">Информация уточняется</p>';
     var gc = document.getElementById('modalGallery'); gc.innerHTML = '';
@@ -556,7 +555,19 @@ function openDetails(id) {
         var dots = document.createElement('div'); dots.className = 'carousel-dots';
         allImages.forEach(function(url, idx) {
             var slide = document.createElement('div'); slide.className = 'slide';
-            var img = document.createElement('img'); img.src = getImageUrl(url); img.onclick = function() { window.open(getImageUrl(url), '_blank'); }; img.onerror = onImgError;
+            var img = document.createElement('img');
+            img.src = getImageUrl(url);
+            img.onclick = function() {
+                var fullUrl = getImageUrl(url);
+                if (fullUrl && fullUrl.startsWith('http')) {
+                    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                        window.location.href = fullUrl;
+                    } else {
+                        window.open(fullUrl, '_blank');
+                    }
+                }
+            };
+            img.onerror = onImgError;
             slide.appendChild(img); track.appendChild(slide);
             var dot = document.createElement('div'); dot.className = 'dot ' + (idx === 0 ? 'active' : ''); dot.onclick = function() { track.scrollTo({ left: slide.offsetLeft, behavior: 'smooth' }); }; dots.appendChild(dot);
         });
@@ -568,7 +579,24 @@ function openDetails(id) {
     if (plansImages.length > 0) {
         var t = document.createElement('h3'); t.className = 'plans-section-title'; t.textContent = '📐 Планировки'; pc.appendChild(t);
         var pt = document.createElement('div'); pt.className = 'carousel-track';
-        plansImages.forEach(function(url) { var s = document.createElement('div'); s.className = 'slide'; s.style.flex = '0 0 85%'; var img = document.createElement('img'); img.src = getImageUrl(url); img.style.height = '200px'; img.onclick = function() { window.open(getImageUrl(url), '_blank'); }; img.onerror = onImgError; s.appendChild(img); pt.appendChild(s); });
+        plansImages.forEach(function(url) {
+            var s = document.createElement('div'); s.className = 'slide'; s.style.flex = '0 0 85%';
+            var img = document.createElement('img');
+            img.src = getImageUrl(url);
+            img.style.height = '200px';
+            img.onclick = function() {
+                var fullUrl = getImageUrl(url);
+                if (fullUrl && fullUrl.startsWith('http')) {
+                    if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                        window.location.href = fullUrl;
+                    } else {
+                        window.open(fullUrl, '_blank');
+                    }
+                }
+            };
+            img.onerror = onImgError;
+            s.appendChild(img); pt.appendChild(s);
+        });
         pc.appendChild(pt);
     } else if (item.floor_plans_text) { pc.innerHTML = '<h3 class="plans-section-title">📐 Планировки</h3><p class="floor-plans-text">' + item.floor_plans_text + '</p>'; }
     var mc = document.querySelector('#detailsModal .modal-content');
@@ -585,7 +613,7 @@ function openConsultForm(id, event) {
     currentModalId = id;
     var item = listings.find(function(l) { return l.id === id; });
     if (item) {
-        document.getElementById('consultObjectName').textContent = '🏢 ' + item.name;
+        document.getElementById('consultObjectName').textContent = ' ' + item.name;
         document.getElementById('consultName').value = '';
         document.getElementById('consultPhone').value = '+7 (';
         document.getElementById('consultTelegram').value = '';
@@ -630,8 +658,16 @@ function submitConsultForm(event) {
         var name = document.getElementById('consultName').value.trim();
         var phone = document.getElementById('consultPhone').value.trim();
         var telegram = document.getElementById('consultTelegram').value.trim() || '';
-        if (!name || name.length < 2) { tg.showAlert('⚠️ Введите имя'); return; }
-        if (phone.replace(/\D/g, '').length < 10) { tg.showAlert('❌ Введите корректный телефон'); return; }
+       
+        if (!name || name.length < 2) { tg.showAlert('️ Введите имя'); return; }
+       
+        // ✅ ИСПРАВЛЕНО: проверка на 11 цифр
+        var phoneDigits = phone.replace(/\D/g, '');
+        if (phoneDigits.length < 11) {
+            tg.showAlert('❌ Телефон должен содержать 11 цифр');
+            return;
+        }
+       
         if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) { tg.showAlert('❌ Telegram только латиницей'); return; }
         if (!AGENT_ID) { tg.showAlert('❌ Ошибка: агент не определён'); return; }
 
@@ -643,7 +679,12 @@ function submitConsultForm(event) {
         var payload = {
             action: 'save_lead',
             agentId: AGENT_ID,
-            data: { objectName: item.name, clientName: name, clientPhone: phone, clientTelegram: telegram || 'Не указан' }
+            data: {
+                objectName: item.name,
+                clientName: name,
+                clientPhone: phone,
+                clientTelegram: telegram || 'Не указан'
+            }
         };
 
         fetch(config.client.scriptUrl, {
@@ -660,7 +701,7 @@ function submitConsultForm(event) {
             setTimeout(function() { tg.showAlert('✅ Заявка отправлена!'); }, 100);
         })
         .catch(function(err) {
-            tg.showAlert('❌ Ошибка отправки: ' + err.message);
+            tg.showAlert(' Ошибка отправки: ' + err.message);
             sb.textContent = originalText;
             sb.disabled = false;
         });
