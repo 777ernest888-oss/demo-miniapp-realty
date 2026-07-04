@@ -190,7 +190,6 @@ function showErrorScreen(message) {
 
 async function loadPagesData() {
     try {
-        // ЗАГРУЗКА СТРАНИЦ ЧЕРЕЗ API ВМЕСТО CSV
         if (!config.client || !config.client.scriptUrl) return;
         var url = config.client.scriptUrl + '?action=get_pages&agent_id=' + encodeURIComponent(AGENT_ID);
         var res = await fetch(url);
@@ -350,11 +349,15 @@ function switchView(view) {
 async function init() {
     try {
         console.log('[init] 🚀 Начинаю загрузку...');
+       
+        // ✅ ПОКАЗЫВАЕМ SPINNER
+        var loadingScreen = document.getElementById('loadingScreen');
+        if (loadingScreen) loadingScreen.classList.remove('hidden');
+       
         await loadClientConfig();
 
         var agentOk = await initAgent();
         if (!agentOk) {
-            var loadingScreen = document.getElementById('loadingScreen');
             if (loadingScreen) loadingScreen.classList.add('hidden');
             return;
         }
@@ -368,15 +371,13 @@ async function init() {
             console.log('[init] ✅ Загружено из кэша:', listings.length, 'объектов');
         } else {
             console.log('[init] 📡 Загружаем данные с сервера...');
-            // ИСПРАВЛЕНО: используем action=get_listings и data вместо listings
             var url = config.client.scriptUrl + '?action=get_listings&agent_id=' + encodeURIComponent(AGENT_ID);
             var response = await fetch(url);
             var data = await response.json();
 
             if (data.success) {
-                // ИСПРАВЛЕНО: data.data вместо data.listings
                 listings = data.data || [];
-                currentAgentData = {}; // agentData больше не возвращается отдельно
+                currentAgentData = {};
                 setCachedData({ listings: listings, agentData: currentAgentData });
                 console.log('[init] ✅ Загружено с сервера:', listings.length, 'объектов');
             } else {
@@ -391,7 +392,7 @@ async function init() {
         renderListings(listings.filter(function(l) { return l.active; }));
         initPhoneMask(); initTelegramMask(); hideBack();
 
-        var loadingScreen = document.getElementById('loadingScreen');
+        // ✅ СКРЫВАЕМ SPINNER
         if (loadingScreen) loadingScreen.classList.add('hidden');
         console.log('[init] ✅ Загрузка завершена');
     } catch (error) {
