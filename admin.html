@@ -289,26 +289,37 @@
     }
 
     async function checkPin() {
-      var input = document.getElementById('pinInput').value.trim();
-      if (!input) return;
-      var btn = document.querySelector('#pinScreen button');
-      var ot = btn.textContent;
-      btn.textContent = 'Проверка...'; btn.disabled = true;
-      document.getElementById('pinError').style.display = 'none';
-      try {
-        var urlParams = new URLSearchParams(window.location.search);
-        var isAdminMode = urlParams.get('admin') === '1';
-       
-        var url = config.scriptUrl + '?action=verify_pin&agentId=' + encodeURIComponent(AGENT_ID) + '&pin=' + encodeURIComponent(input);
-        if (isAdminMode) url += '&admin=1';
-       
-        var response = await fetch(url);
-        var data = await response.json();
-        if (data.success) { isAuthorized = true; sessionStorage.setItem('adminAuth', 'true'); sessionStorage.setItem('adminPin', input); showApp(); }
-        else { document.getElementById('pinError').textContent = data.error || '❌ Неверный PIN-код'; document.getElementById('pinError').style.display = 'block'; }
-      } catch (e) { document.getElementById('pinError').textContent = '❌ Ошибка сети'; document.getElementById('pinError').style.display = 'block'; }
-      finally { btn.textContent = ot; btn.disabled = false; }
+  var input = document.getElementById('pinInput').value.trim();
+  if (!input) return;
+  var btn = document.querySelector('#pinScreen button');
+  var ot = btn.textContent;
+  btn.textContent = 'Проверка...'; btn.disabled = true;
+  document.getElementById('pinError').style.display = 'none';
+  try {
+    // Всегда передаём admin=1 при проверке PIN
+    var url = config.scriptUrl + '?action=verify_pin&agentId=' + encodeURIComponent(AGENT_ID) + '&pin=' + encodeURIComponent(input) + '&admin=1';
+   
+    var response = await fetch(url);
+    var data = await response.json();
+   
+    if (data.success) {
+      isAuthorized = true;
+      sessionStorage.setItem('adminAuth', 'true');
+      sessionStorage.setItem('adminPin', input);
+      // Сохраняем флаг admin режима
+      sessionStorage.setItem('adminMode', '1');
+      showApp();
+    } else {
+      document.getElementById('pinError').textContent = data.error || '❌ Неверный PIN-код';
+      document.getElementById('pinError').style.display = 'block';
     }
+  } catch (e) {
+    document.getElementById('pinError').textContent = '❌ Ошибка сети';
+    document.getElementById('pinError').style.display = 'block';
+  } finally {
+    btn.textContent = ot; btn.disabled = false;
+  }
+}
 
     document.getElementById('pinInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') checkPin(); });
 
