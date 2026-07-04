@@ -633,51 +633,56 @@
 
     // === ЗАГРУЗКА ФОТО (NO-CORS + GET ДЛЯ URL) ===
     async function uploadPhoto(type, input) {
-      if (!input.files || input.files.length === 0) return;
-      var files = Array.from(input.files);
-      var btn = input.parentElement;
-      var ot = btn.innerHTML;
-      btn.innerHTML = '⏳ Загрузка...';
+  if (!input.files || input.files.length === 0) return;
+  var files = Array.from(input.files);
+  var btn = input.parentElement;
+  var ot = btn.innerHTML;
+  btn.innerHTML = '⏳ Загрузка...';
+
+  try {
+    for (var i = 0; i < files.length; i++) {
+      var file = files[i];
+      var base64 = await fileToBase64(file);
     
+      // Отправляем через no-cors POST
+      await fetch(config.scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          action: 'upload_image',
+          agentId: AGENT_ID,
+          pin: sessionStorage.getItem('adminPin'),
+          data: { image: base64, fileName: file.name }
+        })
+      });
+    
+      // Ждём обработки
+      await new Promise(function(resolve) { setTimeout(resolve, 3000); });
+    
+      // Получаем URL через no-cors GET
       try {
-        for (var i = 0; i < files.length; i++) {
-          var file = files[i];
-          var base64 = await fileToBase64(file);
-        
-          // Отправляем через no-cors POST
-          fetch(config.scriptUrl, {
-            method: 'POST',
-            mode: 'no-cors',
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-            body: JSON.stringify({
-              action: 'upload_image',
-              agentId: AGENT_ID,
-              pin: sessionStorage.getItem('adminPin'),
-              data: { image: base64, fileName: file.name }
-            })
-          });
-        
-          // Ждём обработки
-          await new Promise(function(resolve) { setTimeout(resolve, 3000); });
-        
-          // Получаем URL через GET
-          try {
-            var lastData = await apiCall('get_last_file_url', {});
-            if (lastData.url) {
-              addPhotoToField(type, lastData.url);
-            }
-          } catch (e) {
-            console.error('[uploadPhoto] Error getting URL:', e);
-          }
+        var response = await fetch(config.scriptUrl + '?action=get_last_file_url', {
+          mode: 'no-cors'
+        });
+        // no-cors не даёт прочитать ответ, поэтому просто ждём
+        // и используем последний известный URL
+        var lastUrl = PropertiesService.getScriptProperties().getProperty('last_uploaded_file_url');
+        if (lastUrl) {
+          addPhotoToField(type, lastUrl);
         }
-        showToast('✅ Фото загружено');
       } catch (e) {
-        showToast('❌ Ошибка загрузки: ' + e.message);
-      } finally {
-        btn.innerHTML = ot;
-        setTimeout(function() { input.value = ''; }, 500);
+        console.error('[uploadPhoto] Error getting URL:', e);
       }
     }
+    showToast('✅ Фото загружено');
+  } catch (e) {
+    showToast('❌ Ошибка загрузки: ' + e.message);
+  } finally {
+    btn.innerHTML = ot;
+    setTimeout(function() { input.value = ''; }, 500);
+  }
+}
 
     function fileToBase64(file) {
       return new Promise(function(res, rej) {
