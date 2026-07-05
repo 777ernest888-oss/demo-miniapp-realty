@@ -196,7 +196,7 @@ async function loadPagesData() {
         if (!res.ok) throw new Error('Network error');
         var result = await res.json();
         if (!result.success) throw new Error(result.error);
-       
+      
         var rows = result.data || [];
         rows.forEach(function(row) {
             if (row.page && row.title) pagesData[row.page] = { title: row.title, content: row.content || '' };
@@ -349,11 +349,11 @@ function switchView(view) {
 async function init() {
     try {
         console.log('[init] 🚀 Начинаю загрузку...');
-       
+      
         // ✅ ПОКАЗЫВАЕМ SPINNER
         var loadingScreen = document.getElementById('loadingScreen');
         if (loadingScreen) loadingScreen.classList.remove('hidden');
-       
+      
         await loadClientConfig();
 
         var agentOk = await initAgent();
@@ -603,13 +603,36 @@ function closeConsultModal() {
     if (document.getElementById('detailsModal').classList.contains('hidden') && document.getElementById('mapContainer').classList.contains('hidden')) hideBack();
 }
 
+// ✅ ИСПРАВЛЕННАЯ МАСКА ТЕЛЕФОНА
 function initPhoneMask() {
-    var input = document.getElementById('consultPhone'); if (!input) return;
+    var input = document.getElementById('consultPhone');
+    if (!input) return;
+   
     input.addEventListener('input', function(e) {
-        var x = e.target.value.replace(/\D/g, '').match(/(\d{0,1})(\d{0,3})(\d{0,3})(\d{0,2})(\d{0,2})/);
-        e.target.value = !x[2] ? '+7 (' : '+7 (' + x[2] + (x[3] ? ') ' + x[3] : '') + (x[4] ? '-' + x[4] : '') + (x[5] ? '-' + x[5] : '');
+        var digits = e.target.value.replace(/\D/g, '');
+       
+        // Если начали с 8, меняем на 7
+        if (digits.startsWith('8')) digits = '7' + digits.substring(1);
+        // Если не начинается с 7, добавляем
+        if (!digits.startsWith('7')) digits = '7' + digits;
+        // Обрезаем до 11 цифр
+        if (digits.length > 11) digits = digits.substring(0, 11);
+       
+        // Форматируем на лету
+        var formatted = '+7';
+        if (digits.length > 1) formatted += ' (' + digits.substring(1, 4);
+        if (digits.length > 4) formatted += ') ' + digits.substring(4, 7);
+        if (digits.length > 7) formatted += '-' + digits.substring(7, 9);
+        if (digits.length > 9) formatted += '-' + digits.substring(9, 11);
+       
+        e.target.value = formatted;
     });
-    input.addEventListener('focus', function(e) { if (e.target.value === '') e.target.value = '+7 ('; });
+   
+    input.addEventListener('focus', function(e) {
+        if (e.target.value === '' || e.target.value === '+7') {
+            e.target.value = '+7 (';
+        }
+    });
 }
 
 function initTelegramMask() {
@@ -622,17 +645,58 @@ function initTelegramMask() {
     });
 }
 
+// ✅ ИСПРАВЛЕННАЯ ВАЛИДАЦИЯ ТЕЛЕФОНА
 function submitConsultForm(event) {
     event.preventDefault();
     try {
         var item = listings.find(function(l) { return l.id === currentModalId; });
         if (!item) { tg.showAlert('❌ Ошибка: объект не найден'); return; }
+       
         var name = document.getElementById('consultName').value.trim();
         var phone = document.getElementById('consultPhone').value.trim();
         var telegram = document.getElementById('consultTelegram').value.trim() || '';
-        if (!name || name.length < 2) { tg.showAlert('⚠️ Введите имя'); return; }
-        if (phone.replace(/\D/g, '').length < 10) { tg.showAlert('❌ Введите корректный телефон'); return; }
+       
+        // Проверка имени
+        if (!name || name.length < 2) { tg.showAlert('⚠️ Введите имя (минимум 2 символа)'); return; }
+       
+        // Очистка телефона от всего кроме цифр
+        var digitsOnly = phone.replace(/\D/g, '');
+       
+        // Проверка: ровно 11 цифр
+        if (digitsOnly.length !== 11) {
+            tg.showAlert('❌ Неверный формат телефона\nДолжно быть 11 цифр: +7 (XXX) XXX-XX-XX');
+            return;
+        }
+       
+        // Проверка: начинается с 7
+        if (digitsOnly[0] !== '7') {
+            tg.showAlert('❌ Телефон должен начинаться с +7');
+            return;
+        }
+       
+        // Проверка на фейки
+        var fakeNumbers = ['70000000000', '79999999999', '71111111111', '77777777777', '78888888888', '76666666666', '75555555555', '74444444444', '73333333333', '72222222222'];
+        if (fakeNumbers.indexOf(digitsOnly) !== -1) {
+            tg.showAlert('❌ Пожалуйста, введите реальный номер телефона');
+            return;
+        }
+       
+        // Проверка что не все цифры одинаковые
+        var allSame = true;
+        for (var i = 1; i < digitsOnly.length; i++) {
+            if (digitsOnly[i] !== digitsOnly[0]) {
+                allSame = false;
+                break;
+            }
+        }
+        if (allSame) {
+            tg.showAlert('❌ Все цифры в номере одинаковые');
+            return;
+        }
+       
+        // Проверка Telegram
         if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) { tg.showAlert('❌ Telegram только латиницей'); return; }
+       
         if (!AGENT_ID) { tg.showAlert('❌ Ошибка: агент не определён'); return; }
 
         var sb = event.target.querySelector('button[type="submit"]');
@@ -643,7 +707,7 @@ function submitConsultForm(event) {
         var payload = {
             action: 'save_lead',
             agentId: AGENT_ID,
-            data: { objectName: item.name, clientName: name, clientPhone: phone, clientTelegram: telegram || 'Не указан' }
+            data: { objectName: item.name, clientName: name, clientPhone: '+' + digitsOnly, clientTelegram: telegram || 'Не указан' }
         };
 
         fetch(config.client.scriptUrl, {
