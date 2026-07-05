@@ -451,7 +451,7 @@ function restoreAgent() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('Agents');
  
-  // Генерируем хеш для PIN 1234
+  // Генерирую хеш для PIN 1234
   var pinHash = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, '1234')
     .map(function(byte) {
       var v = (byte < 0) ? 256 + byte : byte;
