@@ -342,10 +342,17 @@
     document.getElementById('pinInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') checkPin(); });
 
     function showApp() {
-      document.getElementById('pinScreen').style.display = 'none';
-      document.getElementById('appContent').style.display = 'block';
-      loadObjects();
-    }
+  document.getElementById('pinScreen').style.display = 'none';
+  document.getElementById('appContent').style.display = 'block';
+ 
+  // Сохраняем флаг admin режима для последующих запросов
+  var urlParams = new URLSearchParams(window.location.search);
+  if (urlParams.get('admin') === '1') {
+    sessionStorage.setItem('adminMode', '1');
+  }
+ 
+  loadObjects();
+}
 
     async function apiCall(action, params) {
   if (!config.scriptUrl) throw new Error('Script URL не настроен');
