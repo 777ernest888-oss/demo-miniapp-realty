@@ -281,18 +281,15 @@
     }
 
     function checkAuth() {
-  // Если уже авторизован в этой сессии — сразу показываем приложение
   if (sessionStorage.getItem('adminAuth') === 'true') {
     isAuthorized = true;
     showApp();
     return;
   }
- 
-  // Проверяем URL параметр admin=1
+
   var urlParams = new URLSearchParams(window.location.search);
   var isAdminMode = urlParams.get('admin') === '1';
- 
-  // Если есть Telegram initData (вход через Telegram WebApp) — авторизуем автоматически
+
   var initData = getTelegramInitData();
   if (initData && !isAdminMode) {
     isAuthorized = true;
@@ -300,8 +297,7 @@
     showApp();
     return;
   }
- 
-  // Иначе показываем экран PIN-кода
+
   document.getElementById('pinScreen').style.display = 'flex';
   document.getElementById('pinInput').focus();
 }
@@ -309,25 +305,24 @@
     async function checkPin() {
   var input = document.getElementById('pinInput').value.trim();
   if (!input) return;
- 
+
   var btn = document.querySelector('#pinScreen button');
   var originalText = btn.textContent;
   btn.textContent = 'Проверка...';
   btn.disabled = true;
- 
+
   document.getElementById('pinError').style.display = 'none';
- 
+
   try {
-    // ВАЖНО: всегда добавляем admin=1
     var url = config.scriptUrl + '?action=verify_pin&agent_id=' + encodeURIComponent(AGENT_ID) + '&pin=' + encodeURIComponent(input) + '&admin=1';
-   
+  
     console.log('[checkPin] Запрос:', url);
-   
+  
     var response = await fetch(url);
     var data = await response.json();
-   
+  
     console.log('[checkPin] Ответ:', data);
-   
+  
     if (data.success) {
       isAuthorized = true;
       sessionStorage.setItem('adminAuth', 'true');
@@ -352,23 +347,21 @@
     function showApp() {
   document.getElementById('pinScreen').style.display = 'none';
   document.getElementById('appContent').style.display = 'block';
- 
-  // Сохраняем флаг admin режима для последующих запросов
+
   var urlParams = new URLSearchParams(window.location.search);
   if (urlParams.get('admin') === '1') {
     sessionStorage.setItem('adminMode', '1');
   }
- 
+
   loadObjects();
 }
 
     async function apiCall(action, params) {
   if (!config.scriptUrl) throw new Error('Script URL не настроен');
- 
-  // Проверяем admin режим из URL ИЛИ из sessionStorage
+
   var urlParams = new URLSearchParams(window.location.search);
   var isAdminMode = urlParams.get('admin') === '1' || sessionStorage.getItem('adminMode') === '1';
- 
+
   var payload = {
     action: action,
     agentId: AGENT_ID,
@@ -377,19 +370,18 @@
     data: params,
     isAdminMode: isAdminMode
   };
- 
+
   if (action === 'get_leads' || action === 'get_agent_profile' || action === 'get_pages' || action === 'get_listings' || action === 'get_last_file_url') {
     var getUrl = config.scriptUrl + '?action=' + action + '&agent_id=' + encodeURIComponent(AGENT_ID);
     if (action === 'get_listings') getUrl += '&includeHidden=true';
-    // ВСЕГДА добавляем admin=1 если мы в режиме админа
     if (isAdminMode) getUrl += '&admin=1';
-   
+  
     var response = await fetch(getUrl);
     var data = await response.json();
     if (!data.success && action !== 'get_last_file_url') throw new Error(data.error || 'Ошибка сервера');
     return data;
   }
- 
+
   await fetch(config.scriptUrl, {
     method: 'POST',
     mode: 'no-cors',
@@ -416,9 +408,22 @@
       else if (currentTab === 'about') loadAboutPage();
     }
 
+    // ✅ ИСПРАВЛЕНО: Правильный парсинг русской даты DD.MM.YYYY
+    function parseRussianDate(dateStr) {
+      if (!dateStr) return null;
+      if (dateStr instanceof Date) return dateStr;
+      var parts = String(dateStr).trim().split('.');
+      if (parts.length === 3) {
+        return new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+      }
+      return new Date(dateStr);
+    }
+
+    // ✅ ИСПРАВЛЕНО: Использует parseRussianDate для правильного форматирования
     function formatDate(dateStr) {
       if (!dateStr) return '';
-      var d = new Date(dateStr);
+      var d = parseRussianDate(dateStr);
+      if (!d || isNaN(d.getTime())) return '';
       var day = ('0' + d.getDate()).slice(-2);
       var month = ('0' + (d.getMonth() + 1)).slice(-2);
       var year = d.getFullYear();
@@ -575,21 +580,21 @@
       try {
         var urlParams = new URLSearchParams(window.location.search);
         var isAdminMode = urlParams.get('admin') === '1';
-       
+      
         var url = config.scriptUrl + '?action=get_leads&agent_id=' + encodeURIComponent(AGENT_ID);
         if (isAdminMode) url += '&admin=1';
-       
+      
         var response = await fetch(url);
         var result = await response.json();
-       
+      
         leads = result.data || [];
         document.getElementById('leadsLoading').style.display='none';
-       
+      
         if (leads.length===0) {
           document.getElementById('leadsList').innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><h3>Нет заявок</h3></div>';
           return;
         }
-       
+      
         leads.forEach(function(lead) {
           var card = document.createElement('div');
           card.className='lead-card';
@@ -597,7 +602,7 @@
           var pd = lead.clientPhone && String(lead.clientPhone).indexOf('#ERROR')===-1 ? escapeHtml(lead.clientPhone) : 'Не указан';
           var tgInfo = lead.clientTelegram && lead.clientTelegram !== 'Не указан' ? '<div class="lead-info">💬 '+escapeHtml(lead.clientTelegram)+'</div>' : '';
           var formattedTime = lead.formattedTime || formatDate(lead.timestamp);
-         
+        
           card.innerHTML = '<div class="lead-header"><div class="lead-object">🏢 '+escapeHtml(lead.objectName||'Не указан')+'</div><div class="lead-status '+sc+'">'+escapeHtml(lead.status||'Новая')+'</div></div>'+
             '<div class="lead-info">👤 '+escapeHtml(lead.clientName||'Не указано')+'</div>'+
             '<div class="lead-info">📞 '+pd+'</div>'+
@@ -607,7 +612,7 @@
             '<button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'contacted\')"> Обзвонена</button>'+
             '<button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'completed\')">✅ Завершена</button>'+
             '<button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'cancelled\')">❌ Отменена</button></div>';
-         
+        
           document.getElementById('leadsList').appendChild(card);
         });
       } catch (e) {
