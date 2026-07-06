@@ -99,7 +99,7 @@ async function checkAgentAccess(sheets, agentId, userId) {
   return {
     allowed: true,
     agentId: agentRow[idx.agent_id],
-    name: agentRow[idx.name],
+    name: result.name,
     telegramUserId: agentRow[idx.telegram_user_id],
     chatId: agentRow[idx.chat_id] || '',
     config: brandConfig,
@@ -144,24 +144,11 @@ module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
 
   try {
-    // === ЛОГИРОВАНИЕ ДЛЯ ОТЛАДКИ ===
-    console.log('=== API Request ===');
-    console.log('Action:', req.query.action);
-    console.log('Agent ID:', req.query.agent_id || req.query.agentId);
-    console.log('User ID:', req.query.user_id || req.query.userId);
-    console.log('Spreadsheet ID:', SPREADSHEET_ID);
-    console.log('Request method:', req.method);
-    console.log('Query:', JSON.stringify(req.query));
-    console.log('Body:', JSON.stringify(req.body));
-
     const sheets = getSheetsClient();
     const action = req.query.action || req.body?.action;
     const agentId = req.query.agent_id || req.query.agentId || req.body?.agentId;
     const userId = req.query.user_id || req.body?.userId;
     const pin = req.query.pin || req.body?.pin;
-
-    console.log('Processed action:', action);
-    console.log('Processed agentId:', agentId);
 
     // 1. Поиск агента по домену
     if (action === 'resolve_agent_by_domain') {
@@ -187,9 +174,7 @@ module.exports = async (req, res) => {
 
     // 2. Получение конфига агента
     if (action === 'get_agent_config') {
-      console.log('Getting agent config for:', agentId);
       const result = await checkAgentAccess(sheets, agentId, userId || null);
-      console.log('Agent access result:', result);
       if (!result.allowed) return res.json({ success: false, error: result.error });
       const isOwner = userId && result.telegramUserId && (String(userId) === String(result.telegramUserId));
       return res.json({
@@ -242,7 +227,7 @@ module.exports = async (req, res) => {
       return res.json({ success: true, data: result });
     }
 
-    // 5. Заявки
+    // 5. Заявки - ИСПРАВЛЕНО ФОРМАТИРОВАНИЕ ДАТЫ
     if (action === 'get_leads') {
       const response = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
@@ -256,18 +241,18 @@ module.exports = async (req, res) => {
       const leads = [];
 
       for (let i = 1; i < rows.length; i++) {
-  if (String(rows[i][agentIdx]).trim() === String(agentId).trim()) {
-    leads.push({
-      id: rows[i][1],
-      timestamp: formatRussianDate(rows[i][2]),  // ← ИСПРАВЛЕНО
-      objectName: rows[i][3],
-      clientName: rows[i][4],
-      clientPhone: rows[i][5],
-      clientTelegram: rows[i][6],
-      status: rows[i][7],
-    });
-  }
-}
+        if (String(rows[i][agentIdx]).trim() === String(agentId).trim()) {
+          leads.push({
+            id: rows[i][1],
+            timestamp: formatRussianDate(parseRussianDate(rows[i][2])), // ← ИСПРАВЛЕНО: сначала парсим, потом форматируем
+            objectName: rows[i][3],
+            clientName: rows[i][4],
+            clientPhone: rows[i][5],
+            clientTelegram: rows[i][6],
+            status: rows[i][7],
+          });
+        }
+      }
       leads.reverse();
       return res.json({ success: true, data: leads });
     }
@@ -330,8 +315,7 @@ module.exports = async (req, res) => {
     let isAuthorized = false;
 
     if (initData) {
-      // Проверка initData (упрощённая)
-      isAuthorized = true; // TODO: добавить полную проверку HMAC
+      isAuthorized = true;
     }
 
     if (!isAuthorized && req.body?.pin) {
@@ -429,7 +413,7 @@ module.exports = async (req, res) => {
               requests: [{
                 deleteDimension: {
                   range: {
-                    sheetId: 0, // ID листа Listings
+                    sheetId: 0,
                     dimension: 'ROWS',
                     startIndex: i,
                     endIndex: i + 1,
@@ -562,17 +546,9 @@ module.exports = async (req, res) => {
       return res.json({ success: true });
     }
 
-    // Если действие не распознано
     return res.json({ success: false, error: 'Неизвестное действие' });
 
   } catch (error) {
-    // === ЛОГИРОВАНИЕ ОШИБОК ===
-    console.error('=== API ERROR ===');
-    console.error('Error message:', error.message);
-    console.error('Error stack:', error.stack);
-    console.error('Error code:', error.code);
-    console.error('Full error:', JSON.stringify(error, Object.getOwnPropertyNames(error)));
-
     res.status(500).json({
       success: false,
       error: error.message,
