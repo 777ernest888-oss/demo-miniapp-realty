@@ -106,7 +106,7 @@
     <div class="header"><h1>⚙️ Админка</h1><button class="header-btn" onclick="refreshCurrentTab()">↻</button></div>
     <div class="container">
       <div class="tabs">
-        <button class="tab active" onclick="switchTab('objects')"> Объекты</button>
+        <button class="tab active" onclick="switchTab('objects')">🏢 Объекты</button>
         <button class="tab" onclick="switchTab('leads')">📩 Заявки</button>
         <button class="tab" onclick="switchTab('profile')">👤 Профиль</button>
         <button class="tab" onclick="switchTab('about')">ℹ️ Обо мне</button>
@@ -158,7 +158,7 @@
         <div class="form-group"><label class="form-label">Текущий PIN</label><input type="password" class="form-input" id="currentPin" placeholder="Введите текущий PIN"></div>
         <div class="form-group"><label class="form-label">Новый PIN</label><input type="password" class="form-input" id="newPin" placeholder="Минимум 4 символа"></div>
         <div class="form-group"><label class="form-label">Повторите новый PIN</label><input type="password" class="form-input" id="confirmPin" placeholder="Повторите новый PIN"></div>
-        <button class="btn btn-primary" onclick="changePin()"> Сменить PIN-код</button>
+        <button class="btn btn-primary" onclick="changePin()">🔑 Сменить PIN-код</button>
         <p style="text-align:center;font-size:12px;color:var(--text-secondary);margin-top:16px;">После смены PIN текущая сессия будет обновлена автоматически.</p>
       </div>
     </div>
@@ -240,7 +240,7 @@
     });
 
     async function loadConfig() {
-      var response = await fetch('client-config.json?v=2.0.8');
+      var response = await fetch('client-config.json?v=2.0.9');
       var data = await response.json();
       config.scriptUrl = data.client.scriptUrl;
       console.log('[admin loadConfig] OK', config.scriptUrl);
@@ -281,115 +281,98 @@
     }
 
     function checkAuth() {
-  if (sessionStorage.getItem('adminAuth') === 'true') {
-    isAuthorized = true;
-    showApp();
-    return;
-  }
-
-  var urlParams = new URLSearchParams(window.location.search);
-  var isAdminMode = urlParams.get('admin') === '1';
-
-  var initData = getTelegramInitData();
-  if (initData && !isAdminMode) {
-    isAuthorized = true;
-    sessionStorage.setItem('adminAuth', 'true');
-    showApp();
-    return;
-  }
-
-  document.getElementById('pinScreen').style.display = 'flex';
-  document.getElementById('pinInput').focus();
-}
+      if (sessionStorage.getItem('adminAuth') === 'true') {
+        isAuthorized = true;
+        showApp();
+        return;
+      }
+      var urlParams = new URLSearchParams(window.location.search);
+      var isAdminMode = urlParams.get('admin') === '1';
+      var initData = getTelegramInitData();
+      if (initData && !isAdminMode) {
+        isAuthorized = true;
+        sessionStorage.setItem('adminAuth', 'true');
+        showApp();
+        return;
+      }
+      document.getElementById('pinScreen').style.display = 'flex';
+      document.getElementById('pinInput').focus();
+    }
 
     async function checkPin() {
-  var input = document.getElementById('pinInput').value.trim();
-  if (!input) return;
-
-  var btn = document.querySelector('#pinScreen button');
-  var originalText = btn.textContent;
-  btn.textContent = 'Проверка...';
-  btn.disabled = true;
-
-  document.getElementById('pinError').style.display = 'none';
-
-  try {
-    var url = config.scriptUrl + '?action=verify_pin&agent_id=' + encodeURIComponent(AGENT_ID) + '&pin=' + encodeURIComponent(input) + '&admin=1';
-  
-    console.log('[checkPin] Запрос:', url);
-  
-    var response = await fetch(url);
-    var data = await response.json();
-  
-    console.log('[checkPin] Ответ:', data);
-  
-    if (data.success) {
-      isAuthorized = true;
-      sessionStorage.setItem('adminAuth', 'true');
-      sessionStorage.setItem('adminPin', input);
-      sessionStorage.setItem('adminMode', '1');
-      showApp();
-    } else {
-      document.getElementById('pinError').textContent = data.error || '❌ Неверный PIN-код';
-      document.getElementById('pinError').style.display = 'block';
+      var input = document.getElementById('pinInput').value.trim();
+      if (!input) return;
+      var btn = document.querySelector('#pinScreen button');
+      var originalText = btn.textContent;
+      btn.textContent = 'Проверка...';
+      btn.disabled = true;
+      document.getElementById('pinError').style.display = 'none';
+      try {
+        var url = config.scriptUrl + '?action=verify_pin&agent_id=' + encodeURIComponent(AGENT_ID) + '&pin=' + encodeURIComponent(input) + '&admin=1';
+        console.log('[checkPin] Запрос:', url);
+        var response = await fetch(url);
+        var data = await response.json();
+        console.log('[checkPin] Ответ:', data);
+        if (data.success) {
+          isAuthorized = true;
+          sessionStorage.setItem('adminAuth', 'true');
+          sessionStorage.setItem('adminPin', input);
+          sessionStorage.setItem('adminMode', '1');
+          showApp();
+        } else {
+          document.getElementById('pinError').textContent = data.error || '❌ Неверный PIN-код';
+          document.getElementById('pinError').style.display = 'block';
+        }
+      } catch (e) {
+        console.error('[checkPin] Ошибка:', e);
+        document.getElementById('pinError').textContent = '❌ Ошибка сети: ' + e.message;
+        document.getElementById('pinError').style.display = 'block';
+      } finally {
+        btn.textContent = originalText;
+        btn.disabled = false;
+      }
     }
-  } catch (e) {
-    console.error('[checkPin] Ошибка:', e);
-    document.getElementById('pinError').textContent = '❌ Ошибка сети: ' + e.message;
-    document.getElementById('pinError').style.display = 'block';
-  } finally {
-    btn.textContent = originalText;
-    btn.disabled = false;
-  }
-}
     document.getElementById('pinInput').addEventListener('keydown', function(e) { if (e.key === 'Enter') checkPin(); });
 
     function showApp() {
-  document.getElementById('pinScreen').style.display = 'none';
-  document.getElementById('appContent').style.display = 'block';
-
-  var urlParams = new URLSearchParams(window.location.search);
-  if (urlParams.get('admin') === '1') {
-    sessionStorage.setItem('adminMode', '1');
-  }
-
-  loadObjects();
-}
+      document.getElementById('pinScreen').style.display = 'none';
+      document.getElementById('appContent').style.display = 'block';
+      var urlParams = new URLSearchParams(window.location.search);
+      if (urlParams.get('admin') === '1') {
+        sessionStorage.setItem('adminMode', '1');
+      }
+      loadObjects();
+    }
 
     async function apiCall(action, params) {
-  if (!config.scriptUrl) throw new Error('Script URL не настроен');
-
-  var urlParams = new URLSearchParams(window.location.search);
-  var isAdminMode = urlParams.get('admin') === '1' || sessionStorage.getItem('adminMode') === '1';
-
-  var payload = {
-    action: action,
-    agentId: AGENT_ID,
-    initData: getTelegramInitData(),
-    pin: sessionStorage.getItem('adminPin') || '',
-    data: params,
-    isAdminMode: isAdminMode
-  };
-
-  if (action === 'get_leads' || action === 'get_agent_profile' || action === 'get_pages' || action === 'get_listings' || action === 'get_last_file_url') {
-    var getUrl = config.scriptUrl + '?action=' + action + '&agent_id=' + encodeURIComponent(AGENT_ID);
-    if (action === 'get_listings') getUrl += '&includeHidden=true';
-    if (isAdminMode) getUrl += '&admin=1';
-  
-    var response = await fetch(getUrl);
-    var data = await response.json();
-    if (!data.success && action !== 'get_last_file_url') throw new Error(data.error || 'Ошибка сервера');
-    return data;
-  }
-
-  await fetch(config.scriptUrl, {
-    method: 'POST',
-    mode: 'no-cors',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(payload)
-  });
-  return { success: true };
-}
+      if (!config.scriptUrl) throw new Error('Script URL не настроен');
+      var urlParams = new URLSearchParams(window.location.search);
+      var isAdminMode = urlParams.get('admin') === '1' || sessionStorage.getItem('adminMode') === '1';
+      var payload = {
+        action: action,
+        agentId: AGENT_ID,
+        initData: getTelegramInitData(),
+        pin: sessionStorage.getItem('adminPin') || '',
+        data: params,
+        isAdminMode: isAdminMode
+      };
+      if (action === 'get_leads' || action === 'get_agent_profile' || action === 'get_pages' || action === 'get_listings' || action === 'get_last_file_url') {
+        var getUrl = config.scriptUrl + '?action=' + action + '&agent_id=' + encodeURIComponent(AGENT_ID);
+        if (action === 'get_listings') getUrl += '&includeHidden=true';
+        if (isAdminMode) getUrl += '&admin=1';
+        var response = await fetch(getUrl);
+        var data = await response.json();
+        if (!data.success && action !== 'get_last_file_url') throw new Error(data.error || 'Ошибка сервера');
+        return data;
+      }
+      await fetch(config.scriptUrl, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify(payload)
+      });
+      return { success: true };
+    }
     function getTelegramInitData() { return sessionStorage.getItem('tg_initData') || ''; }
 
     function switchTab(tabName) {
@@ -408,28 +391,61 @@
       else if (currentTab === 'about') loadAboutPage();
     }
 
-    // ✅ ИСПРАВЛЕНО: Правильный парсинг русской даты DD.MM.YYYY
-    function parseRussianDate(dateStr) {
+    /* ============================================================
+       УНИВЕРСАЛЬНЫЙ ПАРСЕР ДАТ
+       Поддерживает: ISO 8601, DD.MM.YYYY, MM/DD/YYYY, timestamp
+       Всегда возвращает корректный объект Date или null
+       ============================================================ */
+    function parseAnyDate(dateStr) {
       if (!dateStr) return null;
-      if (dateStr instanceof Date) return dateStr;
-      var parts = String(dateStr).trim().split('.');
-      if (parts.length === 3) {
-        return new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+      if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
+     
+      var str = String(dateStr).trim();
+     
+      // 1. ISO 8601: 2026-07-06T16:54:00 или 2026-07-06
+      if (/^\d{4}-\d{2}-\d{2}/.test(str)) {
+        var d = new Date(str);
+        if (!isNaN(d.getTime())) return d;
       }
-      return new Date(dateStr);
+     
+      // 2. DD.MM.YYYY HH:MM:SS или DD.MM.YYYY
+      var ruMatch = str.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/);
+      if (ruMatch) {
+        var day = parseInt(ruMatch[1], 10);
+        var month = parseInt(ruMatch[2], 10) - 1;
+        var year = parseInt(ruMatch[3], 10);
+        var hours = ruMatch[4] ? parseInt(ruMatch[4], 10) : 0;
+        var minutes = ruMatch[5] ? parseInt(ruMatch[5], 10) : 0;
+        var seconds = ruMatch[6] ? parseInt(ruMatch[6], 10) : 0;
+        var d = new Date(year, month, day, hours, minutes, seconds);
+        if (!isNaN(d.getTime())) return d;
+      }
+     
+      // 3. Fallback: стандартный парсер JS
+      var d = new Date(str);
+      return isNaN(d.getTime()) ? null : d;
     }
 
-    // ✅ ИСПРАВЛЕНО: Использует parseRussianDate для правильного форматирования
-    function formatDate(dateStr) {
-      if (!dateStr) return '';
-      var d = parseRussianDate(dateStr);
-      if (!d || isNaN(d.getTime())) return '';
-      var day = ('0' + d.getDate()).slice(-2);
-      var month = ('0' + (d.getMonth() + 1)).slice(-2);
+    /* ============================================================
+       ФОРМАТИРОВАНИЕ В РУССКИЙ ФОРМАТ
+       Возвращает: «06 июля 2026, 16:54»
+       ============================================================ */
+    function formatRussianDate(dateStr) {
+      var d = parseAnyDate(dateStr);
+      if (!d) return '';
+     
+      var months = [
+        'января', 'февраля', 'марта', 'апреля', 'мая', 'июня',
+        'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+      ];
+     
+      var day = d.getDate();
+      var month = months[d.getMonth()];
       var year = d.getFullYear();
       var hours = ('0' + d.getHours()).slice(-2);
       var minutes = ('0' + d.getMinutes()).slice(-2);
-      return day + '.' + month + '.' + year + ' ' + hours + ':' + minutes;
+     
+      return day + ' ' + month + ' ' + year + ', ' + hours + ':' + minutes;
     }
 
     async function loadObjects() {
@@ -580,44 +596,41 @@
       try {
         var urlParams = new URLSearchParams(window.location.search);
         var isAdminMode = urlParams.get('admin') === '1';
-      
         var url = config.scriptUrl + '?action=get_leads&agent_id=' + encodeURIComponent(AGENT_ID);
         if (isAdminMode) url += '&admin=1';
-      
         var response = await fetch(url);
         var result = await response.json();
-      
         leads = result.data || [];
         document.getElementById('leadsLoading').style.display='none';
-      
         if (leads.length===0) {
           document.getElementById('leadsList').innerHTML='<div class="empty-state"><div class="empty-icon">📭</div><h3>Нет заявок</h3></div>';
           return;
         }
-      
         leads.forEach(function(lead) {
           var card = document.createElement('div');
           card.className='lead-card';
           var sc = 'status-'+(lead.status==='Новая'?'new':lead.status==='Обзвонена'?'contacted':lead.status==='Завершена'?'completed':'cancelled');
           var pd = lead.clientPhone && String(lead.clientPhone).indexOf('#ERROR')===-1 ? escapeHtml(lead.clientPhone) : 'Не указан';
           var tgInfo = lead.clientTelegram && lead.clientTelegram !== 'Не указан' ? '<div class="lead-info">💬 '+escapeHtml(lead.clientTelegram)+'</div>' : '';
-          var formattedTime = lead.formattedTime || formatDate(lead.timestamp);
-        
+         
+          // ✅ ИСПРАВЛЕНО: используем formatRussianDate вместо formatDate
+          var formattedTime = formatRussianDate(lead.timestamp);
+       
           card.innerHTML = '<div class="lead-header"><div class="lead-object">🏢 '+escapeHtml(lead.objectName||'Не указан')+'</div><div class="lead-status '+sc+'">'+escapeHtml(lead.status||'Новая')+'</div></div>'+
             '<div class="lead-info">👤 '+escapeHtml(lead.clientName||'Не указано')+'</div>'+
             '<div class="lead-info">📞 '+pd+'</div>'+
             tgInfo+
-            '<div class="lead-info"> '+formattedTime+'</div>'+
+            '<div class="lead-info">🕐 '+formattedTime+'</div>'+
             '<div class="lead-actions"><button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'new\')">🆕 Новая</button>'+
-            '<button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'contacted\')"> Обзвонена</button>'+
+            '<button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'contacted\')">📞 Обзвонена</button>'+
             '<button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'completed\')">✅ Завершена</button>'+
             '<button class="status-btn" onclick="updateLeadStatus(\''+lead.id+'\',\'cancelled\')">❌ Отменена</button></div>';
-        
+       
           document.getElementById('leadsList').appendChild(card);
         });
       } catch (e) {
         document.getElementById('leadsLoading').style.display='none';
-        showToast(' Ошибка загрузки заявок: ' + e.message);
+        showToast('❌ Ошибка загрузки заявок: ' + e.message);
       }
     }
 
@@ -675,7 +688,7 @@
       if (newP.length<4) { showToast('⚠️ PIN минимум 4 символа'); return; }
       var btn=event.target; var ot=btn.textContent; btn.disabled=true; btn.textContent='Сохранение...';
       try { await apiCall('change_pin',{oldPin:current,newPin:newP}); showToast('✅ PIN изменён'); document.getElementById('currentPin').value=''; document.getElementById('newPin').value=''; document.getElementById('confirmPin').value=''; sessionStorage.setItem('adminPin',newP); }
-      catch(e) { showToast(' '+e.message); } finally { btn.disabled=false; btn.textContent=ot; }
+      catch(e) { showToast('❌ '+e.message); } finally { btn.disabled=false; btn.textContent=ot; }
     }
 
     function escapeHtml(text) { if (!text) return ''; var div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
