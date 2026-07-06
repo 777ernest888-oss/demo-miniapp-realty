@@ -256,18 +256,18 @@ module.exports = async (req, res) => {
       const leads = [];
 
       for (let i = 1; i < rows.length; i++) {
-        if (String(rows[i][agentIdx]).trim() === String(agentId).trim()) {
-          leads.push({
-            id: rows[i][1],
-            timestamp: rows[i][2],
-            objectName: rows[i][3],
-            clientName: rows[i][4],
-            clientPhone: rows[i][5],
-            clientTelegram: rows[i][6],
-            status: rows[i][7],
-          });
-        }
-      }
+  if (String(rows[i][agentIdx]).trim() === String(agentId).trim()) {
+    leads.push({
+      id: rows[i][1],
+      timestamp: formatRussianDate(rows[i][2]),  // ← ИСПРАВЛЕНО
+      objectName: rows[i][3],
+      clientName: rows[i][4],
+      clientPhone: rows[i][5],
+      clientTelegram: rows[i][6],
+      status: rows[i][7],
+    });
+  }
+}
       leads.reverse();
       return res.json({ success: true, data: leads });
     }
