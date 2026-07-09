@@ -517,7 +517,7 @@ function initMap() {
     if (!mapContainer) return;
    
     if (!map) {
-        // ✅ ЭТА СТРОКА ОТКЛЮЧАЕТ СТАНДАРТНЫЕ МАРКЕРЫ!
+        // ✅ ЭТА СТРОКА ОТКЛЮЧАЕТ СТАНДАРТНЫЕ МАРКЕРЫ LEAFLET!
         delete L.Icon.Default.prototype._getIconUrl;
        
         map = L.map('mapContainer').setView([59.9343, 30.3351], 11);
