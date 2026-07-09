@@ -512,24 +512,26 @@ function renderListings(data) {
 }
 
 function initMap() {
-    if (typeof L === 'undefined') return;
-    var mapContainer = document.getElementById('mapContainer');
-    if (!mapContainer) return;
-   
-    if (!map) {
-        map = L.map('mapContainer').setView([59.9343, 30.3351], 11);
-       
-        // ✅ 2ГИС — бесплатно, быстро в РФ, не требует ключ
-        L.tileLayer('https://tile2.maps.2gis.com/tiles?x={x}&y={y}&z={z}', {
-            attribution: '© 2ГИС',
-            maxZoom: 18
-        }).addTo(map);
-       
-        console.log('[Map] ✅ Карта 2ГИС инициализирована');
-    }
-   
-    filterListings();
-    setTimeout(function() { map.invalidateSize(); }, 150);
+    if (typeof L === 'undefined') return;
+    var mapContainer = document.getElementById('mapContainer');
+    if (!mapContainer) return;
+   
+    if (!map) {
+        // ✅ ЭТА СТРОКА ОТКЛЮЧАЕТ СТАНДАРТНЫЕ МАРКЕРЫ!
+        delete L.Icon.Default.prototype._getIconUrl;
+       
+        map = L.map('mapContainer').setView([59.9343, 30.3351], 11);
+       
+        L.tileLayer('https://tile2.maps.2gis.com/tiles?x={x}&y={y}&z={z}', {
+            attribution: '© 2ГИС',
+            maxZoom: 18
+        }).addTo(map);
+       
+        console.log('[Map] ✅ Карта 2ГИС инициализирована');
+    }
+   
+    filterListings();
+    setTimeout(function() { map.invalidateSize(); }, 150);
 }
 
 function updateMapMarkers(filteredItems) {
