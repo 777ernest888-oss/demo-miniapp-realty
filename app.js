@@ -14,6 +14,17 @@ var AGENT_CONFIG = window.AGENT_CONFIG || null;
 var CACHE_KEY = window.CACHE_KEY || 'app_cache_v1';
 var CACHE_TTL = window.CACHE_TTL || (5 * 60 * 1000);
 
+// ✅ ОТКЛЮЧАЕМ СТАНДАРТНЫЕ МАРКЕРЫ LEAFLET (до загрузки карты)
+if (typeof L !== 'undefined') {
+    delete L.Icon.Default.prototype._getIconUrl;
+    L.Icon.Default.mergeOptions({
+        iconRetinaUrl: '',
+        iconUrl: '',
+        shadowUrl: ''
+    });
+    console.log('[Leaflet] Стандартные маркеры отключены');
+}
+
 function getCachedData() {
     try {
         var cached = JSON.parse(localStorage.getItem(CACHE_KEY));
@@ -139,7 +150,7 @@ async function initAgent() {
             }
             return true;
         } else {
-            console.error('[initAgent] ❌ Ошибка:', data.error);
+            console.error('[initAgent]  Ошибка:', data.error);
             showErrorScreen('Ошибка: ' + data.error);
             return false;
         }
@@ -202,7 +213,7 @@ async function loadPagesData() {
             if (row.page && row.title) pagesData[row.page] = { title: row.title, content: row.content || '' };
         });
         console.log('[loadPagesData] ✅ Загружено страниц:', Object.keys(pagesData).length);
-    } catch (e) { console.warn('[loadPagesData] ⚠️ Error:', e); }
+    } catch (e) { console.warn('[loadPagesData] ️ Error:', e); }
 }
 
 function parseCSV(csv) {
@@ -369,7 +380,7 @@ async function init() {
             currentAgentData = cached.agentData || {};
             console.log('[init] ✅ Загружено из кэша:', listings.length, 'объектов');
         } else {
-            console.log('[init] 📡 Загружаем данные с сервера...');
+            console.log('[init]  Загружаем данные с сервера...');
             var url = config.client.scriptUrl + '?action=get_listings&agent_id=' + encodeURIComponent(AGENT_ID);
             var response = await fetch(url);
             var data = await response.json();
@@ -500,7 +511,8 @@ function renderListings(data) {
         var card = document.createElement('div');
         card.className = 'listing-card';
         card.onclick = function(e) { if (!e.target.closest('.consult-btn-inline')) openDetails(item.id); };
-        card.innerHTML = '<img src="' + imageUrl + '" alt="' + escapeHtml(item.name) + '" class="listing-image" onerror="onImgError(event)">' +
+        // ✅ loading="lazy" для кэширования картинок
+        card.innerHTML = '<img src="' + imageUrl + '" alt="' + escapeHtml(item.name) + '" class="listing-image" loading="lazy" onerror="onImgError(event)">' +
             '<div class="listing-info"><h3>' + (escapeHtml(item.name) || 'Без названия') + '</h3>' +
             '<div class="listing-meta"><span>📍 ' + (escapeHtml(item.district) || '') + '</span><span>🚇 ' + (escapeHtml(item.metro) || '') + '</span>' +
             (item.rooms ? '<span>🚪 ' + escapeHtml(item.rooms) + '</span>' : '') + (area ? '<span>📐 ' + escapeHtml(area) + '</span>' : '') + '</div>' +
@@ -512,26 +524,32 @@ function renderListings(data) {
 }
 
 function initMap() {
-    if (typeof L === 'undefined') return;
-    var mapContainer = document.getElementById('mapContainer');
-    if (!mapContainer) return;
-   
-    if (!map) {
-        // ✅ ЭТА СТРОКА ОТКЛЮЧАЕТ СТАНДАРТНЫЕ МАРКЕРЫ LEAFLET!
-        delete L.Icon.Default.prototype._getIconUrl;
-       
-        map = L.map('mapContainer').setView([59.9343, 30.3351], 11);
-       
-        L.tileLayer('https://tile2.maps.2gis.com/tiles?x={x}&y={y}&z={z}', {
-            attribution: '© 2ГИС',
-            maxZoom: 18
-        }).addTo(map);
-       
-        console.log('[Map] ✅ Карта 2ГИС инициализирована');
-    }
-   
-    filterListings();
-    setTimeout(function() { map.invalidateSize(); }, 150);
+    if (typeof L === 'undefined') return;
+    var mapContainer = document.getElementById('mapContainer');
+    if (!mapContainer) return;
+   
+    if (!map) {
+        // ✅ ДВОЙНАЯ ЗАЩИТА ОТ СТАНДАРТНЫХ МАРКЕРОВ
+        delete L.Icon.Default.prototype._getIconUrl;
+        L.Icon.Default.mergeOptions({
+            iconRetinaUrl: '',
+            iconUrl: '',
+            shadowUrl: ''
+        });
+       
+        map = L.map('mapContainer').setView([59.9343, 30.3351], 11);
+       
+        // ✅ 2ГИС — бесплатно, быстро в РФ
+        L.tileLayer('https://tile2.maps.2gis.com/tiles?x={x}&y={y}&z={z}', {
+            attribution: '© 2ГИС',
+            maxZoom: 18
+        }).addTo(map);
+       
+        console.log('[Map] ✅ Карта 2ГИС инициализирована');
+    }
+   
+    filterListings();
+    setTimeout(function() { map.invalidateSize(); }, 150);
 }
 
 function updateMapMarkers(filteredItems) {
@@ -585,7 +603,7 @@ function openDetails(id) {
     if (typeof item.price_from === 'number') priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
     var ppsqm = typeof item.price_per_sqm === 'number' ? Math.round(item.price_per_sqm).toLocaleString('ru-RU') : '';
     document.getElementById('modalPrice').innerHTML = 'от <b>' + priceDisplay + '</b> млн ₽' + (ppsqm ? '<span class="price-per-sqm">~' + ppsqm + ' ₽/м²</span>' : '');
-    document.getElementById('modalMeta').innerHTML = '<div class="meta-row"><span>📍 ' + (escapeHtml(item.address) || '') + '</span></div><div class="meta-row"><span>🚇 м. ' + (escapeHtml(item.metro) || '') + '</span></div><div class="meta-row"><span>🏗️ Класс: ' + (escapeHtml(item.class) || '') + '</span></div><div class="meta-row"><span>🎨 Отделка: ' + (escapeHtml(item.finishing) || '') + '</span></div><div class="meta-row"><span>📅 Срок сдачи: ' + (escapeHtml(item.completion_soonest) || '') + (item.completion_soonest && item.completion_all ? ' - ' : '') + (escapeHtml(item.completion_all) || '') + '</span></div>';
+    document.getElementById('modalMeta').innerHTML = '<div class="meta-row"><span>📍 ' + (escapeHtml(item.address) || '') + '</span></div><div class="meta-row"><span>🚇 м. ' + (escapeHtml(item.metro) || '') + '</span></div><div class="meta-row"><span>🏗️ Класс: ' + (escapeHtml(item.class) || '') + '</span></div><div class="meta-row"><span>🎨 Отделка: ' + (escapeHtml(item.finishing) || '') + '</span></div><div class="meta-row"><span> Срок сдачи: ' + (escapeHtml(item.completion_soonest) || '') + (item.completion_soonest && item.completion_all ? ' - ' : '') + (escapeHtml(item.completion_all) || '') + '</span></div>';
     document.getElementById('modalDescription').textContent = item.description || 'Описание отсутствует';
     document.getElementById('modalFeatures').innerHTML = item.features ? '<ul>' + item.features.split(',').map(function(f) { return '<li>' + escapeHtml(f.trim()) + '</li>'; }).join('') + '</ul>' : '<p style="color:var(--text-secondary);">Информация уточняется</p>';
     var gc = document.getElementById('modalGallery'); gc.innerHTML = '';
@@ -596,7 +614,11 @@ function openDetails(id) {
         var dots = document.createElement('div'); dots.className = 'carousel-dots';
         allImages.forEach(function(url, idx) {
             var slide = document.createElement('div'); slide.className = 'slide';
-            var img = document.createElement('img'); img.src = getImageUrl(url); img.onclick = function() { window.open(getImageUrl(url), '_blank'); }; img.onerror = onImgError;
+            var img = document.createElement('img');
+            img.src = getImageUrl(url);
+            img.loading = 'lazy'; // ✅ КЭШИРОВАНИЕ
+            img.onclick = function() { window.open(getImageUrl(url), '_blank'); };
+            img.onerror = onImgError;
             slide.appendChild(img); track.appendChild(slide);
             var dot = document.createElement('div'); dot.className = 'dot ' + (idx === 0 ? 'active' : ''); dot.onclick = function() { track.scrollTo({ left: slide.offsetLeft, behavior: 'smooth' }); }; dots.appendChild(dot);
         });
@@ -608,7 +630,7 @@ function openDetails(id) {
     if (plansImages.length > 0) {
         var t = document.createElement('h3'); t.className = 'plans-section-title'; t.textContent = '📐 Планировки'; pc.appendChild(t);
         var pt = document.createElement('div'); pt.className = 'carousel-track';
-        plansImages.forEach(function(url) { var s = document.createElement('div'); s.className = 'slide'; s.style.flex = '0 0 85%'; var img = document.createElement('img'); img.src = getImageUrl(url); img.style.height = '200px'; img.onclick = function() { window.open(getImageUrl(url), '_blank'); }; img.onerror = onImgError; s.appendChild(img); pt.appendChild(s); });
+        plansImages.forEach(function(url) { var s = document.createElement('div'); s.className = 'slide'; s.style.flex = '0 0 85%'; var img = document.createElement('img'); img.src = getImageUrl(url); img.loading = 'lazy'; img.style.height = '200px'; img.onclick = function() { window.open(getImageUrl(url), '_blank'); }; img.onerror = onImgError; s.appendChild(img); pt.appendChild(s); });
         pc.appendChild(pt);
     } else if (item.floor_plans_text) { pc.innerHTML = '<h3 class="plans-section-title">📐 Планировки</h3><p class="floor-plans-text">' + item.floor_plans_text + '</p>'; }
     var mc = document.querySelector('#detailsModal .modal-content');
@@ -625,7 +647,7 @@ function openConsultForm(id, event) {
     currentModalId = id;
     var item = listings.find(function(l) { return l.id === id; });
     if (item) {
-        document.getElementById('consultObjectName').textContent = '🏢 ' + item.name;
+        document.getElementById('consultObjectName').textContent = ' ' + item.name;
         document.getElementById('consultName').value = '';
         document.getElementById('consultPhone').value = '+7 (';
         document.getElementById('consultTelegram').value = '';
@@ -755,7 +777,7 @@ function submitConsultForm(event) {
             sb.disabled = false;
         });
     } catch (e) {
-        tg.showAlert('⚠️ Произошла ошибка.');
+        tg.showAlert('️ Произошла ошибка.');
     }
 }
 
