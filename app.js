@@ -196,7 +196,7 @@ async function loadPagesData() {
         if (!res.ok) throw new Error('Network error');
         var result = await res.json();
         if (!result.success) throw new Error(result.error);
-      
+     
         var rows = result.data || [];
         rows.forEach(function(row) {
             if (row.page && row.title) pagesData[row.page] = { title: row.title, content: row.content || '' };
@@ -349,11 +349,11 @@ function switchView(view) {
 async function init() {
     try {
         console.log('[init] 🚀 Начинаю загрузку...');
-      
+     
         // ✅ ПОКАЗЫВАЕМ SPINNER
         var loadingScreen = document.getElementById('loadingScreen');
         if (loadingScreen) loadingScreen.classList.remove('hidden');
-      
+     
         await loadClientConfig();
 
         var agentOk = await initAgent();
@@ -517,24 +517,66 @@ function initMap() {
     if (typeof L === 'undefined') return;
     var mapContainer = document.getElementById('mapContainer');
     if (!mapContainer) return;
-    if (!map) { map = L.map('mapContainer').setView([59.9343, 30.3351], 11); L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map); }
+   
+    if (!map) {
+        map = L.map('mapContainer').setView([59.9343, 30.3351], 11);
+       
+        // ✅ РОССИЙСКИЕ ТАЙЛЫ (Яндекс.Карты)
+        L.tileLayer('https://vec0{1-4}.maps.yandex.net/tiles?l=map&x={x}&y={y}&z={z}&scale=1&lang=ru_RU', {
+            attribution: '© Яндекс.Карты',
+            subdomains: ['1', '2', '3', '4']
+        }).addTo(map);
+       
+        console.log('[Map] ✅ Карта инициализирована с Яндекс.Карты');
+    }
+   
     filterListings();
     setTimeout(function() { map.invalidateSize(); }, 150);
 }
 
 function updateMapMarkers(filteredItems) {
     if (!map) return;
-    markers.forEach(function(m) { map.removeLayer(m); }); markers = [];
+   
+    // Удаляем старые маркеры
+    markers.forEach(function(m) { map.removeLayer(m); });
+    markers = [];
+   
+    // ✅ CSS-МАРКЕРЫ (вместо PNG)
+    var customIcon = L.divIcon({
+        className: 'custom-marker',
+        html: '<div style="background:var(--accent, #3498DB);width:30px;height:30px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.4);position:relative;"><div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(45deg);color:white;font-weight:bold;font-size:12px;">₽</div></div>',
+        iconSize: [30, 30],
+        iconAnchor: [15, 30],
+        popupAnchor: [0, -30]
+    });
+   
     filteredItems.forEach(function(item) {
         if (!item.active || !item.lat || !item.lng) return;
+       
         var priceDisplay = '?';
-        if (typeof item.price_from === 'number') priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
-        var marker = L.marker([item.lat, item.lng]).addTo(map);
+        if (typeof item.price_from === 'number') {
+            priceDisplay = item.price_from < 1000 ? item.price_from.toFixed(1) : (item.price_from / 1000000).toFixed(1);
+        }
+       
+        // ✅ Используем CSS-маркер
+        var marker = L.marker([item.lat, item.lng], {icon: customIcon}).addTo(map);
+       
         marker.bindPopup('<div class="map-popup" data-id="' + item.id + '" style="cursor:pointer;"><b>' + item.name + '</b><br>от ' + priceDisplay + ' млн ₽</div>');
-        marker.on('popupopen', function() { var el = document.querySelector('.map-popup[data-id="' + item.id + '"]'); if (el) el.addEventListener('click', function() { openDetails(item.id); }); });
+       
+        marker.on('popupopen', function() {
+            var el = document.querySelector('.map-popup[data-id="' + item.id + '"]');
+            if (el) el.addEventListener('click', function() { openDetails(item.id); });
+        });
+       
         markers.push(marker);
     });
-    if (markers.length > 0) { var group = new L.featureGroup(markers); map.fitBounds(group.getBounds().pad(0.1)); }
+   
+    if (markers.length > 0) {
+        var group = new L.featureGroup(markers);
+        map.fitBounds(group.getBounds().pad(0.1));
+    }
+   
+    console.log('[Map] ✅ Добавлено маркеров:', markers.length);
 }
 
 function openDetails(id) {
@@ -607,27 +649,27 @@ function closeConsultModal() {
 function initPhoneMask() {
     var input = document.getElementById('consultPhone');
     if (!input) return;
-   
+  
     input.addEventListener('input', function(e) {
         var digits = e.target.value.replace(/\D/g, '');
-       
+      
         // Если начали с 8, меняем на 7
         if (digits.startsWith('8')) digits = '7' + digits.substring(1);
         // Если не начинается с 7, добавляем
         if (!digits.startsWith('7')) digits = '7' + digits;
         // Обрезаем до 11 цифр
         if (digits.length > 11) digits = digits.substring(0, 11);
-       
+      
         // Форматируем на лету
         var formatted = '+7';
         if (digits.length > 1) formatted += ' (' + digits.substring(1, 4);
         if (digits.length > 4) formatted += ') ' + digits.substring(4, 7);
         if (digits.length > 7) formatted += '-' + digits.substring(7, 9);
         if (digits.length > 9) formatted += '-' + digits.substring(9, 11);
-       
+      
         e.target.value = formatted;
     });
-   
+  
     input.addEventListener('focus', function(e) {
         if (e.target.value === '' || e.target.value === '+7') {
             e.target.value = '+7 (';
@@ -651,36 +693,36 @@ function submitConsultForm(event) {
     try {
         var item = listings.find(function(l) { return l.id === currentModalId; });
         if (!item) { tg.showAlert('❌ Ошибка: объект не найден'); return; }
-       
+      
         var name = document.getElementById('consultName').value.trim();
         var phone = document.getElementById('consultPhone').value.trim();
         var telegram = document.getElementById('consultTelegram').value.trim() || '';
-       
+      
         // Проверка имени
         if (!name || name.length < 2) { tg.showAlert('⚠️ Введите имя (минимум 2 символа)'); return; }
-       
+      
         // Очистка телефона от всего кроме цифр
         var digitsOnly = phone.replace(/\D/g, '');
-       
+      
         // Проверка: ровно 11 цифр
         if (digitsOnly.length !== 11) {
             tg.showAlert('❌ Неверный формат телефона\nДолжно быть 11 цифр: +7 (XXX) XXX-XX-XX');
             return;
         }
-       
+      
         // Проверка: начинается с 7
         if (digitsOnly[0] !== '7') {
             tg.showAlert('❌ Телефон должен начинаться с +7');
             return;
         }
-       
+      
         // Проверка на фейки
         var fakeNumbers = ['70000000000', '79999999999', '71111111111', '77777777777', '78888888888', '76666666666', '75555555555', '74444444444', '73333333333', '72222222222'];
         if (fakeNumbers.indexOf(digitsOnly) !== -1) {
             tg.showAlert('❌ Пожалуйста, введите реальный номер телефона');
             return;
         }
-       
+      
         // Проверка что не все цифры одинаковые
         var allSame = true;
         for (var i = 1; i < digitsOnly.length; i++) {
@@ -693,10 +735,10 @@ function submitConsultForm(event) {
             tg.showAlert('❌ Все цифры в номере одинаковые');
             return;
         }
-       
+      
         // Проверка Telegram
         if (telegram && /[а-яА-ЯёЁ]/.test(telegram)) { tg.showAlert('❌ Telegram только латиницей'); return; }
-       
+      
         if (!AGENT_ID) { tg.showAlert('❌ Ошибка: агент не определён'); return; }
 
         var sb = event.target.querySelector('button[type="submit"]');
