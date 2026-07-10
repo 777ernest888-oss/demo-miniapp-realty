@@ -8,6 +8,30 @@
   <meta http-equiv="Expires" content="0">
   <title>КАТАЛОГ НОВОСТРОЕК</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <!-- ✅ БЛОКИРОВКА СТАНДАРТНЫХ МАРКЕРОВ LEAFLET -->
+<script>
+(function() {
+  var originalDefine = window.define;
+  window.define = function() {
+    if (arguments[2]) {
+      var leafletFactory = arguments[2];
+      arguments[2] = function() {
+        var L = leafletFactory.apply(this, arguments);
+        if (L.Icon && L.Icon.Default) {
+          delete L.Icon.Default.prototype._getIconUrl;
+          L.Icon.Default.mergeOptions({
+            iconRetinaUrl: '',
+            iconUrl: '',
+            shadowUrl: ''
+          });
+        }
+        return L;
+      };
+    }
+    return originalDefine ? originalDefine.apply(window, arguments) : undefined;
+  };
+})();
+</script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="styles.css?v=2.0.2">
   <style>
