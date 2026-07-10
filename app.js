@@ -14,6 +14,17 @@ var AGENT_CONFIG = window.AGENT_CONFIG || null;
 var CACHE_KEY = window.CACHE_KEY || 'app_cache_v1';
 var CACHE_TTL = window.CACHE_TTL || (5 * 60 * 1000);
 
+// ✅ ВОССТАНОВЛЕНИЕ ЗАЩИТЫ ОТ СТАНДАРТНЫХ МАРКЕРОВ
+if (typeof L !== 'undefined') {
+    delete L.Icon.Default.prototype._getIconUrl;
+    L.Icon.Default.mergeOptions({
+        iconRetinaUrl: '',
+        iconUrl: '',
+        shadowUrl: ''
+    });
+    console.log('[Leaflet] Стандартные маркеры отключены');
+}
+
 function getCachedData() {
     try {
         var cached = JSON.parse(localStorage.getItem(CACHE_KEY));
